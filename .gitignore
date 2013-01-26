@@ -1,0 +1,13 @@
+.rvmrc
+.bundle
+.idea
+.loadpath
+.project
+.DS_Store
+*.swp
+nbproject/*
+doc/*
+log/*
+tmp/*
+pkg/*
+measurement/*

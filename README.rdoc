@@ -1,0 +1,13 @@
+RightDevelop is a library of reusable, unit- and functional-tested Ruby code that RightScale has found broadly useful.
+
+== What Does It Do?
+
+=== Continuous Integration
+
+Jenkins groks JUnit XML test results very well, and has lots of hidden features associated with them. Tests are tests,
+so we've written an RSpec formatter that Jenkins will feel right at home with!
+
+To use our CI harness, just add the following to your Rakefile (or into lib/tasks/ci.rake):
+
+require 'right_develop'
+RightDevelop::CI::RakeTask.new
