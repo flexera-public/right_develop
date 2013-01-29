@@ -56,7 +56,10 @@ Jeweler::Tasks.new do |gem|
   gem.email = "support@rightscale.com"
   gem.authors = ["Tony Spataro"]
 end
-Jeweler::RubygemsDotOrgTasks.new
+
+# This is a closed-source gem; omit gemcutter tasks so people don't accidentally
+# push this gem to the public!
+#Jeweler::RubygemsDotOrgTasks.new
 
 CLEAN.include('pkg')
 
