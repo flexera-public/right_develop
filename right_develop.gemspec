@@ -4,14 +4,14 @@
 # -*- encoding: utf-8 -*-
 
 Gem::Specification.new do |s|
-  s.name = "right_develop"
+  s.name = %q{right_develop}
   s.version = "1.0.0"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Tony Spataro"]
-  s.date = "2013-02-04"
-  s.description = "A toolkit of development tools created by RightScale."
-  s.email = "support@rightscale.com"
+  s.date = %q{2013-02-04}
+  s.description = %q{A toolkit of development tools created by RightScale.}
+  s.email = %q{support@rightscale.com}
   s.extra_rdoc_files = [
     "LICENSE",
     "README.rdoc"
@@ -46,20 +46,21 @@ Gem::Specification.new do |s|
     "right_develop.rconf",
     "spec/spec_helper.rb"
   ]
-  s.homepage = "https://github.com/rightscale/right_develop"
+  s.homepage = %q{https://github.com/rightscale/right_develop}
   s.licenses = ["MIT"]
   s.require_paths = ["lib"]
-  s.rubygems_version = "1.8.24"
-  s.summary = "Reusable dev & test code."
+  s.rubygems_version = %q{1.3.7}
+  s.summary = %q{Reusable dev & test code.}
 
   if s.respond_to? :specification_version then
+    current_version = Gem::Specification::CURRENT_SPECIFICATION_VERSION
     s.specification_version = 3
 
     if Gem::Version.new(Gem::VERSION) >= Gem::Version.new('1.2.0') then
-      s.add_runtime_dependency(%q<rake>, ["~> 0.9.5"])
+      s.add_runtime_dependency(%q<rake>, [">= 0.8.7", "< 0.10"])
       s.add_runtime_dependency(%q<right_support>, ["~> 2.0"])
       s.add_runtime_dependency(%q<builder>, ["~> 3.0"])
-      s.add_runtime_dependency(%q<rspec>, ["< 3.0", ">= 1.3"])
+      s.add_runtime_dependency(%q<rspec>, [">= 1.3", "< 3.0"])
       s.add_runtime_dependency(%q<cucumber>, ["~> 1.0"])
       s.add_development_dependency(%q<jeweler>, ["~> 1.8.3"])
       s.add_development_dependency(%q<rdoc>, [">= 2.4.2"])
@@ -69,12 +70,20 @@ Gem::Specification.new do |s|
       s.add_development_dependency(%q<rdoc>, [">= 2.4.2"])
       s.add_development_dependency(%q<syntax>, ["~> 1.0.0"])
       s.add_development_dependency(%q<nokogiri>, ["~> 1.5"])
+      s.add_development_dependency(%q<jeweler>, ["~> 1.8.3"])
+      s.add_development_dependency(%q<rdoc>, [">= 2.4.2"])
+      s.add_development_dependency(%q<syntax>, ["~> 1.0.0"])
+      s.add_development_dependency(%q<nokogiri>, ["~> 1.5"])
     else
-      s.add_dependency(%q<rake>, ["~> 0.9.5"])
+      s.add_dependency(%q<rake>, [">= 0.8.7", "< 0.10"])
       s.add_dependency(%q<right_support>, ["~> 2.0"])
       s.add_dependency(%q<builder>, ["~> 3.0"])
-      s.add_dependency(%q<rspec>, ["< 3.0", ">= 1.3"])
+      s.add_dependency(%q<rspec>, [">= 1.3", "< 3.0"])
       s.add_dependency(%q<cucumber>, ["~> 1.0"])
+      s.add_dependency(%q<jeweler>, ["~> 1.8.3"])
+      s.add_dependency(%q<rdoc>, [">= 2.4.2"])
+      s.add_dependency(%q<syntax>, ["~> 1.0.0"])
+      s.add_dependency(%q<nokogiri>, ["~> 1.5"])
       s.add_dependency(%q<jeweler>, ["~> 1.8.3"])
       s.add_dependency(%q<rdoc>, [">= 2.4.2"])
       s.add_dependency(%q<syntax>, ["~> 1.0.0"])
@@ -85,11 +94,15 @@ Gem::Specification.new do |s|
       s.add_dependency(%q<nokogiri>, ["~> 1.5"])
     end
   else
-    s.add_dependency(%q<rake>, ["~> 0.9.5"])
+    s.add_dependency(%q<rake>, [">= 0.8.7", "< 0.10"])
     s.add_dependency(%q<right_support>, ["~> 2.0"])
     s.add_dependency(%q<builder>, ["~> 3.0"])
-    s.add_dependency(%q<rspec>, ["< 3.0", ">= 1.3"])
+    s.add_dependency(%q<rspec>, [">= 1.3", "< 3.0"])
     s.add_dependency(%q<cucumber>, ["~> 1.0"])
+    s.add_dependency(%q<jeweler>, ["~> 1.8.3"])
+    s.add_dependency(%q<rdoc>, [">= 2.4.2"])
+    s.add_dependency(%q<syntax>, ["~> 1.0.0"])
+    s.add_dependency(%q<nokogiri>, ["~> 1.5"])
     s.add_dependency(%q<jeweler>, ["~> 1.8.3"])
     s.add_dependency(%q<rdoc>, [">= 2.4.2"])
     s.add_dependency(%q<syntax>, ["~> 1.0.0"])

@@ -1,7 +1,7 @@
 source "http://rubygems.org"
 
 # Runtime dependencies of RightDevelop
-gem "rake", "~> 0.9.5"
+gem "rake", [">= 0.8.7", "< 0.10"]
 gem "right_support", "~> 2.0"
 gem "builder", "~> 3.0"
 gem "rspec", [">= 1.3", "< 3.0"]

@@ -72,7 +72,7 @@ DEPENDENCIES
   cucumber (~> 1.0)
   jeweler (~> 1.8.3)
   nokogiri (~> 1.5)
-  rake (~> 0.9.5)
+  rake (>= 0.8.7, < 0.10)
   rdoc (>= 2.4.2)
   right_develop!
   right_support (~> 2.0)
