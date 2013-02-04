@@ -48,9 +48,7 @@ module RightDevelop::CI
       end
 
       def classname_for(example)
-        eg = example.metadata[:example_group]
-        eg = eg[:example_group] while eg.key?(:example_group)
-        klass = eg[:description_args].to_s
+        klass = example.example_group.described_class || tr.example_group.top_level_description
         "rspec.#{klass}"
       end
 

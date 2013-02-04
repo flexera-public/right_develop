@@ -50,12 +50,25 @@ module RightDevelop::CI
     # Default :ci
     attr_accessor :ci_namespace
 
-    # File glob to select which specs will be run with the spec task
+    # File glob to select which specs will be run with the spec task.
     #
     # Default nil (let RSpec choose pattern)
     attr_accessor :rspec_pattern
 
-    # The base directory for output files.
+    # Filename (without directory!) to which RSpec XML results should be written.
+    # The CI task will take output_path, append "rspec" as a subdir and finally
+    # append this file name, to come up with a relative path for output. For example:
+    #
+    # Default "rspec.xml"
+    #
+    #   output_path = "my_cool_ci"
+    #   rspec_output = "my_awesome_rspec.xml"
+    #
+    # Given the options above, the CI harness would write RSpec results to:
+    #   my_cool_ci/rspec/my_awesome_rspec.xml
+    attr_accessor :rspec_output
+
+    # The base directory for all output files.
     #
     # Default 'measurement'
     attr_accessor :output_path
@@ -66,6 +79,7 @@ module RightDevelop::CI
       yield self if block_given?
 
       @output_path ||= 'measurement'
+      @rspec_output ||= 'rspec.xml'
 
       namespace @ci_namespace do
         task :prep do
@@ -80,7 +94,7 @@ module RightDevelop::CI
           RSpec::Core::RakeTask.new(:spec => :prep) do |t|
             t.rspec_opts = ['-r', 'right_develop/ci',
                             '-f', JavaSpecFormatter.name,
-                            '-o', File.join(@output_path, 'rspec', 'rspec.xml')]
+                            '-o', File.join(@output_path, 'rspec', @rspec_output)]
             unless self.rspec_pattern.nil?
               t.pattern = self.rspec_pattern
             end
@@ -90,7 +104,7 @@ module RightDevelop::CI
           Spec::Rake::SpecTask.new(:spec => :prep) do |t|
             desc "Run RSpec Examples"
             t.spec_opts = ['-r', 'right_develop/ci',
-                           '-f', JavaSpecFormatter.name + ":" + File.join(@output_path, 'rspec', 'rspec.xml')]
+                           '-f', JavaSpecFormatter.name + ":" + File.join(@output_path, 'rspec', @rspec_output)]
             unless self.rspec_pattern.nil?
               t.spec_files = FileList[self.rspec_pattern]
             end

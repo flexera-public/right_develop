@@ -10,7 +10,7 @@ Feature: RSpec 1.x support
     And a gem dependency on 'rspec ~> 1.0'
     And the Rakefile contains a RightDevelop::CI::RakeTask
 
-  Scenario: passing RSpec 1.x examples
+  Scenario: passing examples
     Given a trivial RSpec spec
     When I install the bundle
     And I rake 'ci:spec'
@@ -18,7 +18,7 @@ Feature: RSpec 1.x support
     And the file 'measurement/rspec/rspec.xml' should mention 2 passing test cases
     And the file 'measurement/rspec/rspec.xml' should mention 0 failing test cases
 
-  Scenario: failing RSpec 1.x examples
+  Scenario: failing examples
     Given a trivial failing RSpec spec
     When I install the bundle
     And I rake 'ci:spec'
@@ -26,7 +26,7 @@ Feature: RSpec 1.x support
     And the file 'measurement/rspec/rspec.xml' should mention 2 passing test cases
     And the file 'measurement/rspec/rspec.xml' should mention 1 failing test case
 
-  Scenario: override spec files
+  Scenario: override input file pattern
     Given an RSpec spec named 'passing_spec.rb' with content:
     """
     describe String do
@@ -52,3 +52,16 @@ Feature: RSpec 1.x support
     When I install the bundle
     And I rake 'ci:spec'
     Then the command should succeed
+
+  Scenario: override output file location
+    Given a trivial RSpec spec
+    And the Rakefile contains:
+    """
+    RightDevelop::CI::RakeTask.new do |task|
+      task.rspec_output = 'awesome.xml'
+    end
+    """
+    When I install the bundle
+    And I rake 'ci:spec'
+    Then the command should succeed
+    And the file 'measurement/rspec/awesome.xml' should exist
