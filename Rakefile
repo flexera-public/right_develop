@@ -55,6 +55,7 @@ Jeweler::Tasks.new do |gem|
   gem.description = %Q{A toolkit of development tools created by RightScale.}
   gem.email = "support@rightscale.com"
   gem.authors = ["Tony Spataro"]
+  gem.rubygems_version = "1.3.7"
 end
 
 # This is a closed-source gem; omit gemcutter tasks so people don't accidentally
