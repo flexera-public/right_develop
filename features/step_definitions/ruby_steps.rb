@@ -50,27 +50,47 @@ Given /^the Rakefile contains a RightDevelop::CI::RakeTask with parameter '(.*)'
   end
 end
 
+Given /^the Rakefile contains:$/ do |content|
+  step 'a Rakefile'
+  rakefile = ruby_app_path('Rakefile')
+  File.open(rakefile, 'w') do |file|
+    file.puts "require 'right_develop'"
+    content.split("\n").each do |line|
+      file.puts line
+    end
+  end
+end
+
 Given /^a trivial (failing )?RSpec spec$/ do |failing|
   spec_dir = ruby_app_path('spec')
   spec = ruby_app_path('spec', 'trivial_spec.rb')
   FileUtils.mkdir_p(spec_dir)
-  unless File.exist?(spec)
-    File.open(spec, 'w') do |file|
-      file.puts "describe String do"
-      file.puts "  it 'has a size' do"
-      file.puts "    'joe'.size.should == 3"
-      file.puts "  end"
+  File.open(spec, 'w') do |file|
+    file.puts "describe String do"
+    file.puts "  it 'has a size' do"
+    file.puts "    'joe'.size.should == 3"
+    file.puts "  end"
+    file.puts
+    file.puts "  it 'is stringy' do"
+    file.puts "    pending"
+    file.puts "  end"
+    unless failing.nil?
       file.puts
-      file.puts "  it 'is stringy' do"
-      file.puts "    pending"
-      file.puts "  end"
-      unless failing.nil?
-        file.puts
-        file.puts "it 'meets an impossible ideal' do"
-        file.puts "  raise NotImplementedError, 'inconceivable!'"
-        file.puts "end"
-      end
+      file.puts "it 'meets an impossible ideal' do"
+      file.puts "  raise NotImplementedError, 'inconceivable!'"
       file.puts "end"
+    end
+    file.puts "end"
+  end
+end
+
+Given /^an RSpec spec named '([A-Za-z0-9_.]+)' with content:$/ do |name, content|
+  spec_dir = ruby_app_path('spec')
+  spec = ruby_app_path('spec', name)
+  FileUtils.mkdir_p(spec_dir)
+  File.open(spec, 'w') do |file|
+    content.split("\n").each do |line|
+      file.puts line
     end
   end
 end
