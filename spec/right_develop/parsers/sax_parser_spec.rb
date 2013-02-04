@@ -3,7 +3,7 @@ require File.expand_path(File.dirname(__FILE__) + '/../../spec_helper.rb')
 describe "xml parser" do
   it "BaseHelper.xml_post_process_1_5 for root hash formatted xml" do
     expected_hash = {
-      "farms"=>[],
+      "farms"=>"",
       "animals"=>[
         {"species"=>"chicken", "type"=>'bird'},
         {"species"=>"chicken", "type"=>'bird'},
@@ -85,6 +85,37 @@ describe "xml parser" do
             <farmer name='Moe'  specialty='sowing'/>
           </farmers>
           <description>vegetable farms</description>
+        </farm_cluster>
+      </farm_clusters>
+    @
+    RightDevelop::Parsers::SaxParser.parse(servers_index_1_5_xml,
+      :post_parser => lambda { |xml| RightDevelop::Parsers::XmlPostParser.remove_nesting(xml) } ).should == expected_array
+  end
+
+  it "BaseHelper.xml_post_process_1_5 for node with empty text string" do
+    expected_array = [
+      {
+        'farms'=>[{'name'=>'server farm'}],
+        'description'=>'big time computing'
+      },
+      {
+        'farms'=>[{'name'=>'unlisted farm'}],
+        'description'=>''
+      }
+    ]
+    servers_index_1_5_xml = %@<?xml version='1.0' encoding='UTF-8'?>
+      <farm_clusters>
+        <farm_cluster>
+          <farms>
+            <farm name='server farm'/>
+          </farms>
+          <description>big time computing</description>
+        </farm_cluster>
+        <farm_cluster>
+          <farms>
+            <farm name='unlisted farm'/>
+          </farms>
+          <description></description>
         </farm_cluster>
       </farm_clusters>
     @

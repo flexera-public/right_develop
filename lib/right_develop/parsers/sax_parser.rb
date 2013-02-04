@@ -81,11 +81,13 @@ module RightDevelop::Parsers
     end
 
     def on_end_element_ns(name, prefix, uri)
+      # Special handling of empty text fields
+      if @tag.is_a?(Hash) && @tag.empty? && @tag['@@text'].nil?
+        @tag['@@text'] = ""
+      end
+
       # Finalize tag's text
-      if @tag.key?('@@text') && @tag['@@text'].empty?
-        # Delete text if it is blank
-        @tag.delete('@@text')
-      elsif @tag.keys.count == 0
+      if @tag.keys.count == 0
         # Set tag value to nil then the tag is blank
         name.pluralize == name ? @tag = [] : {}
       elsif @tag.keys == ['@@text']
