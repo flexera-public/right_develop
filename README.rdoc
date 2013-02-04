@@ -19,7 +19,9 @@ tweaks various instance variables of the resulting Rake task:
 
   RightDevelop::CI::RakeTask.new do |task|
     task.ci_namespace = :my_happy_ci
-    task.rspec_pattern = "spec/important_specs/**/*_spec.rb"
+    task.rspec_pattern = "spec/important/**/*_spec.rb" # only run the important specs for CI
+    task.output_path   = "ci_results"                  # use ci_results as the base dir for all output files
+    task.rspec_output  = "happy_specs.xml"             # write to ci_results/rspec/happy_specs.xml
   end
 
 ==== Keeping the CI Harness Out of Production
