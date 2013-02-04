@@ -1,4 +1,4 @@
-Feature: Rake integration
+Feature: basic Rake integration
   In order to promote predictable, reliable Continuous Integration
   RightDevelop should expose a "ci:" Rake namespace
 
@@ -25,31 +25,3 @@ Feature: Rake integration
     And I rake '-T'
     Then the output should contain 'funkalicious:cucumber'
     Then the output should contain 'funkalicious:spec'
-
-  Scenario: override spec files
-    Given a gem dependency on 'rspec ~> 2.0'
-    And an RSpec spec named 'passing_spec.rb' with content:
-    """
-    describe String do
-      it 'is cool' do
-        'cool'.should == 'cool'
-      end
-    end
-    """
-    And an RSpec spec named 'failing_spec.rb' with content:
-    """
-    describe String do
-      it 'is uncool' do
-        'cool'.should == 'uncool'
-      end
-    end
-    """
-    And the Rakefile contains:
-    """
-    RightDevelop::CI::RakeTask.new do |task|
-      task.rspec_files = 'passing_spec.rb'
-    end
-    """
-    When I install the bundle
-    And I rake 'ci:spec'
-    Then the command should succeed

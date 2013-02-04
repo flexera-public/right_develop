@@ -50,6 +50,11 @@ module RightDevelop::CI
     # Default :ci
     attr_accessor :ci_namespace
 
+    # File glob to select which specs will be run with the spec task
+    #
+    # Default nil (let RSpec choose pattern)
+    attr_accessor :rspec_pattern
+
     # The base directory for output files.
     #
     # Default 'measurement'
@@ -76,6 +81,9 @@ module RightDevelop::CI
             t.rspec_opts = ['-r', 'right_develop/ci',
                             '-f', JavaSpecFormatter.name,
                             '-o', File.join(@output_path, 'rspec', 'rspec.xml')]
+            unless self.rspec_pattern.nil?
+              t.pattern = self.rspec_pattern
+            end
           end
         elsif defined?(::Spec::Rake::SpecTask)
           # RSpec 1
@@ -83,6 +91,9 @@ module RightDevelop::CI
             desc "Run RSpec Examples"
             t.spec_opts = ['-r', 'right_develop/ci',
                            '-f', JavaSpecFormatter.name + ":" + File.join(@output_path, 'rspec', 'rspec.xml')]
+            unless self.rspec_pattern.nil?
+              t.spec_files = FileList[self.rspec_pattern]
+            end
           end
         else
           raise LoadError, "Cannot define CI rake task: unsupported RSpec version"

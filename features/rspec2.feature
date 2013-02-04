@@ -25,3 +25,30 @@ Feature: RSpec 2.x support
     Then the command should fail
     And the file 'measurement/rspec/rspec.xml' should mention 2 passing test cases
     And the file 'measurement/rspec/rspec.xml' should mention 1 failing test case
+
+  Scenario: override spec files
+    Given an RSpec spec named 'passing_spec.rb' with content:
+    """
+    describe String do
+      it 'is cool' do
+        'cool'.should == 'cool'
+      end
+    end
+    """
+    And an RSpec spec named 'failing_spec.rb' with content:
+    """
+    describe String do
+      it 'is uncool' do
+        'cool'.should == 'uncool'
+      end
+    end
+    """
+    And the Rakefile contains:
+    """
+    RightDevelop::CI::RakeTask.new do |task|
+      task.rspec_pattern = 'spec/passing_spec.rb'
+    end
+    """
+    When I install the bundle
+    And I rake 'ci:spec'
+    Then the command should succeed
