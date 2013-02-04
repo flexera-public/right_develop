@@ -60,7 +60,7 @@ module RightDevelop::CI
       end
 
       def classname_for(example)
-        klass = example.example_group.described_class || tr.example_group.top_level_description
+        klass = example.example_group.described_class || example.example_group.top_level_description
         "rspec.#{klass}"
       end
 
