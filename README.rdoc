@@ -9,5 +9,40 @@ so we've written an RSpec formatter that Jenkins will feel right at home with!
 
 To use our CI harness, just add the following to your Rakefile (or into lib/tasks/ci.rake):
 
-require 'right_develop'
-RightDevelop::CI::RakeTask.new
+  require 'right_develop'
+  RightDevelop::CI::RakeTask.new
+
+==== Customizing your CI Harness
+
+You can override various aspects of the CI harness' behavior by passing a block to the constructor which
+tweaks various instance variables of the resulting Rake task:
+
+  RightDevelop::CI::RakeTask.new do |task|
+    task.ci_namespace = :my_happy_ci
+    task.rspec_pattern = "spec/important_specs/**/*_spec.rb"
+  end
+
+==== Keeping the CI Harness Out of Production
+
+We recommend that you don't install RightDevelop -- or other test-only gems such as rspec -- when you deploy
+your code to production. This improves the startup time and performance of your app, and prevents instability
+due to potential bugs in test code.
+
+To prevent RightDevelop from shipping to production, simply put it in the "development" group of your Gemfile:
+
+  group :development do
+    gem 'right_develop'
+  end
+
+And ensure that you deploy your code using Bundler's --without flag:
+
+  bundle install --deployment --without development
+
+And finally, modify your Rakefile so you can tolerate the absence of the RightDevelop rake classes. For this,
+you can use RightSupport's Kernel#require_succeeds? extension to conditionally instantiate the Rake tasks:
+
+  require 'right_support'
+
+  if require_succeeds?('right_develop')
+    RightDevelop::CI::RakeTask.new
+  end
