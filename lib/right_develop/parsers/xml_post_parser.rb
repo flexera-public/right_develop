@@ -51,7 +51,11 @@ module RightDevelop::Parsers
       #if root & children are the same base word, get rid of both layers
       root_key       = xml_object.keys[0]
       root_child     = xml_object[xml_object.first[0]]
-      root_child_key = root_child.keys[0]
+      if root_child.respond_to?(:keys)
+        root_child_key = root_child.keys[0]
+      else
+        root_child_key = nil
+      end
 
       #remove root key
       xml_object = xml_object[xml_object.first[0]]
