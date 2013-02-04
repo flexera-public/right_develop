@@ -64,6 +64,10 @@ module RightDevelop::Parsers
       if root_key.singularize == root_child_key
         # Ensure object is an array (like JSON responses)
         xml_object = [xml_object[xml_object.first[0]]].flatten
+      elsif !xml_object
+         # Degenerate case where nothing was contained by parent node
+         # (i.e. no resources were actually returned)
+        xml_object = []
       end
 
       remove_nesting_node(xml_object)

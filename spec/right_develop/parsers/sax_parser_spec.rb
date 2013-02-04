@@ -3,7 +3,7 @@ require File.expand_path(File.dirname(__FILE__) + '/../../spec_helper.rb')
 describe "xml parser" do
   it "BaseHelper.xml_post_process_1_5 for root hash formatted xml" do
     expected_hash = {
-      "farms"=>"",
+      "farms"=>nil,
       "animals"=>[
         {"species"=>"chicken", "type"=>'bird'},
         {"species"=>"chicken", "type"=>'bird'},
@@ -100,7 +100,7 @@ describe "xml parser" do
       },
       {
         'farms'=>[{'name'=>'unlisted farm'}],
-        'description'=>''
+        'description'=>nil
       }
     ]
     servers_index_1_5_xml = %@<?xml version='1.0' encoding='UTF-8'?>

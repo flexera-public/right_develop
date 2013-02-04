@@ -83,7 +83,7 @@ module RightDevelop::Parsers
     def on_end_element_ns(name, prefix, uri)
       # Special handling of empty text fields
       if @tag.is_a?(Hash) && @tag.empty? && @tag['@@text'].nil?
-        @tag['@@text'] = ""
+        @tag['@@text'] = nil
       end
 
       # Finalize tag's text
