@@ -27,6 +27,7 @@
 require 'right_develop'
 
 require 'cucumber'
+require 'cucumber/formatter/junit'
 
 module RightDevelop::CI
   class JavaCucumberFormatter < Cucumber::Formatter::Junit
