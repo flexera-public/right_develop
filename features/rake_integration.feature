@@ -1,4 +1,4 @@
-Feature: Rake integration
+Feature: basic Rake integration
   In order to promote predictable, reliable Continuous Integration
   RightDevelop should expose a "ci:" Rake namespace
 
@@ -15,7 +15,12 @@ Feature: Rake integration
     And the output should contain 'ci:spec'
 
   Scenario: override namespace
-    Given the Rakefile contains a RightDevelop::CI::RakeTask with parameter ':funkalicious'
+    Given the Rakefile contains:
+    """
+    RightDevelop::CI::RakeTask.new do |task|
+      task.ci_namespace = :funkalicious
+    end
+    """
     When I install the bundle
     And I rake '-T'
     Then the output should contain 'funkalicious:cucumber'
