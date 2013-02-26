@@ -163,6 +163,16 @@ Then /^the directory '(.*)' should contain files/ do |dir|
   Dir[File.join(dir, '*')].should_not be_empty
 end
 
+Then /^the file '(.*)' should (not )?exist?$/ do |file, negatory|
+  file = ruby_app_path(file)
+
+  if negatory.nil? || negatory.empty?
+    Pathname.new(file).should exist
+  else
+    Pathname.new(file).should_not exist
+  end
+end
+
 Then /^the file '(.*)' should mention ([0-9]) (passing|failing) test cases?$/ do |file, n, pass_fail|
   file = ruby_app_path(file)
   n = Integer(n)
