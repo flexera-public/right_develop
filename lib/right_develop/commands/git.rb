@@ -8,10 +8,6 @@ module RightDevelop::Commands
     YES              = /(ye?s?)/i
     NO               = /(no?)/i
 
-    DEFAULT_OPTIONS  = {
-      :except=>"release|v?[0-9.]+"
-    }
-
     TASKS = %w(prune)
 
     # Parse command-line options and create a Command object
@@ -29,16 +25,15 @@ Usage:
 Where <task> is one of:
 #{task_list}
 EOS
-        opt :age, "Minimum age to consider", :default => '3.months.ago'
+        opt :age, "Minimum age to consider", :default => "3.months"
         opt :only, "Limit to branches matching this prefix", :type=>:string
-        opt :except, "Ignore branches matching this prefix", :type=>:string
+        opt :except, "Ignore branches matching this prefix", :type=>:string, :default=>"release|v?[0-9.]+"
         opt :local, "Limit to local branches"
         opt :remote, "Limit to remote branches"
         opt :merged, "Limit to branches that are fully merged into the named branch", :type=>:string
         stop_on TASKS
       end
 
-      options = DEFAULT_OPTIONS.merge(options)
       task = ARGV.shift
 
       case task
@@ -48,33 +43,54 @@ EOS
       else
         Trollop.die "unknown task #{task}"
       end
-
     end
 
-    def initialize(repo, subcommand, options)
-      @git        = repo
-      @subcommand = subcommand
-      @options    = options
+    # @option options [String] :age Ignore branches newer than this time-ago-in-words e.g. "3 months"; default unit is months
+    # @option options [String] :except Ignore branches matching this regular expression
+    # @option options [String] :only Consider only branches matching this regular expression
+    # @option options [true|false] :local Consider local branches
+    # @option options [true|false] :remote Consider remote branches
+    # @option options [String] :merged Consider only branches that are fully merged into this branch (e.g. master)
+    def initialize(repo, task, options)
+      # Post-process "age" option; transform from natural-language expression into a timestamp.
+      if (age = options.delete(:age))
+        age = age.gsub(/\s+/, ".")
 
-      # Post-process the "age" option
-      max_age = options[:age]
-      if max_age =~ /^[0-9]+\.?(hours|days|weeks|months|years)?\.?(ago)?$/
-        max_age = eval(options[:age])
-      elsif max_age =~ /^[0-9]+$/
-        max_age = max_age.to_i.months.ago
-      else
-        raise ArgumentError, "Can't parse max_age of '#{max_age}'"
+        if age =~ /^[0-9]+\.?(hours|days|weeks|months|years)$/
+          age = eval(age).ago
+        elsif age =~ /^[0-9]+$/
+          age = age.to_i.months.ago
+        else
+          raise ArgumentError, "Can't parse age of '#{age}'"
+        end
+        options[:age] = age
       end
-      @max_age = max_age
+
+      # Post-process "except" option; transform into a Regexp.
+      if (except = options.delete(:except))
+        except = Regexp.new("^(origin/)?(#{Regexp.escape(except)})")
+        options[:except] = except
+      end
+
+      # Post-process "only" option; transform into a Regexp.
+      if (only = options.delete(:only))
+        only = Regexp.new("^(origin/)?(#{Regexp.escape(only)})")
+        options[:only] = only
+      end
+
+      @git     = repo
+      @task    = task
+      @options = options
     end
 
-    # Run this command.
+    # Run the task that was specified when this object was instantiated. This
+    # method does no work; it just delegates to a task method.
     def run
-      case @subcommand
+      case @task
       when :prune
         prune(@options)
       else
-        raise StateError, "Invalid @subcommand; check Git.create!"
+        raise StateError, "Invalid @task; check Git.create!"
       end
     end
 
@@ -82,8 +98,7 @@ EOS
 
     # Prune dead branches from the repository.
     #
-    # @param [Time] max_age Ignore any branch with commits more recently than this timestamp.
-    # @param [Hash] options
+    # @option options [Time] :age Ignore branches whose HEAD commit is newer than this timestamp
     # @option options [Regexp] :except Ignore branches matching this pattern
     # @option options [Regexp] :only Consider only branches matching this pattern
     # @option options [true|false] :local Consider local branches
@@ -93,10 +108,8 @@ EOS
       branches = @git.branches
 
       #Filter by name prefix
-      except   = Regexp.new("^(origin/)?(#{Regexp.escape(options[:except])})") if options[:except]
-      only     = Regexp.new("^(origin/)?(#{Regexp.escape(options[:only])})") if options[:only]
-      branches = branches.select { |x| x =~ only } if only
-      branches = branches.reject { |x| x =~ except } if except
+      branches = branches.select { |x| x =~ options[:only] } if options[:only]
+      branches = branches.reject { |x| x =~ options[:except] } if options[:except]
 
       #Filter by location (local/remote)
       if options[:local] && !options[:remote]
@@ -114,17 +127,15 @@ EOS
 
       old = {}
       branches.each do |branch|
-        next if except && (except === branch)
-
         latest = @git.log(branch, :tail=>1).first
         timestamp = latest.timestamp
-        if timestamp < @max_age &&
+        if timestamp < options[:age] &&
           old[branch] = timestamp
         end
       end
 
       if old.empty?
-        STDERR.puts "No branches older than #{time_ago_in_words(max_age)} found; do you need to specify --remote?"
+        STDERR.puts "No branches older than #{time_ago_in_words(options[:age])} found; do you need to specify --remote?"
         exit -2
       end
 

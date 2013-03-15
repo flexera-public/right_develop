@@ -2,7 +2,7 @@
 
 require "trollop"
 
-require "right_develop/commands"
+require "right_develop"
 
 gemspec = Gem.latest_spec_for("right_develop")
 
