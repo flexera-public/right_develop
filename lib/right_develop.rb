@@ -24,8 +24,10 @@ require 'right_support'
 
 # Autoload everything possible
 module RightDevelop
-  autoload :CI, 'right_develop/ci'
-  autoload :Parsers, 'right_develop/parsers'
+  autoload :CI,       'right_develop/ci'
+  autoload :Commands, 'right_develop/commands'
+  autoload :Git,      'right_develop/git'
+  autoload :Parsers,  'right_develop/parsers'
 end
 
 # Automatically include RightSupport networking extensions
