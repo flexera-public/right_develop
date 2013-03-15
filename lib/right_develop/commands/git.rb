@@ -24,6 +24,8 @@ Usage:
 
 Where <task> is one of:
 #{task_list}
+
+And [options] are selected from:
 EOS
         opt :age, "Minimum age to consider", :default => "3.months"
         opt :only, "Limit to branches matching this prefix", :type=>:string
@@ -68,13 +70,13 @@ EOS
 
       # Post-process "except" option; transform into a Regexp.
       if (except = options.delete(:except))
-        except = Regexp.new("^(origin/)?(#{Regexp.escape(except)})")
+        except = Regexp.new("^(origin/)?(#{except})")
         options[:except] = except
       end
 
       # Post-process "only" option; transform into a Regexp.
       if (only = options.delete(:only))
-        only = Regexp.new("^(origin/)?(#{Regexp.escape(only)})")
+        only = Regexp.new("^(origin/)?(#{only})")
         options[:only] = only
       end
 
