@@ -4,14 +4,16 @@
 # -*- encoding: utf-8 -*-
 
 Gem::Specification.new do |s|
-  s.name = "right_develop"
+  s.name = %q{right_develop}
   s.version = "1.1.0"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Tony Spataro"]
-  s.date = "2013-02-26"
-  s.description = "A toolkit of development tools created by RightScale."
-  s.email = "support@rightscale.com"
+  s.date = %q{2013-03-15}
+  s.default_executable = %q{right_develop}
+  s.description = %q{A toolkit of development tools created by RightScale.}
+  s.email = %q{support@rightscale.com}
+  s.executables = ["right_develop"]
   s.extra_rdoc_files = [
     "LICENSE",
     "README.rdoc"
@@ -25,6 +27,7 @@ Gem::Specification.new do |s|
     "README.rdoc",
     "Rakefile",
     "VERSION",
+    "bin/right_develop",
     "features/cucumber.feature",
     "features/rake_integration.feature",
     "features/rspec1.feature",
@@ -41,6 +44,13 @@ Gem::Specification.new do |s|
     "lib/right_develop/ci/java_cucumber_formatter.rb",
     "lib/right_develop/ci/java_spec_formatter.rb",
     "lib/right_develop/ci/rake_task.rb",
+    "lib/right_develop/commands.rb",
+    "lib/right_develop/commands/git.rb",
+    "lib/right_develop/git.rb",
+    "lib/right_develop/git/branch.rb",
+    "lib/right_develop/git/branch_collection.rb",
+    "lib/right_develop/git/commit.rb",
+    "lib/right_develop/git/repository.rb",
     "lib/right_develop/net.rb",
     "lib/right_develop/parsers.rb",
     "lib/right_develop/parsers/sax_parser.rb",
@@ -50,11 +60,11 @@ Gem::Specification.new do |s|
     "spec/right_develop/parsers/sax_parser_spec.rb",
     "spec/spec_helper.rb"
   ]
-  s.homepage = "https://github.com/rightscale/right_develop"
+  s.homepage = %q{https://github.com/rightscale/right_develop}
   s.licenses = ["MIT"]
   s.require_paths = ["lib"]
-  s.rubygems_version = "1.8.24"
-  s.summary = "Reusable dev & test code."
+  s.rubygems_version = %q{1.6.2}
+  s.summary = %q{Reusable dev & test code.}
 
   if s.respond_to? :specification_version then
     s.specification_version = 3
@@ -65,6 +75,36 @@ Gem::Specification.new do |s|
       s.add_runtime_dependency(%q<builder>, ["~> 3.0"])
       s.add_runtime_dependency(%q<rspec>, ["< 3.0", ">= 1.3"])
       s.add_runtime_dependency(%q<cucumber>, ["~> 1.0"])
+      s.add_runtime_dependency(%q<trollop>, ["~> 1.0"])
+      s.add_runtime_dependency(%q<actionpack>, ["< 4.0", ">= 2.3.0"])
+      s.add_development_dependency(%q<jeweler>, ["~> 1.8.3"])
+      s.add_development_dependency(%q<rdoc>, [">= 2.4.2"])
+      s.add_development_dependency(%q<syntax>, ["~> 1.0.0"])
+      s.add_development_dependency(%q<nokogiri>, ["~> 1.5"])
+      s.add_development_dependency(%q<flexmock>, ["~> 0.8.7"])
+      s.add_development_dependency(%q<activesupport>, [">= 0"])
+      s.add_development_dependency(%q<libxml-ruby>, ["~> 2.4.0"])
+      s.add_development_dependency(%q<jeweler>, ["~> 1.8.3"])
+      s.add_development_dependency(%q<rdoc>, [">= 2.4.2"])
+      s.add_development_dependency(%q<syntax>, ["~> 1.0.0"])
+      s.add_development_dependency(%q<nokogiri>, ["~> 1.5"])
+      s.add_development_dependency(%q<flexmock>, ["~> 0.8.7"])
+      s.add_development_dependency(%q<activesupport>, [">= 0"])
+      s.add_development_dependency(%q<libxml-ruby>, ["~> 2.4.0"])
+      s.add_development_dependency(%q<jeweler>, ["~> 1.8.3"])
+      s.add_development_dependency(%q<rdoc>, [">= 2.4.2"])
+      s.add_development_dependency(%q<syntax>, ["~> 1.0.0"])
+      s.add_development_dependency(%q<nokogiri>, ["~> 1.5"])
+      s.add_development_dependency(%q<flexmock>, ["~> 0.8.7"])
+      s.add_development_dependency(%q<activesupport>, [">= 0"])
+      s.add_development_dependency(%q<libxml-ruby>, ["~> 2.4.0"])
+      s.add_development_dependency(%q<jeweler>, ["~> 1.8.3"])
+      s.add_development_dependency(%q<rdoc>, [">= 2.4.2"])
+      s.add_development_dependency(%q<syntax>, ["~> 1.0.0"])
+      s.add_development_dependency(%q<nokogiri>, ["~> 1.5"])
+      s.add_development_dependency(%q<flexmock>, ["~> 0.8.7"])
+      s.add_development_dependency(%q<activesupport>, [">= 0"])
+      s.add_development_dependency(%q<libxml-ruby>, ["~> 2.4.0"])
       s.add_development_dependency(%q<jeweler>, ["~> 1.8.3"])
       s.add_development_dependency(%q<rdoc>, [">= 2.4.2"])
       s.add_development_dependency(%q<syntax>, ["~> 1.0.0"])
@@ -90,6 +130,36 @@ Gem::Specification.new do |s|
       s.add_dependency(%q<builder>, ["~> 3.0"])
       s.add_dependency(%q<rspec>, ["< 3.0", ">= 1.3"])
       s.add_dependency(%q<cucumber>, ["~> 1.0"])
+      s.add_dependency(%q<trollop>, ["~> 1.0"])
+      s.add_dependency(%q<actionpack>, ["< 4.0", ">= 2.3.0"])
+      s.add_dependency(%q<jeweler>, ["~> 1.8.3"])
+      s.add_dependency(%q<rdoc>, [">= 2.4.2"])
+      s.add_dependency(%q<syntax>, ["~> 1.0.0"])
+      s.add_dependency(%q<nokogiri>, ["~> 1.5"])
+      s.add_dependency(%q<flexmock>, ["~> 0.8.7"])
+      s.add_dependency(%q<activesupport>, [">= 0"])
+      s.add_dependency(%q<libxml-ruby>, ["~> 2.4.0"])
+      s.add_dependency(%q<jeweler>, ["~> 1.8.3"])
+      s.add_dependency(%q<rdoc>, [">= 2.4.2"])
+      s.add_dependency(%q<syntax>, ["~> 1.0.0"])
+      s.add_dependency(%q<nokogiri>, ["~> 1.5"])
+      s.add_dependency(%q<flexmock>, ["~> 0.8.7"])
+      s.add_dependency(%q<activesupport>, [">= 0"])
+      s.add_dependency(%q<libxml-ruby>, ["~> 2.4.0"])
+      s.add_dependency(%q<jeweler>, ["~> 1.8.3"])
+      s.add_dependency(%q<rdoc>, [">= 2.4.2"])
+      s.add_dependency(%q<syntax>, ["~> 1.0.0"])
+      s.add_dependency(%q<nokogiri>, ["~> 1.5"])
+      s.add_dependency(%q<flexmock>, ["~> 0.8.7"])
+      s.add_dependency(%q<activesupport>, [">= 0"])
+      s.add_dependency(%q<libxml-ruby>, ["~> 2.4.0"])
+      s.add_dependency(%q<jeweler>, ["~> 1.8.3"])
+      s.add_dependency(%q<rdoc>, [">= 2.4.2"])
+      s.add_dependency(%q<syntax>, ["~> 1.0.0"])
+      s.add_dependency(%q<nokogiri>, ["~> 1.5"])
+      s.add_dependency(%q<flexmock>, ["~> 0.8.7"])
+      s.add_dependency(%q<activesupport>, [">= 0"])
+      s.add_dependency(%q<libxml-ruby>, ["~> 2.4.0"])
       s.add_dependency(%q<jeweler>, ["~> 1.8.3"])
       s.add_dependency(%q<rdoc>, [">= 2.4.2"])
       s.add_dependency(%q<syntax>, ["~> 1.0.0"])
@@ -116,6 +186,36 @@ Gem::Specification.new do |s|
     s.add_dependency(%q<builder>, ["~> 3.0"])
     s.add_dependency(%q<rspec>, ["< 3.0", ">= 1.3"])
     s.add_dependency(%q<cucumber>, ["~> 1.0"])
+    s.add_dependency(%q<trollop>, ["~> 1.0"])
+    s.add_dependency(%q<actionpack>, ["< 4.0", ">= 2.3.0"])
+    s.add_dependency(%q<jeweler>, ["~> 1.8.3"])
+    s.add_dependency(%q<rdoc>, [">= 2.4.2"])
+    s.add_dependency(%q<syntax>, ["~> 1.0.0"])
+    s.add_dependency(%q<nokogiri>, ["~> 1.5"])
+    s.add_dependency(%q<flexmock>, ["~> 0.8.7"])
+    s.add_dependency(%q<activesupport>, [">= 0"])
+    s.add_dependency(%q<libxml-ruby>, ["~> 2.4.0"])
+    s.add_dependency(%q<jeweler>, ["~> 1.8.3"])
+    s.add_dependency(%q<rdoc>, [">= 2.4.2"])
+    s.add_dependency(%q<syntax>, ["~> 1.0.0"])
+    s.add_dependency(%q<nokogiri>, ["~> 1.5"])
+    s.add_dependency(%q<flexmock>, ["~> 0.8.7"])
+    s.add_dependency(%q<activesupport>, [">= 0"])
+    s.add_dependency(%q<libxml-ruby>, ["~> 2.4.0"])
+    s.add_dependency(%q<jeweler>, ["~> 1.8.3"])
+    s.add_dependency(%q<rdoc>, [">= 2.4.2"])
+    s.add_dependency(%q<syntax>, ["~> 1.0.0"])
+    s.add_dependency(%q<nokogiri>, ["~> 1.5"])
+    s.add_dependency(%q<flexmock>, ["~> 0.8.7"])
+    s.add_dependency(%q<activesupport>, [">= 0"])
+    s.add_dependency(%q<libxml-ruby>, ["~> 2.4.0"])
+    s.add_dependency(%q<jeweler>, ["~> 1.8.3"])
+    s.add_dependency(%q<rdoc>, [">= 2.4.2"])
+    s.add_dependency(%q<syntax>, ["~> 1.0.0"])
+    s.add_dependency(%q<nokogiri>, ["~> 1.5"])
+    s.add_dependency(%q<flexmock>, ["~> 0.8.7"])
+    s.add_dependency(%q<activesupport>, [">= 0"])
+    s.add_dependency(%q<libxml-ruby>, ["~> 2.4.0"])
     s.add_dependency(%q<jeweler>, ["~> 1.8.3"])
     s.add_dependency(%q<rdoc>, [">= 2.4.2"])
     s.add_dependency(%q<syntax>, ["~> 1.0.0"])

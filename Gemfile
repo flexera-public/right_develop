@@ -1,11 +1,17 @@
-source "http://rubygems.org"
+source "https://rubygems.org"
 
 # Runtime dependencies of RightDevelop
+
+# Gems used by the CI harness
 gem "rake", [">= 0.8.7", "< 0.10"]
 gem "right_support", "~> 2.0"
 gem "builder", "~> 3.0"
 gem "rspec", [">= 1.3", "< 3.0"]
 gem "cucumber", "~> 1.0"
+
+# Gems used by the command-line Git tools
+gem "trollop", "~> 1.0"
+gem "actionpack", [">= 2.3.0", "< 4.0"]
 
 # Gems used during RightDevelop development that should be called out in the gemspec
 group :development do

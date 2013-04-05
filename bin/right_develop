@@ -1,0 +1,41 @@
+#!/usr/bin/env ruby
+
+require "trollop"
+
+require "right_develop"
+
+gemspec = Gem.latest_spec_for("right_develop")
+
+commands = {}
+RightDevelop::Commands.constants.each do |konst|
+  name = konst.to_s.downcase
+  commands[name] = RightDevelop::Commands.const_get(konst.to_sym)
+end
+
+# Use a Trollop parser for help/banner display, but do not actually parse anything
+# just yet.
+command_list = commands.keys.map { |c| "       * #{c}" }.join("\n")
+p = Trollop::Parser.new do
+  version "right_develop #{gemspec.version} (c) 2013- RightScale, Inc."
+  banner <<-EOS
+A command-line interface to various tools offered by the right_develop gem.
+
+Usage:
+       right_develop <command> [options]
+
+Where <command> is one of:
+#{command_list}
+
+To get help on a command:
+       right_develop <command> --help
+EOS
+
+  stop_on commands.keys
+end
+
+opts = Trollop::with_standard_exception_handling p do
+  raise Trollop::HelpNeeded if ARGV.empty?
+  p.parse ARGV
+  cmd = ARGV.shift
+  commands[cmd].create.run
+end
