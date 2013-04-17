@@ -27,12 +27,18 @@ Where <task> is one of:
 
 And [options] are selected from:
 EOS
-        opt :age, "Minimum age to consider", :default => "3.months"
-        opt :only, "Limit to branches matching this prefix", :type=>:string
-        opt :except, "Ignore branches matching this prefix", :type=>:string, :default=>"release|v?[0-9.]+"
+        opt :age, "Minimum age to consider",
+              :default => "3.months"
+        opt :only, "Limit to branches matching this prefix", 
+              :type=>:string
+        opt :except, "Ignore branches matching this prefix",
+              :type=>:string,
+              :default => "^(release|v?[0-9.]+|)"
         opt :local, "Limit to local branches"
         opt :remote, "Limit to remote branches"
-        opt :merged, "Limit to branches that are fully merged into the named branch", :type=>:string
+        opt :merged, "Limit to branches that are fully merged into the named branch",
+              :type=>:string,
+              :default => "master"
         stop_on TASKS
       end
 
