@@ -25,7 +25,7 @@ require 'time'
 require 'builder'
 
 # Try to load RSpec 2.x - 1.x formatters
-['rspec/core/formatters', 'spec/runner/formatter/base_text_formatter'].each do |f|
+['rspec/core', 'spec', 'rspec/core/formatters/base_text_formatter', 'spec/runner/formatter/base_text_formatter'].each do |f|
   begin
     require f
   rescue LoadError
