@@ -1,5 +1,7 @@
 RightDevelop is a library of reusable, unit- and functional-tested Ruby code that RightScale has found broadly useful.
 
+Maintained by the RightScale Teal Team
+
 == What Does It Do?
 
 === Continuous Integration
