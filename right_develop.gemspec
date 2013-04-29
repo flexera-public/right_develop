@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{right_develop}
-  s.version = "1.1.0"
+  s.version = "1.2.0"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Tony Spataro"]
-  s.date = %q{2013-04-17}
+  s.date = %q{2013-04-29}
   s.default_executable = %q{right_develop}
   s.description = %q{A toolkit of development tools created by RightScale.}
   s.email = %q{support@rightscale.com}
@@ -123,6 +123,13 @@ Gem::Specification.new do |s|
       s.add_development_dependency(%q<rdoc>, [">= 2.4.2"])
       s.add_development_dependency(%q<syntax>, ["~> 1.0.0"])
       s.add_development_dependency(%q<nokogiri>, ["~> 1.5"])
+      s.add_development_dependency(%q<flexmock>, ["~> 0.8.7"])
+      s.add_development_dependency(%q<activesupport>, [">= 0"])
+      s.add_development_dependency(%q<libxml-ruby>, ["~> 2.4.0"])
+      s.add_development_dependency(%q<jeweler>, ["~> 1.8.3"])
+      s.add_development_dependency(%q<rdoc>, [">= 2.4.2"])
+      s.add_development_dependency(%q<syntax>, ["~> 1.0.0"])
+      s.add_development_dependency(%q<nokogiri>, ["~> 1.5"])
       s.add_development_dependency(%q<jeweler>, ["~> 1.8.3"])
       s.add_development_dependency(%q<rdoc>, [">= 2.4.2"])
       s.add_development_dependency(%q<syntax>, ["~> 1.0.0"])
@@ -139,6 +146,13 @@ Gem::Specification.new do |s|
       s.add_dependency(%q<cucumber>, ["~> 1.0"])
       s.add_dependency(%q<trollop>, ["< 3.0", ">= 1.0"])
       s.add_dependency(%q<actionpack>, ["< 4.0", ">= 2.3.0"])
+      s.add_dependency(%q<jeweler>, ["~> 1.8.3"])
+      s.add_dependency(%q<rdoc>, [">= 2.4.2"])
+      s.add_dependency(%q<syntax>, ["~> 1.0.0"])
+      s.add_dependency(%q<nokogiri>, ["~> 1.5"])
+      s.add_dependency(%q<flexmock>, ["~> 0.8.7"])
+      s.add_dependency(%q<activesupport>, [">= 0"])
+      s.add_dependency(%q<libxml-ruby>, ["~> 2.4.0"])
       s.add_dependency(%q<jeweler>, ["~> 1.8.3"])
       s.add_dependency(%q<rdoc>, [">= 2.4.2"])
       s.add_dependency(%q<syntax>, ["~> 1.0.0"])
@@ -202,6 +216,13 @@ Gem::Specification.new do |s|
     s.add_dependency(%q<cucumber>, ["~> 1.0"])
     s.add_dependency(%q<trollop>, ["< 3.0", ">= 1.0"])
     s.add_dependency(%q<actionpack>, ["< 4.0", ">= 2.3.0"])
+    s.add_dependency(%q<jeweler>, ["~> 1.8.3"])
+    s.add_dependency(%q<rdoc>, [">= 2.4.2"])
+    s.add_dependency(%q<syntax>, ["~> 1.0.0"])
+    s.add_dependency(%q<nokogiri>, ["~> 1.5"])
+    s.add_dependency(%q<flexmock>, ["~> 0.8.7"])
+    s.add_dependency(%q<activesupport>, [">= 0"])
+    s.add_dependency(%q<libxml-ruby>, ["~> 2.4.0"])
     s.add_dependency(%q<jeweler>, ["~> 1.8.3"])
     s.add_dependency(%q<rdoc>, [">= 2.4.2"])
     s.add_dependency(%q<syntax>, ["~> 1.0.0"])
