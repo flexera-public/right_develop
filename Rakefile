@@ -56,6 +56,10 @@ Jeweler::Tasks.new do |gem|
   gem.email = "support@rightscale.com"
   gem.authors = ["Tony Spataro"]
   gem.rubygems_version = "1.3.7"
+  gem.files.exclude ".rspec"
+  gem.files.exclude "Gemfile*"
+  gem.files.exclude "features/**/*"
+  gem.files.exclude "spec/**/*"
 end
 
 # This is a closed-source gem; omit gemcutter tasks so people don't accidentally
