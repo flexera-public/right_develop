@@ -9,6 +9,7 @@ Given /^a Gemfile$/ do
   unless File.exist?(gemfile)
     basedir = File.expand_path('../../..', __FILE__)
     File.open(gemfile, 'w') do |file|
+      file.puts "source 'https://rubygems.org'"
       file.puts "gem 'right_develop', :path=>'#{basedir}'"
     end
   end
@@ -130,7 +131,7 @@ Given /^a trivial (failing )?Cucumber feature$/ do |failing|
 end
 
 When /^I install the bundle$/ do
-  ruby_app_shell('bundle install')
+  ruby_app_shell('bundle install --local || bundle install')
 end
 
 When /^I rake '(.*)'$/ do |task|

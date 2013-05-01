@@ -36,5 +36,6 @@ module RightDevelop
 end
 
 # Explicitly require everything else to avoid overreliance on autoload (1-module-deep rule)
+require 'right_develop/ci/util'
 require 'right_develop/ci/java_cucumber_formatter'
 require 'right_develop/ci/java_spec_formatter'

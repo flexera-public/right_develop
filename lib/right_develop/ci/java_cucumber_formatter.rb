@@ -36,7 +36,7 @@ module RightDevelop::CI
     def build_testcase(duration, status, exception = nil, suffix = "")
       @time += duration
       # Use "cucumber" as a pseudo-package, and the feature name as a pseudo-class
-      classname = "cucumber.#{@feature_name}"
+      classname = "cucumber.#{RightDevelop::CI::Util.pseudo_java_class_name(@feature_name)}"
       name = "#{@scenario}#{suffix}"
       pending = [:pending, :undefined].include?(status)
       passed = (status == :passed || (pending && !@options[:strict]))

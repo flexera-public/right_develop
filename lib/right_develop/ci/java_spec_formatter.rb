@@ -61,6 +61,7 @@ module RightDevelop::CI
 
       def classname_for(example)
         klass = example.example_group.described_class || example.example_group.top_level_description
+        klass = RightDevelop::CI::Util.pseudo_java_class_name(klass.to_s)
         "rspec.#{klass}"
       end
 
@@ -182,6 +183,7 @@ module RightDevelop::CI
         # and assuming the first word is a class name
         group = @test_groups[example]
         klass = group.description.split(/\s+/).first
+        klass = RightDevelop::CI::Util.pseudo_java_class_name(klass)
         "rspec.#{klass}"
       end
     end
