@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    right_develop (1.2.1)
+    right_develop (1.2.2)
       actionpack (>= 2.3.0, < 4.0)
       builder (~> 3.0)
       cucumber (~> 1.0)
