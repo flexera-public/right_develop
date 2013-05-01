@@ -81,7 +81,7 @@ module RightDevelop::CI
               full_description = full_description[classname.length..-1].strip
             end
 
-            builder.testcase(:classname => classname, :name => full_description, :time => time) do
+            builder.testcase(:classname => classname.to_sym, :name => full_description, :time => time) do
               case test.metadata[:execution_result][:status]
               when "failed"
                 builder.failure :message => "failed #{full_description}", :type => "failed" do
@@ -148,7 +148,7 @@ module RightDevelop::CI
               full_description = full_description[classname.length..-1].strip
             end
 
-            builder.testcase(:classname => classname, :name => full_description, :time => @test_times[test]) do
+            builder.testcase(:classname => classname.to_sym, :name => full_description, :time => @test_times[test]) do
               case result
               when "failed"
                 builder.failure :message => "failed #{full_description}", :type => "failed" do

@@ -41,7 +41,7 @@ module RightDevelop::CI
       pending = [:pending, :undefined].include?(status)
       passed = (status == :passed || (pending && !@options[:strict]))
 
-      @builder.testcase(:classname => classname, :name => name, :time => "%.6f" % duration) do
+      @builder.testcase(:classname => classname.to_sym, :name => name, :time => "%.6f" % duration) do
         unless passed
           @builder.failure(:message => "#{status.to_s} #{name}", :type => status.to_s) do
             @builder.cdata! @output
