@@ -1,3 +1,7 @@
+# NOTE: do not include right_develop's gemspec in its Gemfile; this is a Jewelerized
+# project and gemspec-in-gemfile is not appropriate. It causes a loop in the dependency
+# solver and Jeweler ends up generating a needlessly large gemspec.
+
 source "https://rubygems.org"
 
 # Runtime dependencies of RightDevelop
@@ -7,7 +11,7 @@ gem "rake", [">= 0.8.7", "< 0.10"]
 gem "right_support", "~> 2.0"
 gem "builder", "~> 3.0"
 gem "rspec", [">= 1.3", "< 3.0"]
-gem "cucumber", "~> 1.0"
+gem "cucumber", ["~> 1.0", "< 1.3.3"] # Cuke >= 1.3.3 depends on RubyGems > 2.0 without specifyin that in its gemspec
 
 # Gems used by the command-line Git tools
 gem "trollop", [">= 1.0", "< 3.0"]
@@ -24,9 +28,9 @@ group :development do
   gem "libxml-ruby", "~> 2.4.0"
 end
 
-# Gems that are only used locally by this repo to run tests and should NOT be called out in the gemspec
+# Gems that are only used locally by this repo to run tests and should NOT be called out in the
+# gemspec.
 group :test do
-  gemspec
   gem "ruby-debug", ">= 0.10", :platforms => :ruby_18
   gem "ruby-debug19", ">= 0.11.6", :platforms => :ruby_19
 end
