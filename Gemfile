@@ -25,12 +25,13 @@ group :development do
   gem "nokogiri", "~> 1.5"
   gem "flexmock", "~> 0.8.7", :require => nil
   gem "activesupport"
-  gem "libxml-ruby", "~> 2.4.0"
 end
 
 # Gems that are only used locally by this repo to run tests and should NOT be called out in the
 # gemspec.
 group :test do
+  gem "json", "1.4.6"           # locked to 1.4.6 for mswin32 friendliness
+  gem "libxml-ruby", "~> 1.1.4" # locked to 1.1.4 for mswin32 friendliness
   gem "ruby-debug", ">= 0.10", :platforms => :ruby_18
   gem "ruby-debug19", ">= 0.11.6", :platforms => :ruby_19
 end
