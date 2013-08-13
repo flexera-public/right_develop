@@ -11,6 +11,8 @@ require 'rspec/core/rake_task'
 require 'cucumber/rake/task'
 
 # We use RightDevelop's CI harness in its own Rakefile. Hooray dogfood!
+lib_dir = File.expand_path('../lib', __FILE__)
+$: << lib_dir unless $:.include?(lib_dir)
 require 'right_develop'
 
 # But, we have a very special need, because OUR Cucumbers need to run with a pristine
