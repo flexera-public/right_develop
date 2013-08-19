@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{right_develop}
-  s.version = "1.2.2"
+  s.version = "1.3.0"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Tony Spataro"]
-  s.date = %q{2013-08-13}
+  s.date = %q{2013-08-16}
   s.default_executable = %q{right_develop}
   s.description = %q{A toolkit of development tools created by RightScale.}
   s.email = %q{support@rightscale.com}
@@ -26,6 +26,11 @@ Gem::Specification.new do |s|
     "VERSION",
     "bin/right_develop",
     "lib/right_develop.rb",
+    "lib/right_develop/buckets.rb",
+    "lib/right_develop/buckets/aws.rb",
+    "lib/right_develop/buckets/aws/s3.rb",
+    "lib/right_develop/buckets/rake_task.rb",
+    "lib/right_develop/buckets/storage_base.rb",
     "lib/right_develop/ci.rb",
     "lib/right_develop/ci/java_cucumber_formatter.rb",
     "lib/right_develop/ci/java_spec_formatter.rb",
@@ -37,11 +42,16 @@ Gem::Specification.new do |s|
     "lib/right_develop/git/branch.rb",
     "lib/right_develop/git/branch_collection.rb",
     "lib/right_develop/git/commit.rb",
+    "lib/right_develop/git/rake_task.rb",
     "lib/right_develop/git/repository.rb",
     "lib/right_develop/net.rb",
     "lib/right_develop/parsers.rb",
     "lib/right_develop/parsers/sax_parser.rb",
     "lib/right_develop/parsers/xml_post_parser.rb",
+    "lib/right_develop/utility.rb",
+    "lib/right_develop/utility/git.rb",
+    "lib/right_develop/utility/shell.rb",
+    "lib/right_develop/utility/versioning.rb",
     "right_develop.gemspec",
     "right_develop.rconf"
   ]
@@ -63,6 +73,7 @@ Gem::Specification.new do |s|
       s.add_runtime_dependency(%q<cucumber>, ["~> 1.0", "< 1.3.3"])
       s.add_runtime_dependency(%q<trollop>, [">= 1.0", "< 3.0"])
       s.add_runtime_dependency(%q<actionpack>, [">= 2.3.0", "< 4.0"])
+      s.add_runtime_dependency(%q<right_aws>, [">= 2.1.0"])
       s.add_development_dependency(%q<jeweler>, ["~> 1.8.3"])
       s.add_development_dependency(%q<rdoc>, [">= 2.4.2"])
       s.add_development_dependency(%q<syntax>, ["~> 1.0.0"])
@@ -77,6 +88,7 @@ Gem::Specification.new do |s|
       s.add_dependency(%q<cucumber>, ["~> 1.0", "< 1.3.3"])
       s.add_dependency(%q<trollop>, [">= 1.0", "< 3.0"])
       s.add_dependency(%q<actionpack>, [">= 2.3.0", "< 4.0"])
+      s.add_dependency(%q<right_aws>, [">= 2.1.0"])
       s.add_dependency(%q<jeweler>, ["~> 1.8.3"])
       s.add_dependency(%q<rdoc>, [">= 2.4.2"])
       s.add_dependency(%q<syntax>, ["~> 1.0.0"])
@@ -92,6 +104,7 @@ Gem::Specification.new do |s|
     s.add_dependency(%q<cucumber>, ["~> 1.0", "< 1.3.3"])
     s.add_dependency(%q<trollop>, [">= 1.0", "< 3.0"])
     s.add_dependency(%q<actionpack>, [">= 2.3.0", "< 4.0"])
+    s.add_dependency(%q<right_aws>, [">= 2.1.0"])
     s.add_dependency(%q<jeweler>, ["~> 1.8.3"])
     s.add_dependency(%q<rdoc>, [">= 2.4.2"])
     s.add_dependency(%q<syntax>, ["~> 1.0.0"])

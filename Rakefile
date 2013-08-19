@@ -68,6 +68,10 @@ end
 # push this gem to the public!
 #Jeweler::RubygemsDotOrgTasks.new
 
+# uncomment the following for ad-hoc testing of reusable rake tasks
+#RightDevelop::Buckets::RakeTask.new
+#RightDevelop::Git::RakeTask.new
+
 CLEAN.include('pkg')
 
 RightDevelop::CI::RakeTask.new

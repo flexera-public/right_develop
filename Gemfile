@@ -17,6 +17,9 @@ gem "cucumber", ["~> 1.0", "< 1.3.3"] # Cuke >= 1.3.3 depends on RubyGems > 2.0 
 gem "trollop", [">= 1.0", "< 3.0"]
 gem "actionpack", [">= 2.3.0", "< 4.0"]
 
+# Gems used by Buckets
+gem "right_aws", ">= 2.1.0"
+
 # Gems used during RightDevelop development that should be called out in the gemspec
 group :development do
   gem "jeweler", "~> 1.8.3"
