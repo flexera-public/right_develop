@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Tony Spataro"]
-  s.date = %q{2013-08-16}
+  s.date = %q{2013-08-19}
   s.default_executable = %q{right_develop}
   s.description = %q{A toolkit of development tools created by RightScale.}
   s.email = %q{support@rightscale.com}
@@ -26,11 +26,6 @@ Gem::Specification.new do |s|
     "VERSION",
     "bin/right_develop",
     "lib/right_develop.rb",
-    "lib/right_develop/buckets.rb",
-    "lib/right_develop/buckets/aws.rb",
-    "lib/right_develop/buckets/aws/s3.rb",
-    "lib/right_develop/buckets/rake_task.rb",
-    "lib/right_develop/buckets/storage_base.rb",
     "lib/right_develop/ci.rb",
     "lib/right_develop/ci/java_cucumber_formatter.rb",
     "lib/right_develop/ci/java_spec_formatter.rb",
@@ -48,6 +43,9 @@ Gem::Specification.new do |s|
     "lib/right_develop/parsers.rb",
     "lib/right_develop/parsers/sax_parser.rb",
     "lib/right_develop/parsers/xml_post_parser.rb",
+    "lib/right_develop/s3.rb",
+    "lib/right_develop/s3/interface.rb",
+    "lib/right_develop/s3/rake_task.rb",
     "lib/right_develop/utility.rb",
     "lib/right_develop/utility/git.rb",
     "lib/right_develop/utility/shell.rb",

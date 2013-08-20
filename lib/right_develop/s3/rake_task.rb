@@ -20,40 +20,37 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-# ancestors.
+# Once this file is required, the Rake DSL is loaded - don't do this except inside Rake!!
+require 'rake/tasklib'
+
+# Make sure the rest of RightDevelop & S3 is required, since this file can be
+# required directly.
 require 'right_develop'
-require 'right_develop/buckets'
+require 'right_develop/s3'
 
 # localized
 require 'tmpdir'
 
-# Try to load RSpec 2.x - 1.x Rake tasks
-require 'rake/tasklib' # assumes we are inside a rake process
-['rspec/core/rake_task', 'spec/rake/spectask'].each do |f|
-  begin
-    require f
-  rescue LoadError
-    # no-op, we will raise later
-  end
-end
-
-module RightDevelop::Buckets
+module RightDevelop::S3
 
   class RakeTask < ::Rake::TaskLib
+    DEFAULT_OPTIONS = {
+      :s3_namespace     => :s3
+    }
+
     include ::Rake::DSL if defined?(::Rake::DSL)
 
-    # @return [Class] storage_class
-    attr_accessor :storage_class
+    attr_accessor :s3_namespace
 
     def initialize(options = {})
-      options = {
-        :namespace     => :s3,
-        :storage_class => ::RightDevelop::Buckets::Aws::S3
-      }.merge(options)
+      # Let client provide options object-style, in our initializer
+      options = DEFAULT_OPTIONS.merge(options)
+      self.s3_namespace = options[:s3_namespace]
 
-      @storage_class = options[:storage_class]
+      # Let client provide options DSL-style by calling our writers
+      yield(self) if block_given?
 
-      namespace options[:namespace] do
+      namespace self.s3_namespace do
 
         desc 'List files in S3 bucket'
         task :list_files, [:bucket, :subdirectory, :recursive, :filters] do |task, args|
@@ -102,11 +99,11 @@ module RightDevelop::Buckets
           recursive = args[:recursive] != 'false'
 
           # establish from/to credentials before copying.
-          from_storage = storage_class.new(
+          from_storage = Interface.new(
             :aws_access_key_id     => ENV['FROM_AWS_ACCESS_KEY_ID'],
             :aws_secret_access_key => ENV['FROM_AWS_SECRET_ACCESS_KEY'],
             :logger                => logger)
-          to_storage = storage_class.new(
+          to_storage = Interface.new(
             :aws_access_key_id     => ENV['TO_AWS_ACCESS_KEY_ID'],
             :aws_secret_access_key => ENV['TO_AWS_SECRET_ACCESS_KEY'],
             :logger                => logger)
@@ -161,13 +158,10 @@ module RightDevelop::Buckets
     end
 
     def storage
-      unless @storage
-        @storage = storage_class.new(
-          :aws_access_key_id     => ENV['AWS_ACCESS_KEY_ID'],
-          :aws_secret_access_key => ENV['AWS_SECRET_ACCESS_KEY'],
-          :logger                => logger)
-      end
-      @storage
+      @storage ||= Interface.new(
+        :aws_access_key_id     => ENV['AWS_ACCESS_KEY_ID'],
+        :aws_secret_access_key => ENV['AWS_SECRET_ACCESS_KEY'],
+        :logger                => logger)
     end
 
   end # RakeTask

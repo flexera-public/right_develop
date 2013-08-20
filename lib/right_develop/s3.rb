@@ -20,8 +20,12 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-# ancestor
-require 'right_develop/buckets'
+module RightDevelop
+  module S3
+    # Defer loading the Rake task; it mixes the Rake DSL into everything!
+    # Only the Rakefiles themselves should refer to this constant.
+    autoload :RakeTask, 'right_develop/s3/rake_task'
+  end
+end
 
-# children
-require 'right_develop/buckets/aws/s3'
+require 'right_develop/s3/interface'

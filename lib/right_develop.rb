@@ -24,7 +24,7 @@ require 'right_support'
 
 # Autoload everything possible
 module RightDevelop
-  autoload :Buckets,  'right_develop/buckets'
+  autoload :S3,       'right_develop/s3'
   autoload :CI,       'right_develop/ci'
   autoload :Commands, 'right_develop/commands'
   autoload :Git,      'right_develop/git'

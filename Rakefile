@@ -64,13 +64,7 @@ Jeweler::Tasks.new do |gem|
   gem.files.exclude "spec/**/*"
 end
 
-# This is a closed-source gem; omit gemcutter tasks so people don't accidentally
-# push this gem to the public!
-#Jeweler::RubygemsDotOrgTasks.new
-
-# uncomment the following for ad-hoc testing of reusable rake tasks
-#RightDevelop::Buckets::RakeTask.new
-#RightDevelop::Git::RakeTask.new
+Jeweler::RubygemsDotOrgTasks.new
 
 CLEAN.include('pkg')
 

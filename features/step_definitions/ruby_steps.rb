@@ -33,21 +33,21 @@ Given /^a Rakefile$/ do
   end
 end
 
-Given /^the Rakefile contains a RightDevelop::CI::RakeTask$/ do
+Given /^the Rakefile contains a ([A-Za-z0-9:]+)::RakeTask$/ do |mod|
   step 'a Rakefile'
   rakefile = ruby_app_path('Rakefile')
   File.open(rakefile, 'w') do |file|
     file.puts "require 'right_develop'"
-    file.puts "RightDevelop::CI::RakeTask.new"
+    file.puts "#{mod}::RakeTask.new"
   end
 end
 
-Given /^the Rakefile contains a RightDevelop::CI::RakeTask with parameter '(.*)'$/ do |ns|
+Given /^the Rakefile contains a ([A-Za-z0-9:]+)::RakeTask with parameter '(.*)'$/ do |mod, ns|
   step 'a Rakefile'
   rakefile = ruby_app_path('Rakefile')
   File.open(rakefile, 'w') do |file|
     file.puts "require 'right_develop'"
-    file.puts "RightDevelop::CI::RakeTask.new(#{ns})"
+    file.puts "#{mod}::RakeTask.new(#{ns})"
   end
 end
 
