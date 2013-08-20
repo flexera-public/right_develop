@@ -38,6 +38,10 @@ module RightDevelop
 
     # A Git command's output did not match with expected output.
     class FormatError < StandardError; end
+
+    # Defer loading the Rake task; it mixes the Rake DSL into everything!
+    # Only the Rakefiles themselves should refer to this constant.
+    autoload :RakeTask, "right_develop/git/rake_task"
   end
 end
 
@@ -45,5 +49,4 @@ end
 require "right_develop/git/branch"
 require "right_develop/git/branch_collection"
 require "right_develop/git/commit"
-require "right_develop/git/rake_task"
 require "right_develop/git/repository"

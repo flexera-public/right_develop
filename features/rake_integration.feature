@@ -11,7 +11,7 @@ Feature: basic Rake integration
     Given the Rakefile contains a RightDevelop::CI::RakeTask
     When I install the bundle
     And I rake '-T'
-    And the output should contain 'ci:cucumber'
+    Then the output should contain 'ci:cucumber'
     And the output should contain 'ci:spec'
 
   Scenario: override CI namespace
@@ -24,13 +24,13 @@ Feature: basic Rake integration
     When I install the bundle
     And I rake '-T'
     Then the output should contain 'funkalicious:cucumber'
-    Then the output should contain 'funkalicious:spec'
+    And the output should contain 'funkalicious:spec'
 
   Scenario: list S3 tasks
     Given the Rakefile contains a RightDevelop::S3::RakeTask
     When I install the bundle
     And I rake '-T'
-    And the output should contain 's3:list_files'
+    Then the output should contain 's3:list_files'
 
   Scenario: override S3 namespace
     Given the Rakefile contains:
@@ -42,3 +42,22 @@ Feature: basic Rake integration
     When I install the bundle
     And I rake '-T'
     Then the output should contain 'funkalicious:list_files'
+
+  Scenario: list Git tasks
+    Given the Rakefile contains a RightDevelop::Git::RakeTask
+    When I install the bundle
+    And I rake '-T'
+    Then the output should contain 'git:setup'
+    And the output should contain 'git:branch[revision,base_dir]'
+    And the output should contain 'git:check[revision,base_dir]'
+
+  Scenario: override Git namespace
+    Given the Rakefile contains:
+    """
+    RightDevelop::Git::RakeTask.new do |task|
+      task.git_namespace = :funkalicious
+    end
+    """
+    When I install the bundle
+    And I rake '-T'
+    Then the output should contain 'funkalicious:setup'

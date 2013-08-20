@@ -20,28 +20,33 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-# ancestor.
+# Make sure the rest of RightDevelop & Gitis required, since this file can be
+# required directly.
 require 'right_develop/git'
 
-# Try to load RSpec 2.x - 1.x Rake tasks
-require 'rake/tasklib' # assumes we are inside a rake process
-['rspec/core/rake_task', 'spec/rake/spectask'].each do |f|
-  begin
-    require f
-  rescue LoadError
-    # no-op, we will raise later
-  end
-end
+# Once this file is required, the Rake DSL is loaded - don't do this except inside Rake!!
+require 'rake/tasklib'
 
 module RightDevelop::Git
 
   class RakeTask < ::Rake::TaskLib
+    DEFAULT_OPTIONS = {
+      :git_namespace => :git
+    }
+
     include ::Rake::DSL if defined?(::Rake::DSL)
 
-    def initialize(options = {})
-      options = { :namespace => :git }.merge(options)
+    attr_accessor :git_namespace
 
-      namespace options[:namespace] do
+    def initialize(options = {})
+      # Let client provide options object-style, in our initializer
+      options = DEFAULT_OPTIONS.merge(options)
+      self.git_namespace = options[:git_namespace]
+
+      # Let client provide options DSL-style by calling our writers
+      yield(self) if block_given?
+
+      namespace self.git_namespace do
 
         desc "Perform 'git submodule update --init --recursive'"
         task :setup do
@@ -49,7 +54,7 @@ module RightDevelop::Git
         end
 
         desc "If HEAD is a branch or tag ref, ensure that all submodules are checked out to the same tag or branch"
-        task :check, :revision, :base_dir do |_, args|
+        task :check, [:revision, :base_dir] do |_, args|
           revision = args[:revision].to_s.strip
           base_dir = args[:base_dir].to_s.strip
           revision = nil if revision.empty?
@@ -60,7 +65,7 @@ module RightDevelop::Git
         end
 
         desc "Checkout supermodule and all submodules to given tag, branch or SHA"
-        task :branch, :revision, :base_dir do |_, args|
+        task :branch, [:revision, :base_dir] do |_, args|
           revision = args[:revision].to_s.strip
           base_dir = args[:base_dir].to_s.strip
           raise ::ArgumentError, 'revision is required' if revision.empty?
