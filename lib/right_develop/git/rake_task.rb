@@ -53,8 +53,8 @@ module RightDevelop::Git
           git.update_submodules(:recursive => true)
         end
 
-        desc "If HEAD is a branch or tag ref, ensure that all submodules are checked out to the same tag or branch"
-        task :check, [:revision, :base_dir] do |_, args|
+        desc "If HEAD is a branch or tag ref, ensure that all submodules are checked out to the same tag or branch or ensure consistency for SHA"
+        task :verify, [:revision, :base_dir] do |_, args|
           revision = args[:revision].to_s.strip
           base_dir = args[:base_dir].to_s.strip
           revision = nil if revision.empty?
@@ -65,7 +65,7 @@ module RightDevelop::Git
         end
 
         desc "Checkout supermodule and all submodules to given tag, branch or SHA"
-        task :branch, [:revision, :base_dir] do |_, args|
+        task :checkout, [:revision, :base_dir] do |_, args|
           revision = args[:revision].to_s.strip
           base_dir = args[:base_dir].to_s.strip
           raise ::ArgumentError, 'revision is required' if revision.empty?
