@@ -56,9 +56,9 @@ module RightDevelop::Utility::Git
     true
   end
 
-  # msysgit on Windows exits zero even when checkout|reset fails so we need to
-  # scan the output for error or fatal messages. it does no harm to do the same
-  # on Linux even though the exit code works properly there.
+  # msysgit on Windows exits zero even when checkout|reset|fetch fails so we
+  # need to scan the output for error or fatal messages. it does no harm to do
+  # the same on Linux even though the exit code works properly there.
   #
   # @param [String|Array] args to execute
   #
@@ -192,8 +192,8 @@ module RightDevelop::Utility::Git
   #
   # @return [TrueClass] always true
   def fetch_all
-    spit_output('fetch')
-    spit_output('fetch --tags') # need a separate call to fetch tags
+    vet_output('fetch')
+    vet_output('fetch --tags') # need a separate call to fetch tags
     true
   end
 
