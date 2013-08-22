@@ -31,17 +31,27 @@ module RightDevelop::Git
 
   class RakeTask < ::Rake::TaskLib
     DEFAULT_OPTIONS = {
-      :git_namespace => :git
+      :git_namespace      => :git,
+      :pre_checkout_step  => nil,
+      :post_checkout_step => nil,
+      :pre_verify_step    => nil,
+      :post_verify_step   => nil,
     }
 
     include ::Rake::DSL if defined?(::Rake::DSL)
 
     attr_accessor :git_namespace
+    attr_accessor :pre_checkout_step, :post_checkout_step
+    attr_accessor :pre_verify_step, :post_verify_step
 
     def initialize(options = {})
       # Let client provide options object-style, in our initializer
       options = DEFAULT_OPTIONS.merge(options)
       self.git_namespace = options[:git_namespace]
+      self.pre_checkout_step = options[:pre_checkout_step]
+      self.post_checkout_step = options[:post_checkout_step]
+      self.pre_verify_step = options[:pre_verify_step]
+      self.post_verify_step = options[:post_verify_step]
 
       # Let client provide options DSL-style by calling our writers
       yield(self) if block_given?
@@ -60,7 +70,9 @@ module RightDevelop::Git
           revision = nil if revision.empty?
           base_dir = '.' if base_dir.empty?
           ::Dir.chdir(base_dir) do
+            pre_verify_step.call(revision) if pre_verify_step
             git.verify_revision(revision)
+            post_verify_step.call(revision) if post_verify_step
           end
         end
 
@@ -71,7 +83,9 @@ module RightDevelop::Git
           raise ::ArgumentError, 'revision is required' if revision.empty?
           base_dir = '.' if base_dir.empty?
           ::Dir.chdir(base_dir) do
+            pre_checkout_step.call(revision) if pre_checkout_step
             git.checkout_revision(revision, :force => true, :recursive => true)
+            post_checkout_step.call(revision) if post_checkout_step
           end
         end
 
