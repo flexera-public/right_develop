@@ -2,7 +2,8 @@
 # project and gemspec-in-gemfile is not appropriate. It causes a loop in the dependency
 # solver and Jeweler ends up generating a needlessly large gemspec.
 
-source "https://rubygems.org"
+source 'http://s3.amazonaws.com/rightscale_rightlink_gems_dev'
+source 'https://rubygems.org'
 
 # Runtime dependencies of RightDevelop
 
