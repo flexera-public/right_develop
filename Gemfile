@@ -2,7 +2,8 @@
 # project and gemspec-in-gemfile is not appropriate. It causes a loop in the dependency
 # solver and Jeweler ends up generating a needlessly large gemspec.
 
-source "https://rubygems.org"
+source 'http://s3.amazonaws.com/rightscale_rightlink_gems_dev'
+source 'https://rubygems.org'
 
 # Runtime dependencies of RightDevelop
 
@@ -16,6 +17,9 @@ gem "cucumber", ["~> 1.0", "< 1.3.3"] # Cuke >= 1.3.3 depends on RubyGems > 2.0 
 # Gems used by the command-line Git tools
 gem "trollop", [">= 1.0", "< 3.0"]
 gem "actionpack", [">= 2.3.0", "< 4.0"]
+
+# Gems used by S3
+gem "right_aws", ">= 2.1.0"
 
 # Gems used during RightDevelop development that should be called out in the gemspec
 group :development do

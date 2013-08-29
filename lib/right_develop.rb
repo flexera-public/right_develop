@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2009-2011 RightScale Inc
+# Copyright (c) 2009-2013 RightScale Inc
 #
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -24,10 +24,12 @@ require 'right_support'
 
 # Autoload everything possible
 module RightDevelop
+  autoload :S3,       'right_develop/s3'
   autoload :CI,       'right_develop/ci'
   autoload :Commands, 'right_develop/commands'
   autoload :Git,      'right_develop/git'
   autoload :Parsers,  'right_develop/parsers'
+  autoload :Utility,  'right_develop/utility'
 end
 
 # Automatically include RightSupport networking extensions

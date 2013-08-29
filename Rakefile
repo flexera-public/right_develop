@@ -64,9 +64,7 @@ Jeweler::Tasks.new do |gem|
   gem.files.exclude "spec/**/*"
 end
 
-# This is a closed-source gem; omit gemcutter tasks so people don't accidentally
-# push this gem to the public!
-#Jeweler::RubygemsDotOrgTasks.new
+Jeweler::RubygemsDotOrgTasks.new
 
 CLEAN.include('pkg')
 
