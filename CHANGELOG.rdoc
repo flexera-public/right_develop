@@ -1,3 +1,8 @@
 == 1.0
 
 Initial release calved from RightSupport.
+
+== 2.0
+
+Delegated reusable RightDevelop::Git functionality to right_git gem, removed
+local class definitions. Some developer-specific git behavior remains.

@@ -60,7 +60,7 @@ module RightDevelop::Git
 
         desc "Perform 'git submodule update --init --recursive'"
         task :setup do
-          git.update_submodules(:recursive => true)
+          git.setup
         end
 
         desc "If HEAD is a branch or tag ref, ensure that all submodules are checked out to the same tag or branch or ensure consistency for SHA"
