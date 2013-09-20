@@ -22,59 +22,40 @@
 
 # ancestor
 require 'right_develop/utility'
+require 'right_git'
 
 module RightDevelop::Utility::Git
 
-  SHA1_REGEX = /^[0-9a-fA-F]{40}$/
-
-  COMMIT_SHA1_REGEX = /^commit ([0-9a-fA-F]{40})$/
-
-  SUBMODULE_STATUS_REGEX = /^([+\- ])([0-9a-fA-F]{40}) (.*) (.*)$/
+  DEFAULT_REPO_OPTIONS = {
+    :logger => ::RightDevelop::Utility::Shell.default_logger,
+    :shell  => ::RightDevelop::Utility::Shell
+  }.freeze
 
   class VerifyError < StandardError; end
 
   module_function
 
-  # Executes and returns the output for a git command. Raises on failure.
+  # Factory method for a default repository object from the current working
+  # directory. The working directory can change but the repo directory is
+  # preserved by the object.
   #
-  # @param [String|Array] args to execute
-  #
-  # @return [String] output
-  def git_output(*args)
-    cmd = ['git'] + Array(args).flatten
-    return ::RightDevelop::Utility::Shell.output_for(cmd.join(' '))
+  # @return [RightGit::Git::Repository] new repository
+  def default_repository
+    ::RightGit::Git::Repository.new('.', DEFAULT_REPO_OPTIONS)
   end
 
-  # Prints the output for a git command.  Raises on failure.
-  #
-  # @param [String|Array] args to execute
-  #
-  # @return [TrueClass] always true
-  def spit_output(*args)
-    cmd = ['git'] + Array(args).flatten
-    ::RightDevelop::Utility::Shell.execute(cmd.join(' '))
-    true
-  end
-
-  # msysgit on Windows exits zero even when checkout|reset|fetch fails so we
-  # need to scan the output for error or fatal messages. it does no harm to do
-  # the same on Linux even though the exit code works properly there.
-  #
-  # @param [String|Array] args to execute
+  # Performs setup of the working directory repository for automation or
+  # development. Currently this only involves initializing/updating submodules.
   #
   # @return [TrueClass] always true
-  def vet_output(*args)
-    last_output = git_output(*args).strip
-    puts last_output unless last_output.empty?
-    if last_output.downcase =~ /error|fatal/
-      fail "git exited zero but an error was detected in output."
-    end
+  def setup
+    default_repository.update_submodules(:recursive => true)
     true
   end
 
   # @return [TrueClass|FalseClass] true if the given revision is a commit SHA
   def is_sha?(revision)
-    !!SHA1_REGEX.match(revision)
+    ::RightGit::Git::Commit.sha?(revision)
   end
 
   # Determine if the branch given by name exists.
@@ -83,117 +64,53 @@ module RightDevelop::Utility::Git
   # @param [Hash] options for query
   # @option options [TrueClass|FalseClass] :remote to find remote branches
   # @option options [TrueClass|FalseClass] :local to find local branches
+  # @option options [RightGit::Git::Repository] :repo to use or nil
   #
   # @return [TrueClass|FalseClass] true if branch exists
   def branch_exists?(branch_name, options = {})
     options = {
       :remote => true,
-      :local  => true
+      :local  => true,
+      :repo   => nil
     }.merge(options)
     remote = options[:remote]
     local = options[:local]
+    repo = options[:repo] || default_repository
     unless local || remote
       raise ::ArgumentError, 'Either remote or local must be true'
     end
-    remote_regex = remote ? /\/#{::Regexp.escape(branch_name)}$/ : nil
-    branches(:all => remote).any? do |data|
-      (local && data == branch_name) || (remote && remote_regex.match(data))
-    end
-  end
-
-  # Generates a list of known (checked-out) branches from the current git
-  # directory.
-  #
-  # @param [Hash] options for branches
-  # @option options [TrueClass|FalseClass] :all is true to include remote branches, else local only (default)
-  #
-  # @return [Array] list of branches
-  def branches(options = {})
-    options = {
-      :all => true
-    }.merge(options)
-    git_args = ['branch']
-    git_args << '-a' if options[:all]
-    git_output(git_args).lines.map do |line|
-      # strip any leading asterisk used to mark current branch, etc.
-      line.gsub(/^\*/, '').strip
+    both = local && remote
+    repo.branches(:all => remote).any? do |branch|
+      branch.name == branch_name && (both || remote == branch.remote?)
     end
   end
 
   # Determine if the tag given by name exists.
   #
   # @param [String] tag_name to query
+  # @param [Hash] options for query
+  # @option options [RightGit::Git::Repository] :repo to use or nil
   #
   # @return [TrueClass|FalseClass] true if tag exists
-  def tag_exists?(tag_name)
+  def tag_exists?(tag_name, options = {})
+    options = {
+      :repo => nil
+    }.merge(options)
+    repo = options[:repo] || default_repository
+
     # note that remote tags cannot be queried directly; use git fetch --tags to
     # import them first.
-    tags.any? { |tag| tag == tag_name }
-  end
-
-  # Generates a list of known (fetched) tags from the current git directory.
-  #
-  # @return [Array] list of tags
-  def tags
-    git_output('tag').map { |line| line.strip }
-  end
-
-  # Queries the recursive list of submodule paths for the current workspace.
-  #
-  # @param [TrueClass|FalseClass] recursive if true will recursively get paths
-  #
-  # @return [Array] list of submodule paths or empty
-  def submodule_paths(recursive = false)
-    git_args = ['submodule', 'status']
-    git_args << '--recursive' if recursive
-    git_output(git_args).map do |line|
-      data = line.chomp
-      if matched = SUBMODULE_STATUS_REGEX.match(data)
-        matched[3]
-      else
-        fail "Unexpected output from submodule status: #{data.inspect}"
-      end
-    end
-  end
-
-  # Updates submodules for the current workspace.
-  #
-  # @param [TrueClass|FalseClass] recursive if true will recursively get paths
-  #
-  # @return [TrueClass] always true
-  def update_submodules(recursive = false)
-    git_args = ['submodule', 'update', '--init']
-    git_args << '--recursive' if recursive
-    spit_output(git_args)
+    repo.tags.any? { |tag| tag.name == tag_name }
   end
 
   # Clones the repo given by URL to the given destination (if any).
   #
   # @param [String] repo URL to clone
-  # @param [String] destination path where repo is cloned to or nil to clone to subdir of working dir
+  # @param [String] destination path where repo is cloned
   #
   # @return [TrueClass] always true
-  def clone_to(repo, destination = nil)
-    git_args = ['clone', repo]
-    git_args << destination if destination
-    spit_output(git_args)
-  end
-
-  # Performs a hard reset to the given revision, if given, or else the last
-  # checked-out SHA.
-  def hard_reset_to(revision = nil)
-    git_args = ['reset', '--hard']
-    git_args << revision if revision
-    vet_output(git_args)
-    true
-  end
-
-  # Fetches branch and tag information from remote origin.
-  #
-  # @return [TrueClass] always true
-  def fetch_all
-    vet_output('fetch')
-    vet_output('fetch --tags') # need a separate call to fetch tags
+  def clone_to(repo, destination)
+    ::RightGit::Git::Repository.clone_to(repo, destination, DEFAULT_REPO_OPTIONS)
     true
   end
 
@@ -204,8 +121,8 @@ module RightDevelop::Utility::Git
   # @param [String] commit to diff from (e.g. 'master')
   # @return [String] list of relative file paths from diff or empty
   def diff_files_from(commit)
-    result = git_output('diff', '--stat', '--name-only', commit).
-      map { |line| line.strip }.sort
+    git_args = ['diff', '--stat', '--name-only', commit]
+    result = default_repository.git_output(git_args).map { |line| line.strip }.sort
     # not sure if git would ever mention directories in a diff, but ignore them.
     result.delete_if { |item| ::File.directory?(item) }
     return result
@@ -239,47 +156,53 @@ module RightDevelop::Utility::Git
     force = !!options[:force]
 
     # hard reset any local changes before attempting checkout, if forced.
-    puts "Performing checkout in #{::Dir.pwd.inspect}"
-    hard_reset_to(nil) if force
+    repo = default_repository
+    logger = repo.logger
+    logger.info("Performing checkout in #{repo.repo_dir.inspect}")
+    repo.hard_reset_to(nil) if force
 
     # fetch to ensure revision is known and most up-to-date.
-    fetch_all
+    repo.fetch_all
 
     # do full checkout of revision with submodule update before any attempt to
     # create a new branch. this handles some wierd git failures where submodules
     # are changing between major/minor versions of the code.
-    git_args = ['checkout', revision]
-    git_args << '--force' if force
-    vet_output(git_args)
+    repo.checkout_to(revision, :force => true)
 
     # note that the checkout-to-a-branch will simply switch to a local copy of
     # the branch which may or may not by synchronized with its remote origin. to
     # ensure the branch is synchronized, perform a pull.
     is_sha = is_sha?(revision)
-    if !is_sha && branch_exists?(revision, :remote => true, :local => false)
+    needs_pull = (
+      !is_sha &&
+      branch_exists?(revision, :remote => true, :local => false, :repo => repo)
+    )
+    if needs_pull
       # hard reset to remote origin to overcome any local branch divergence.
-      hard_reset_to("origin/#{revision}") if force
+      repo.hard_reset_to("origin/#{revision}") if force
 
       # a pull is not needed at this point if we forced hard reset but it is
       # always nice to see it succeed in the output.
-      spit_output('pull', 'origin', revision)
+      repo.spit_output('pull', 'origin', revision)
     end
 
     # perform a localized hard reset to revision just to prove that revision is
     # now known to the local git database.
-    hard_reset_to(revision)
+    repo.hard_reset_to(revision)
 
     # note that the submodule update is non-recursive for tags and branches in
     # case the submodule needs to checkout to a specific branch before updating
     # its own submodules. it would be strange to recursively update submodules
     # from the parent and then have the recursively checked-out child revision
     # (branch or tag) introduce a different set of submodules.
-    update_submodules(recursive = is_sha && options[:recursive])
+    repo.update_submodules(:recursive => is_sha && options[:recursive])
 
     # recursively checkout submodules, if requested and unless we determine the
     # revision is a SHA (in which case recursive+SHA is ignored).
     if !is_sha && options[:recursive]
-      submodule_paths(recursive = false).each do |submodule_path|
+      repo.submodule_paths(:recursive => false).each do |submodule_path|
+        # note that recursion will use the current directory and create a new
+        # repo by calling default_repository.
         ::Dir.chdir(submodule_path) do
           checkout_revision(revision, options)
         end
@@ -287,7 +210,7 @@ module RightDevelop::Utility::Git
     end
 
     # create a new branch from fully resolved directory, if requested.
-    spit_output('checkout', '-b', new_branch_name) if new_branch_name
+    repo.spit_output('checkout', '-b', new_branch_name) if new_branch_name
     true
   end
 
@@ -300,27 +223,29 @@ module RightDevelop::Utility::Git
   #
   # @raise [VerifyError] on failure
   def verify_revision(revision = nil)
+    repo = default_repository
+    logger = repo.logger
     if revision
       # check current directory against revision.
-      actual_revision = current_revision(revision)
+      actual_revision = current_revision(revision, :repo => repo)
       if revision != actual_revision
         message =
           'Base directory is in an inconsistent state' +
-          " (#{revision} != #{actual_revision}): #{::Dir.pwd.inspect}"
+          " (#{revision} != #{actual_revision}): #{repo.repo_dir.inspect}"
         raise VerifyError, message
       end
     else
       # determine revision to check from local HEAD state if not given. at best
       # this will be a branch or tag, at worst a SHA.
-      puts "\nResolving the default branch, tag or SHA to use for verification in #{::Dir.pwd.inspect}"
-      revision = current_revision
+      logger.info("Resolving the default branch, tag or SHA to use for verification in #{repo.repo_dir.inspect}")
+      revision = current_revision(nil, :repo => repo)
     end
 
     # start verify.
-    puts "\nVerifying consistency of revision=#{revision} in #{::Dir.pwd.inspect}"
+    logger.info("Verifying consistency of revision=#{revision} in #{repo.repo_dir.inspect}")
     if is_sha?(revision)
       revision_type = :sha
-    elsif branch_exists?(revision, :remote => false, :local => true)
+    elsif branch_exists?(revision, :remote => false, :local => true, :repo => repo)
       revision_type = :branch
     else
       revision_type = :tag
@@ -330,9 +255,9 @@ module RightDevelop::Utility::Git
     # by looking for +,- in the submodule status. any that are out of sync will
     # not have a blank space on the left-hand side.
     if revision_type != :branch
-      git_output('submodule status --recursive').lines.each do |line|
+      repo.git_output('submodule status --recursive').lines.each do |line|
         data = line.chomp
-        if matched = SUBMODULE_STATUS_REGEX.match(data)
+        if matched = ::RightGit::Git::Repository::SUBMODULE_STATUS_REGEX.match(data)
           if matched[1] != ' '
             message =
               'At least one submodule is in an inconsistent state:' +
@@ -340,7 +265,8 @@ module RightDevelop::Utility::Git
             raise VerifyError, message
           end
         else
-          fail "Unexpected output from submodule status: #{data.inspect}"
+          raise VerifyError,
+                "Unexpected output from submodule status: #{data.inspect}"
         end
       end
     end
@@ -354,16 +280,15 @@ module RightDevelop::Utility::Git
     # is the same as the submodule SHA from the parent. the same tag must exist
     # and must be consistent for all submodules.
     if revision_type != :sha
-      submodule_paths(recursive = true).each do |submodule_path|
-        ::Dir.chdir(submodule_path) do
-          puts "\nInspecting #{::Dir.pwd.inspect}"
-          actual_revision = current_revision(revision)
-          if revision != actual_revision
-            message =
-              'At least one submodule is in an inconsistent state' +
-              " (#{revision} != #{actual_revision}): #{::Dir.pwd.inspect}"
-            raise VerifyError, message
-          end
+      repo.submodule_paths(:recursive => true).each do |submodule_path|
+        sub_repo = ::RightGit::Git::Repository.new(submodule_path, DEFAULT_REPO_OPTIONS)
+        logger.info("Inspecting #{sub_repo.repo_dir.inspect}")
+        actual_revision = current_revision(revision, :repo => sub_repo)
+        if revision != actual_revision
+          message =
+            'At least one submodule is in an inconsistent state' +
+            " (#{revision} != #{actual_revision}): #{sub_repo.repo_dir.inspect}"
+          raise VerifyError, message
         end
       end
     end
@@ -379,27 +304,38 @@ module RightDevelop::Utility::Git
   # current state of remote branches or tags. do a fetch to ensure those.
   #
   # @param [String] hint for branch vs. tag or nil
+  # @param [Hash] options for query
+  # @option options [RightGit::Git::Repository] :repo to use or nil
   #
   # @return [String] current revision
-  def current_revision(hint = nil)
+  def current_revision(hint = nil, options = {})
+    options = {
+      :repo => nil
+    }.merge(options)
+    repo = options[:repo] || default_repository
+
     # SHA logic
-    actual_sha = current_sha
+    actual_sha = repo.sha_for(nil)
     return actual_sha if is_sha?(hint)
 
     # branch logic
-    if hint.nil? || branch_exists?(hint, :remote => true, :local => true)
-      branch = git_output('rev-parse --abbrev-ref HEAD').strip
+    branch_hint = (
+      hint.nil? ||
+      branch_exists?(hint, :remote => true, :local => true, :repo => repo)
+    )
+    if branch_hint
+      branch = repo.git_output('rev-parse --abbrev-ref HEAD').strip
       return branch if branch != 'HEAD'
     end
 
     # tag logic
-    if hint && tag_exists?(hint)
-      hint_sha = sha_for(hint)
+    if hint && tag_exists?(hint, :repo => repo)
+      hint_sha = repo.sha_for(hint)
       return hint if hint_sha == actual_sha
     end
 
     # lookup tags for actual SHA, if any.
-    if first_tag = tags_for_sha(actual_sha).first
+    if first_tag = tags_for_sha(actual_sha, :repo => repo).first
       return first_tag
     end
 
@@ -407,39 +343,22 @@ module RightDevelop::Utility::Git
     actual_sha
   end
 
-  # Determines the SHA referenced by the current directory.
-  #
-  # @return [String] current SHA
-  def current_sha
-    sha_for(revision = nil)
-  end
-
-  # Determines the SHA referenced by the given revision. Raises on failure.
-  #
-  # @param [String] revision or nil for current SHA
-  #
-  # @return [String] SHA for revision
-  def sha_for(revision)
-    git_args = ['show', revision].compact
-    result = nil
-    git_output(git_args).lines.each do |line|
-      if matched = COMMIT_SHA1_REGEX.match(line.strip)
-        result = matched[1]
-        break
-      end
-    end
-    fail 'Unable to locate commit in show output.' unless result
-    result
-  end
-
   # Generates a list of tags pointing to the given SHA, if any.
   # When the revision is a tag, only one tag is returned regardless of
   # whether other tags reference the same SHA.
   #
+  # @param [String] sha for tags
+  # @param [Hash] options for query
+  # @option options [RightGit::Git::Repository] :repo to use or nil
+  #
   # @return [Array] tags for the revision or empty
-  def tags_for_sha(sha)
+  def tags_for_sha(sha, options = {})
+    options = {
+      :repo => nil
+    }.merge(options)
+    repo = options[:repo] || default_repository
     git_args = ['tag', '--contains', sha]
-    git_output(git_args).map { |line| line.strip }
+    repo.git_output(git_args).map { |line| line.strip }
   end
 
 end # RightDevelop::Utility::Git
