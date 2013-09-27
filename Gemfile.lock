@@ -1,3 +1,10 @@
+GIT
+  remote: git@github.com:rightscale/right_git.git
+  revision: 69814a78d191755991cc8983283b86be723cfa6f
+  branch: master
+  specs:
+    right_git (0.0.1)
+
 GEM
   remote: http://s3.amazonaws.com/rightscale_rightlink_gems_dev/
   remote: https://rubygems.org/
@@ -89,6 +96,7 @@ DEPENDENCIES
   rake (>= 0.8.7, < 0.10)
   rdoc (>= 2.4.2)
   right_aws (>= 2.1.0)
+  right_git!
   right_support (~> 2.0)
   rspec (>= 1.3, < 3.0)
   ruby-debug (>= 0.10)
