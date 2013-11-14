@@ -28,8 +28,9 @@ require 'right_support'
 
 module RightDevelop
   module Utility
-    module Shell
-      extend ::RightGit::Shell::Default
+
+    # extends default shell easy-singleton from right_git gem.
+    class Shell < ::RightGit::Shell::Default
 
       class NullLoggerSingleton
         @@logger = nil
@@ -38,8 +39,6 @@ module RightDevelop
           @@logger ||= ::RightSupport::Log::NullLogger.new
         end
       end
-
-      module_function
 
       # bundle exec sets GEM_HOME and GEM_PATH (in Windows?) and these need to
       # be wacked in order to have a pristing rubygems environment since bundler
@@ -110,11 +109,6 @@ module RightDevelop
 
         # super execute.
         super(cmd, options)
-      end
-
-      # Overrides ::RightGit::Shell::Default#output_for
-      def output_for(cmd, options = {})
-        super  # just need an override for module_method extension
       end
 
       # Overrides ::RightGit::Shell::Default#configure_executioner
