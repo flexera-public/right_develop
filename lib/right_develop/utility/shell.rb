@@ -113,15 +113,17 @@ module RightDevelop
 
       # Overrides ::RightGit::Shell::Default#configure_executioner
       def configure_executioner(executioner, options)
+        # super configure early to ensure that any custom env vars are set after
+        # restoring the pre-bundler env.
+        executioner = super(executioner, options)
+
         # clean all bundler env vars, if requested.
         if options[:clean_bundler_env]
           executioner = lambda do |e|
             lambda { ::Bundler.with_clean_env { e.call } }
           end.call(executioner)
         end
-
-        # super configure.
-        super(executioner, options)
+        executioner
       end
 
     end # Shell
