@@ -28,8 +28,9 @@ require 'right_support'
 
 module RightDevelop
   module Utility
-    module Shell
-      extend ::RightGit::Shell::Default
+
+    # extends default shell easy-singleton from right_git gem.
+    class Shell < ::RightGit::Shell::Default
 
       class NullLoggerSingleton
         @@logger = nil
@@ -38,8 +39,6 @@ module RightDevelop
           @@logger ||= ::RightSupport::Log::NullLogger.new
         end
       end
-
-      module_function
 
       # bundle exec sets GEM_HOME and GEM_PATH (in Windows?) and these need to
       # be wacked in order to have a pristing rubygems environment since bundler
@@ -112,22 +111,19 @@ module RightDevelop
         super(cmd, options)
       end
 
-      # Overrides ::RightGit::Shell::Default#output_for
-      def output_for(cmd, options = {})
-        super  # just need an override for module_method extension
-      end
-
       # Overrides ::RightGit::Shell::Default#configure_executioner
       def configure_executioner(executioner, options)
+        # super configure early to ensure that any custom env vars are set after
+        # restoring the pre-bundler env.
+        executioner = super(executioner, options)
+
         # clean all bundler env vars, if requested.
         if options[:clean_bundler_env]
           executioner = lambda do |e|
             lambda { ::Bundler.with_clean_env { e.call } }
           end.call(executioner)
         end
-
-        # super configure.
-        super(executioner, options)
+        executioner
       end
 
     end # Shell
