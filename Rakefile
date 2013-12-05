@@ -69,3 +69,5 @@ Jeweler::RubygemsDotOrgTasks.new
 CLEAN.include('pkg')
 
 RightDevelop::CI::RakeTask.new
+RightDevelop::Git::RakeTask.new
+RightDevelop::S3::RakeTask.new

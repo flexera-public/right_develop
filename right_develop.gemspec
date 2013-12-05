@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = "right_develop"
-  s.version = "2.0.0"
+  s.version = "2.0.1"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Tony Spataro"]
-  s.date = "2013-09-05"
+  s.date = "2013-11-14"
   s.description = "A toolkit of development tools created by RightScale."
   s.email = "support@rightscale.com"
   s.executables = ["right_develop"]

@@ -122,7 +122,7 @@ module RightDevelop::Utility::Git
   # @return [String] list of relative file paths from diff or empty
   def diff_files_from(commit)
     git_args = ['diff', '--stat', '--name-only', commit]
-    result = default_repository.git_output(git_args).map { |line| line.strip }.sort
+    result = default_repository.git_output(git_args).lines.map { |line| line.strip }.sort
     # not sure if git would ever mention directories in a diff, but ignore them.
     result.delete_if { |item| ::File.directory?(item) }
     return result
@@ -358,7 +358,7 @@ module RightDevelop::Utility::Git
     }.merge(options)
     repo = options[:repo] || default_repository
     git_args = ['tag', '--contains', sha]
-    repo.git_output(git_args).map { |line| line.strip }
+    repo.git_output(git_args).lines.map { |line| line.strip }
   end
 
 end # RightDevelop::Utility::Git

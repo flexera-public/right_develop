@@ -5,6 +5,8 @@
 source 'http://s3.amazonaws.com/rightscale_rightlink_gems_dev'
 source 'https://rubygems.org'
 
+gemspec
+
 # Runtime dependencies of RightDevelop
 
 # Gems used by the CI harness
@@ -36,8 +38,10 @@ end
 # Gems that are only used locally by this repo to run tests and should NOT be called out in the
 # gemspec.
 group :test do
-  gem "json", "1.4.6"           # locked to 1.4.6 for mswin32 friendliness
-  gem "libxml-ruby", "~> 1.1.4" # locked to 1.1.4 for mswin32 friendliness
+  if RUBY_PLATFORM =~ /mswin/
+    gem "json", "1.4.6"           # locked to 1.4.6 for mswin32 friendliness
+    gem "libxml-ruby", "~> 1.1.4" # locked to 1.1.4 for mswin32 friendliness
+  end
   gem "ruby-debug", ">= 0.10", :platforms => :ruby_18
   gem "ruby-debug19", ">= 0.11.6", :platforms => :ruby_19
 end
