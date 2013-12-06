@@ -31,13 +31,8 @@ end
 # Gems that are only used locally by this repo to run tests and should NOT be called out in the
 # gemspec.
 group :test do
-  if RUBY_PLATFORM =~ /mswin/
-    gem "json", "1.4.6"           # locked to 1.4.6 for mswin32 friendliness
-    gem "libxml-ruby", "~> 1.1.4" # locked to 1.1.4 for mswin32 friendliness
-  end
   gem "ruby-debug", ">= 0.10", :platforms => :ruby_18
   gem "debugger", ">= 1.6", :platforms => :ruby_19
-  gem "activesupport"
   gem "syntax", "~> 1.0.0" #rspec will syntax-highlight code snippets if this gem is available
   gem "nokogiri", "~> 1.5"
   gem "flexmock", "~> 0.8.7", :require => nil
