@@ -5,8 +5,6 @@
 source 'http://s3.amazonaws.com/rightscale_rightlink_gems_dev'
 source 'https://rubygems.org'
 
-gemspec
-
 # Runtime dependencies of RightDevelop
 
 # Gems used by the CI harness
@@ -19,8 +17,7 @@ gem "cucumber", ["~> 1.0", "< 1.3.3"] # Cuke >= 1.3.3 depends on RubyGems > 2.0 
 # Gems used by the command-line Git tools
 gem "trollop", [">= 1.0", "< 3.0"]
 gem "actionpack", [">= 2.3.0", "< 4.0"]
-gem "right_git", :git => 'git@github.com:rightscale/right_git.git',
-                 :branch => 'master'
+gem "right_git"
 
 # Gems used by S3
 gem "right_aws", ">= 2.1.0"
@@ -29,19 +26,24 @@ gem "right_aws", ">= 2.1.0"
 group :development do
   gem "jeweler", "~> 1.8.3"
   gem "rdoc", ">= 2.4.2"
-  gem "syntax", "~> 1.0.0" #rspec will syntax-highlight code snippets if this gem is available
-  gem "nokogiri", "~> 1.5"
-  gem "flexmock", "~> 0.8.7", :require => nil
-  gem "activesupport"
 end
 
 # Gems that are only used locally by this repo to run tests and should NOT be called out in the
 # gemspec.
 group :test do
-  if RUBY_PLATFORM =~ /mswin/
-    gem "json", "1.4.6"           # locked to 1.4.6 for mswin32 friendliness
-    gem "libxml-ruby", "~> 1.1.4" # locked to 1.1.4 for mswin32 friendliness
+  # Gems that shouldn't be installed under Windows; used only for testing RightDevelop::Parsers,
+  # which aren't used with Windows and will gracefully fail to instantiate if either gem is not
+  # availablje.
+  platform :ruby do
+    gem "libxml-ruby", "~> 2.7"
+    gem "json", "~> 1.6"
   end
+
+  # Enable debugging of the specs and cukes
   gem "ruby-debug", ">= 0.10", :platforms => :ruby_18
-  gem "ruby-debug19", ">= 0.11.6", :platforms => :ruby_19
+  gem "debugger", ">= 1.6", :platforms => :ruby_19
+
+  gem "syntax", "~> 1.0.0" #rspec will syntax-highlight code snippets if this gem is available
+  gem "nokogiri", "~> 1.5"
+  gem "flexmock", "~> 0.8.7", :require => nil
 end

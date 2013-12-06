@@ -6,5 +6,5 @@ module RightDevelop
   end
 end
 
-# Explicitly require everything else to avoid overreliance on autoload (1-module-deep rule)
+require 'right_develop/parsers/xml_post_parser.rb'
 require 'right_develop/parsers/sax_parser.rb'

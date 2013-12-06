@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Tony Spataro"]
-  s.date = "2013-11-14"
+  s.date = "2013-12-06"
   s.description = "A toolkit of development tools created by RightScale."
   s.email = "support@rightscale.com"
   s.executables = ["right_develop"]
@@ -51,7 +51,7 @@ Gem::Specification.new do |s|
   s.homepage = "https://github.com/rightscale/right_develop"
   s.licenses = ["MIT"]
   s.require_paths = ["lib"]
-  s.rubygems_version = "1.8.25"
+  s.rubygems_version = "1.8.23"
   s.summary = "Reusable dev & test code."
 
   if s.respond_to? :specification_version then
@@ -69,10 +69,6 @@ Gem::Specification.new do |s|
       s.add_runtime_dependency(%q<right_aws>, [">= 2.1.0"])
       s.add_development_dependency(%q<jeweler>, ["~> 1.8.3"])
       s.add_development_dependency(%q<rdoc>, [">= 2.4.2"])
-      s.add_development_dependency(%q<syntax>, ["~> 1.0.0"])
-      s.add_development_dependency(%q<nokogiri>, ["~> 1.5"])
-      s.add_development_dependency(%q<flexmock>, ["~> 0.8.7"])
-      s.add_development_dependency(%q<activesupport>, [">= 0"])
     else
       s.add_dependency(%q<rake>, ["< 0.10", ">= 0.8.7"])
       s.add_dependency(%q<right_support>, ["~> 2.0"])
@@ -85,10 +81,6 @@ Gem::Specification.new do |s|
       s.add_dependency(%q<right_aws>, [">= 2.1.0"])
       s.add_dependency(%q<jeweler>, ["~> 1.8.3"])
       s.add_dependency(%q<rdoc>, [">= 2.4.2"])
-      s.add_dependency(%q<syntax>, ["~> 1.0.0"])
-      s.add_dependency(%q<nokogiri>, ["~> 1.5"])
-      s.add_dependency(%q<flexmock>, ["~> 0.8.7"])
-      s.add_dependency(%q<activesupport>, [">= 0"])
     end
   else
     s.add_dependency(%q<rake>, ["< 0.10", ">= 0.8.7"])
@@ -102,10 +94,6 @@ Gem::Specification.new do |s|
     s.add_dependency(%q<right_aws>, [">= 2.1.0"])
     s.add_dependency(%q<jeweler>, ["~> 1.8.3"])
     s.add_dependency(%q<rdoc>, [">= 2.4.2"])
-    s.add_dependency(%q<syntax>, ["~> 1.0.0"])
-    s.add_dependency(%q<nokogiri>, ["~> 1.5"])
-    s.add_dependency(%q<flexmock>, ["~> 0.8.7"])
-    s.add_dependency(%q<activesupport>, [">= 0"])
   end
 end
 

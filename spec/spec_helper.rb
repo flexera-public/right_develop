@@ -25,4 +25,7 @@ require 'flexmock'
 require 'ruby-debug'
 require 'syntax'
 
+lib_dir = File.expand_path('../../lib', __FILE__)
+$: << lib_dir unless $:.include?(lib_dir)
+
 require 'right_develop'

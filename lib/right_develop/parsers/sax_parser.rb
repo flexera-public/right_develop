@@ -1,9 +1,18 @@
-require 'xml/libxml'
-require 'active_support/inflector'
-require 'right_develop/parsers/xml_post_parser.rb'
-
 module RightDevelop::Parsers
   class SaxParser
+    begin
+      # libxml-ruby requires a C library and headers to be available before it will install; thus,
+      # we do not call it out as a gemspec dependency
+      require 'xml/libxml'
+
+      # ActiveSupport is not a runtime
+      require 'active_support/inflector'
+
+      AVAILABLE = true
+    rescue LoadError => e
+      AVAILABLE = false
+    end
+
     extend XmlPostParser
 
     # Parses XML into a ruby hash
@@ -14,6 +23,10 @@ module RightDevelop::Parsers
     #   the return content of the initial xml parser.
     # @return [Array or Hash] returns rubified XML in Hash and Array format
     def self.parse(text, opts = {})
+      unless AVAILABLE
+        raise NotImplementedError, "#{self.name} is unavailable on this system because libxml-ruby and/or active_support are not installed"
+      end
+
       # Parse the xml text
       # http://libxml.rubyforge.org/rdoc/
       xml           = ::XML::SaxParser::string(text)
@@ -32,6 +45,10 @@ module RightDevelop::Parsers
     end
 
     def initialize
+      unless AVAILABLE
+        raise NotImplementedError, "#{self.name} is unavailable on this system because libxml-ruby and/or active_support are not installed"
+      end
+
       @tag  = {}
       @path = []
     end
