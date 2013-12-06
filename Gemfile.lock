@@ -34,6 +34,7 @@ GEM
       rake
       rdoc
     json (1.8.1)
+    libxml-ruby (2.7.0)
     linecache (0.46)
       rbx-require-relative (> 0.0.4)
     multi_json (1.7.9)
@@ -79,6 +80,8 @@ DEPENDENCIES
   debugger (>= 1.6)
   flexmock (~> 0.8.7)
   jeweler (~> 1.8.3)
+  json (~> 1.6)
+  libxml-ruby (~> 2.7)
   nokogiri (~> 1.5)
   rake (>= 0.8.7, < 0.10)
   rdoc (>= 2.4.2)

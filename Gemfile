@@ -31,8 +31,18 @@ end
 # Gems that are only used locally by this repo to run tests and should NOT be called out in the
 # gemspec.
 group :test do
+  # Gems that shouldn't be installed under Windows; used only for testing RightDevelop::Parsers,
+  # which aren't used with Windows and will gracefully fail to instantiate if either gem is not
+  # availablje.
+  platform :ruby do
+    gem "libxml-ruby", "~> 2.7"
+    gem "json", "~> 1.6"
+  end
+
+  # Enable debugging of the specs and cukes
   gem "ruby-debug", ">= 0.10", :platforms => :ruby_18
   gem "debugger", ">= 1.6", :platforms => :ruby_19
+
   gem "syntax", "~> 1.0.0" #rspec will syntax-highlight code snippets if this gem is available
   gem "nokogiri", "~> 1.5"
   gem "flexmock", "~> 0.8.7", :require => nil
