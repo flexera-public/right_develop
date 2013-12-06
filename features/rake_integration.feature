@@ -48,8 +48,8 @@ Feature: basic Rake integration
     When I install the bundle
     And I rake '-T'
     Then the output should contain 'git:setup'
-    And the output should contain 'git:branch[revision,base_dir]'
-    And the output should contain 'git:check[revision,base_dir]'
+    And the output should contain 'git:checkout[revision,base_dir]'
+    And the output should contain 'git:verify[revision,base_dir]'
 
   Scenario: override Git namespace
     Given the Rakefile contains:
