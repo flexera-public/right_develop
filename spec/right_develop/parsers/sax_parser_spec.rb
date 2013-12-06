@@ -1,6 +1,7 @@
 require File.expand_path(File.dirname(__FILE__) + '/../../spec_helper.rb')
 
 describe "xml parser" do
+  if RightDevelop::Parsers::SaxParser::AVAILABLE
   it "BaseHelper.xml_post_process_1_5 for root hash formatted xml" do
     expected_hash = {
       "farms"=>nil,
@@ -198,5 +199,7 @@ describe "xml parser" do
     RightDevelop::Parsers::SaxParser.parse(custom_nested_xml,
       :post_parser => lambda { |xml| RightDevelop::Parsers::XmlPostParser.remove_nesting(xml) } ).should == expected_array
   end
-
+  else
+    pending 'need to install libxml-ruby and active_support gems in order to run this test'
+  end
 end

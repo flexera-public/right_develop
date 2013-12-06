@@ -1,7 +1,12 @@
-require 'active_support/inflector'
-
 module RightDevelop::Parsers
   module XmlPostParser
+    begin
+      require 'active_support/inflector'
+
+      AVAILABLE = true
+    rescue LoadError => e
+      AVAILABLE = false
+    end
 
     # Parses a rubified XML hash/array, removing the top level xml tag, along with
     # any arrays encoded with singular/plural for parent/child nodes.
@@ -40,6 +45,10 @@ module RightDevelop::Parsers
     # @return [Array or Hash] returns a ruby Array or Hash with top level xml tags removed,
     #   as well as any extra XML encoded array tags.
     def self.remove_nesting(xml_object)
+      unless AVAILABLE
+        raise NotImplementedError, "#{self.name} is unavailable on this system because libxml-ruby and/or active_support are not installed"
+      end
+
       if xml_object.length != 1 || (!xml_object.is_a?(Hash) && !xml_object.is_a?(Array))
         raise ArgumentError, "xml_object format doesn't have a single top level entry"
       end
