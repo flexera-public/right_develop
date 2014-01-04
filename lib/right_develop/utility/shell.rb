@@ -118,7 +118,7 @@ module RightDevelop
         executioner = super(executioner, options)
 
         # clean all bundler env vars, if requested.
-        if options[:clean_bundler_env]
+        if options[:clean_bundler_env] && defined?(::Bundler)
           executioner = lambda do |e|
             lambda { ::Bundler.with_clean_env { e.call } }
           end.call(executioner)

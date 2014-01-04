@@ -26,8 +26,6 @@ require "action_view"
 
 module RightDevelop::Commands
   class Git
-    include ActionView::Helpers::DateHelper
-
     NAME_SPLIT_CHARS = /-|_|\//
     YES              = /(ye?s?)/i
     NO               = /(no?)/i
@@ -70,9 +68,9 @@ EOS
 
       case task
       when "prune"
-        repo = ::RightGit::Repository.new(
+        repo = ::RightGit::Git::Repository.new(
           ::Dir.pwd,
-          ::RightDevelop::Utility::Git::DEFALT_REPO_OPTIONS)
+          ::RightDevelop::Utility::Git::DEFAULT_REPO_OPTIONS)
         self.new(repo, :prune, options)
       else
         Trollop.die "unknown task #{task}"
@@ -88,15 +86,9 @@ EOS
     def initialize(repo, task, options)
       # Post-process "age" option; transform from natural-language expression into a timestamp.
       if (age = options.delete(:age))
-        age = age.gsub(/\s+/, ".")
-
-        if age =~ /^[0-9]+\.?(hours|days|weeks|months|years)$/
-          age = eval(age).ago
-        elsif age =~ /^[0-9]+$/
-          age = age.to_i.months.ago
-        else
-          raise ArgumentError, "Can't parse age of '#{age}'"
-        end
+        require 'ruby-debug'
+        debugger
+        age = parse_age(age)
         options[:age] = age
       end
 
@@ -210,6 +202,62 @@ EOS
         else
           return line
         end
+      end
+    end
+
+    # An ordered list of time intervals of decreasing magnitude. Stored as Array and not Hash in
+    # order to ensure consistent traversal order between Ruby 1.8 and 1.9+.
+    TIME_INTERVALS = [
+      [31_557_600, 'year'],
+      [2_592_000, 'month'],
+      [604_800, 'week'],
+      [86_400, 'day'],
+      [3_600, 'hour'],
+      [60, 'minute'],
+      [1, 'second'],
+    ]
+
+    def time_ago_in_words(once_upon_a)
+      dt = Time.now.to_f - once_upon_a.to_f
+
+      words = nil
+
+      TIME_INTERVALS.each do |pair|
+        mag, term = pair.first, pair.last
+        if dt >= mag
+          units = dt / mag
+          words = "%d %s%s" % [units, term, units > 1 ? 's' : '']
+          break
+        end
+      end
+
+      if words
+        words
+      else
+        once_upon_a.strftime("%Y-%m-%d")
+      end
+    end
+
+    def parse_age(str)
+      ord, word = str.split(/[. ]+/, 2)
+      ord = Integer(ord)
+      word.gsub!(/s$/, '')
+
+      ago = nil
+
+      TIME_INTERVALS.each do |pair|
+        mag, term = pair.first, pair.last
+
+        if term == word
+          ago = Time.at(Time.now.to_i - ord * mag)
+          break
+        end
+      end
+
+      if ago
+        ago
+      else
+        raise ArgumentError, "Cannot parse '#{str}' as an age"
       end
     end
   end

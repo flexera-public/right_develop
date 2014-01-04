@@ -16,7 +16,6 @@ gem "cucumber", ["~> 1.0", "< 1.3.3"] # Cuke >= 1.3.3 depends on RubyGems > 2.0 
 
 # Gems used by the command-line Git tools
 gem "trollop", [">= 1.0", "< 3.0"]
-gem "actionpack", [">= 2.3.0", "< 4.0"]
 gem "right_git"
 
 # Gems used by S3
