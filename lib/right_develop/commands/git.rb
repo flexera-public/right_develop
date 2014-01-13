@@ -26,8 +26,6 @@ require "action_view"
 
 module RightDevelop::Commands
   class Git
-    include ActionView::Helpers::DateHelper
-
     NAME_SPLIT_CHARS = /-|_|\//
     YES              = /(ye?s?)/i
     NO               = /(no?)/i
@@ -70,9 +68,9 @@ EOS
 
       case task
       when "prune"
-        repo = ::RightGit::Repository.new(
+        repo = ::RightGit::Git::Repository.new(
           ::Dir.pwd,
-          ::RightDevelop::Utility::Git::DEFALT_REPO_OPTIONS)
+          ::RightDevelop::Utility::Git::DEFAULT_REPO_OPTIONS)
         self.new(repo, :prune, options)
       else
         Trollop.die "unknown task #{task}"
@@ -88,15 +86,7 @@ EOS
     def initialize(repo, task, options)
       # Post-process "age" option; transform from natural-language expression into a timestamp.
       if (age = options.delete(:age))
-        age = age.gsub(/\s+/, ".")
-
-        if age =~ /^[0-9]+\.?(hours|days|weeks|months|years)$/
-          age = eval(age).ago
-        elsif age =~ /^[0-9]+$/
-          age = age.to_i.months.ago
-        else
-          raise ArgumentError, "Can't parse age of '#{age}'"
-        end
+        age = parse_age(age)
         options[:age] = age
       end
 
@@ -210,6 +200,77 @@ EOS
         else
           return line
         end
+      end
+    end
+
+    # An ordered list of time intervals of decreasing magnitude. Stored as Array and not Hash in
+    # order to ensure consistent traversal order between Ruby 1.8 and 1.9+.
+    TIME_INTERVALS = [
+      [31_557_600, 'year'],
+      [2_592_000, 'month'],
+      [604_800, 'week'],
+      [86_400, 'day'],
+      [3_600, 'hour'],
+      [60, 'minute'],
+      [1, 'second'],
+    ]
+
+    # Workalike for ActiveSupport date-helper method. Given a Time in the past, return
+    # a natural-language English string that describes the duration separating that time from
+    # the present. The duration is very approximate, and will be rounded down to the nearest
+    # appropriate interval (e.g. 2.5 hours becomes 2 hours).
+    #
+    # @example about three days ago
+    #    time_ago_in_words(Time.now - 86400*3.1) # => "3 days"  
+    #
+    # @param [Time] once_upon_a the long-ago time to compare to Time.now
+    # @return [String] an English time duration
+    def time_ago_in_words(once_upon_a)
+      dt = Time.now.to_f - once_upon_a.to_f
+
+      words = nil
+
+      TIME_INTERVALS.each do |pair|
+        mag, term = pair.first, pair.last
+        if dt >= mag
+          units = dt / mag
+          words = "%d %s%s" % [units, term, units > 1 ? 's' : '']
+          break
+        end
+      end
+
+      if words
+        words
+      else
+        once_upon_a.strftime("%Y-%m-%d")
+      end
+    end
+
+    # Given a natural-language English description of a time duration, return a Time in the past,
+    # that is the same duration from Time.now that is expressed in the string. 
+    #
+    # @param [String] str an English time duration
+    # @return [Time] a Time object in the past, as described relative to now by str
+    def parse_age(str)
+      ord, word = str.split(/[. ]+/, 2)
+      ord = Integer(ord)
+      word.gsub!(/s$/, '')
+
+      ago = nil
+
+      TIME_INTERVALS.each do |pair|
+        mag, term = pair.first, pair.last
+
+        if term == word
+          ago = Time.at(Time.now.to_i - ord * mag)
+          break
+        end
+      end
+
+      if ago
+        ago
+      else
+        raise ArgumentError, "Cannot parse '#{str}' as an age"
       end
     end
   end
