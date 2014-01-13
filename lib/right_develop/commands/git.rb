@@ -86,8 +86,6 @@ EOS
     def initialize(repo, task, options)
       # Post-process "age" option; transform from natural-language expression into a timestamp.
       if (age = options.delete(:age))
-        require 'ruby-debug'
-        debugger
         age = parse_age(age)
         options[:age] = age
       end
@@ -217,6 +215,16 @@ EOS
       [1, 'second'],
     ]
 
+    # Workalike for ActiveSupport date-helper method. Given a Time in the past, return
+    # a natural-language English string that describes the duration separating that time from
+    # the present. The duration is very approximate, and will be rounded down to the nearest
+    # appropriate interval (e.g. 2.5 hours becomes 2 hours).
+    #
+    # @example about three days ago
+    #    time_ago_in_words(Time.now - 86400*3.1) # => "3 days"  
+    #
+    # @param [Time] once_upon_a the long-ago time to compare to Time.now
+    # @return [String] an English time duration
     def time_ago_in_words(once_upon_a)
       dt = Time.now.to_f - once_upon_a.to_f
 
@@ -238,6 +246,11 @@ EOS
       end
     end
 
+    # Given a natural-language English description of a time duration, return a Time in the past,
+    # that is the same duration from Time.now that is expressed in the string. 
+    #
+    # @param [String] str an English time duration
+    # @return [Time] a Time object in the past, as described relative to now by str
     def parse_age(str)
       ord, word = str.split(/[. ]+/, 2)
       ord = Integer(ord)
