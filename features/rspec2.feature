@@ -1,7 +1,7 @@
 Feature: RSpec 2.x support
   In order to facilitate TDD and enhance code quality
   RightDevelop should provide a Rake CI harness with JUnit XML output
-  So any Ruby project can have a beautiful, info-rich Jenkins project
+  So any Ruby project can have beautiful, info-rich Jenkins reports
 
   Background:
     Given a Ruby application

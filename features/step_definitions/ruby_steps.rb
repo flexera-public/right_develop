@@ -138,18 +138,6 @@ When /^I rake '(.*)'$/ do |task|
   @ruby_app_output = ruby_app_shell("bundle exec rake #{task} --trace ", :ignore_errors => true)
 end
 
-When /^I debug the app shell$/ do
-  STDOUT.puts "Opening shell in a separate window."
-  if RUBY_PLATFORM =~ /darwin/
-    ruby_app_shell("open -a Terminal .")
-  else
-    raise "Don't know how to open an app shell for #{RUBY_PLATFORM}; please contribute your knowledge to #{__FILE__}"
-  end
-  STDOUT.puts "Press Enter to continue Cucumber execution..."
-  STDOUT.flush
-  STDIN.readline
-end
-
 Then /^the output should contain '(.*)'$/ do |expected_output|
   @ruby_app_output.should include(expected_output)
 end
