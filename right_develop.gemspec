@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{right_develop}
-  s.version = "2.0.3"
+  s.version = "2.1.0"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Tony Spataro"]
-  s.date = %q{2014-01-13}
+  s.date = %q{2014-01-16}
   s.default_executable = %q{right_develop}
   s.description = %q{A toolkit of development tools created by RightScale.}
   s.email = %q{support@rightscale.com}
@@ -66,7 +66,7 @@ Gem::Specification.new do |s|
       s.add_runtime_dependency(%q<rspec>, ["< 3.0", ">= 1.3"])
       s.add_runtime_dependency(%q<cucumber>, ["< 1.3.3", "~> 1.0"])
       s.add_runtime_dependency(%q<trollop>, ["< 3.0", ">= 1.0"])
-      s.add_runtime_dependency(%q<right_git>, [">= 0"])
+      s.add_runtime_dependency(%q<right_git>, ["~> 0.1.0"])
       s.add_runtime_dependency(%q<right_aws>, [">= 2.1.0"])
       s.add_development_dependency(%q<jeweler>, ["~> 1.8.3"])
       s.add_development_dependency(%q<rdoc>, [">= 2.4.2"])
@@ -77,7 +77,7 @@ Gem::Specification.new do |s|
       s.add_dependency(%q<rspec>, ["< 3.0", ">= 1.3"])
       s.add_dependency(%q<cucumber>, ["< 1.3.3", "~> 1.0"])
       s.add_dependency(%q<trollop>, ["< 3.0", ">= 1.0"])
-      s.add_dependency(%q<right_git>, [">= 0"])
+      s.add_dependency(%q<right_git>, ["~> 0.1.0"])
       s.add_dependency(%q<right_aws>, [">= 2.1.0"])
       s.add_dependency(%q<jeweler>, ["~> 1.8.3"])
       s.add_dependency(%q<rdoc>, [">= 2.4.2"])
@@ -89,7 +89,7 @@ Gem::Specification.new do |s|
     s.add_dependency(%q<rspec>, ["< 3.0", ">= 1.3"])
     s.add_dependency(%q<cucumber>, ["< 1.3.3", "~> 1.0"])
     s.add_dependency(%q<trollop>, ["< 3.0", ">= 1.0"])
-    s.add_dependency(%q<right_git>, [">= 0"])
+    s.add_dependency(%q<right_git>, ["~> 0.1.0"])
     s.add_dependency(%q<right_aws>, [">= 2.1.0"])
     s.add_dependency(%q<jeweler>, ["~> 1.8.3"])
     s.add_dependency(%q<rdoc>, [">= 2.4.2"])

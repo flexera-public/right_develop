@@ -27,7 +27,6 @@ require 'right_git'
 module RightDevelop::Utility::Git
 
   DEFAULT_REPO_OPTIONS = {
-    :logger => ::RightDevelop::Utility::Shell.default_logger,
     :shell  => ::RightDevelop::Utility::Shell
   }.freeze
 

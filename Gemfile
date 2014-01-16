@@ -16,7 +16,7 @@ gem "cucumber", ["~> 1.0", "< 1.3.3"] # Cuke >= 1.3.3 depends on RubyGems > 2.0 
 
 # Gems used by the command-line Git tools
 gem "trollop", [">= 1.0", "< 3.0"]
-gem "right_git"
+gem "right_git", "~> 0.1.0"
 
 # Gems used by S3
 gem "right_aws", ">= 2.1.0"

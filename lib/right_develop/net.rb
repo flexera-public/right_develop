@@ -21,7 +21,7 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 # Try to load RSpec 2.x - 1.x
-['rspec', 'spec'].each do |f|
+['rspec', 'rspec/mocks', 'spec'].each do |f|
   begin
     require f
   rescue LoadError
