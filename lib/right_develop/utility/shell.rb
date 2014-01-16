@@ -75,9 +75,9 @@ module RightDevelop
         NullLoggerSingleton.instance
       end
 
-      # @return [Logger] default logger for STDOUT
+      # @return [Logger] RightSupport::Log::Mixin.default_logger
       def default_logger
-        @default_logger ||= ::Logger.new(STDOUT)
+        RightSupport::Log::Mixin.default_logger
       end
 
       # Overrides ::RightGit::Shell::Default#execute
