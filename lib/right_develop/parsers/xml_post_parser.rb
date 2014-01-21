@@ -108,7 +108,7 @@ module RightDevelop::Parsers
             if parent_key.singularize == child_key
               # Wrap xml object in an array so it matches JSON format
               child_node = xml_object_node[parent_key][child_key]
-              if child_node.is_a?(Hash)
+              if (child_node.is_a?(Hash) || child_node.is_a?(String))
                 child_node = [child_node]
               end
               xml_object_node[parent_key] = child_node
