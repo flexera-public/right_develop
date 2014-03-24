@@ -74,6 +74,34 @@ module RightDevelop::CI
     # Default 'measurement'
     attr_accessor :output_path
 
+    # The name for the RSpec task.
+    #
+    # Default :spec
+    attr_accessor :rspec_name
+
+    # The description for the RSpec task.
+    #
+    # Default "Run RSpec examples"
+    attr_accessor :rspec_desc
+
+    # An array of additional options for the RSpec task.
+    #
+    # Default: []
+    #
+    # Use like:
+    #   rspec_opts = ["-t", "~slow_specs"]
+    attr_accessor :rspec_opts
+
+    # The name for the Cucumber task.
+    #
+    # Default :cucumber
+    attr_accessor :cucumber_name
+
+    # The description for the Cucumber task.
+    #
+    # Default "Run Cucumber examples"
+    attr_accessor :cucumber_desc
+
     def initialize(*args)
       @ci_namespace = args.shift || :ci
 
@@ -81,6 +109,11 @@ module RightDevelop::CI
 
       @output_path ||= 'measurement'
       @rspec_output ||= 'rspec.xml'
+      @rspec_name ||= :spec
+      @rspec_desc ||= "Run RSpec examples"
+      @cucumber_name ||= :cucumber
+      @cucumber_desc ||= "Run Cucumber examples"
+      @rspec_opts ||= []
 
       namespace @ci_namespace do
         task :prep do
@@ -90,22 +123,26 @@ module RightDevelop::CI
         end
 
         if defined?(::RSpec::Core::RakeTask)
+          default_opts = ['-r', 'right_develop/ci',
+                          '-f', JavaSpecFormatter.name,
+                          '-o', File.join(@output_path, 'rspec', @rspec_output)]
+
           # RSpec 2
-          desc "Run RSpec examples"
-          RSpec::Core::RakeTask.new(:spec => :prep) do |t|
-            t.rspec_opts = ['-r', 'right_develop/ci',
-                            '-f', JavaSpecFormatter.name,
-                            '-o', File.join(@output_path, 'rspec', @rspec_output)]
+          desc @rspec_desc
+          RSpec::Core::RakeTask.new(@rspec_name => :prep) do |t|
+            t.rspec_opts = default_opts + @rspec_opts
             unless self.rspec_pattern.nil?
               t.pattern = self.rspec_pattern
             end
           end
         elsif defined?(::Spec::Rake::SpecTask)
+          default_opts = ['-r', 'right_develop/ci',
+                          '-f', JavaSpecFormatter.name + ":" + File.join(@output_path, 'rspec', @rspec_output)]
+
           # RSpec 1
-          Spec::Rake::SpecTask.new(:spec => :prep) do |t|
-            desc "Run RSpec Examples"
-            t.spec_opts = ['-r', 'right_develop/ci',
-                           '-f', JavaSpecFormatter.name + ":" + File.join(@output_path, 'rspec', @rspec_output)]
+          Spec::Rake::SpecTask.new(@rspec_name => :prep) do |t|
+            desc @rspec_desc
+            t.spec_opts = default_opts + @rspec_opts
             unless self.rspec_pattern.nil?
               t.spec_files = FileList[self.rspec_pattern]
             end
@@ -114,8 +151,7 @@ module RightDevelop::CI
           raise LoadError, "Cannot define CI rake task: unsupported RSpec version"
         end
 
-        desc "Run Cucumber features"
-        Cucumber::Rake::Task.new do |t|
+        Cucumber::Rake::Task.new(@cucumber_name, @cucumber_desc) do |t|
           t.cucumber_opts = ['--no-color',
                              '--format', JavaCucumberFormatter.name,
                              '--out', File.join(@output_path, 'cucumber')]

@@ -20,10 +20,13 @@ You can override various aspects of the CI harness' behavior by passing a block 
 tweaks various instance variables of the resulting Rake task:
 
   RightDevelop::CI::RakeTask.new do |task|
-    task.ci_namespace = :my_happy_ci
-    task.rspec_pattern = "spec/important/**/*_spec.rb" # only run the important specs for CI
-    task.output_path   = "ci_results"                  # use ci_results as the base dir for all output files
-    task.rspec_output  = "happy_specs.xml"             # write to ci_results/rspec/happy_specs.xml
+    task.ci_namespace  = :my_happy_ci
+    task.rspec_name    = :important                       # run as my_happy_ci:important
+    task.rspec_desc    = "important specs with CI output" # or use cucumber_{name,desc} for Cucumber
+    task.rspec_pattern = "spec/important/**/*_spec.rb"    # only run the important specs for CI
+    task.rspec_opts    = ["-t", "important"]              # alternatively, only run tasks tagged as important
+    task.output_path   = "ci_results"                     # use ci_results as the base dir for all output files
+    task.rspec_output  = "happy_specs.xml"                # write to ci_results/rspec/happy_specs.xml
   end
 
 ==== Keeping the CI Harness Out of Production
