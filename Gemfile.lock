@@ -46,7 +46,7 @@ GEM
     right_git (0.1.0)
       right_support (>= 2.8.10, < 3.0.0)
     right_http_connection (1.3.0)
-    right_support (2.8.10)
+    right_support (2.8.20)
     rspec (2.13.0)
       rspec-core (~> 2.13.0)
       rspec-expectations (~> 2.13.0)
