@@ -11,9 +11,12 @@ describe RightDevelop::CI::Util do
     end
 
     it 'escapes punctuation' do
-      subject.pseudo_java_class_name('Hello.abc').should == 'Hello&#x2e;abc'
       subject.pseudo_java_class_name('Hello-abc').should == 'Hello&#x2d;abc'
       subject.pseudo_java_class_name('Hello abc').should == 'Hello&#x20;abc'
+    end
+
+    it 'uses a homoglyph for "." to foil Jenkins class-name parsing' do
+       subject.pseudo_java_class_name('Hello.abc').should == 'Hello&#xb7;abc'
     end
   end
 end
