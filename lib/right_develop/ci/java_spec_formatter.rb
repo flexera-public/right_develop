@@ -113,22 +113,25 @@ module RightDevelop::CI
       end
 
       def example_started(example)
-        @test_groups[example] = @current_example_group
+        @test_groups[example] ||= @current_example_group
         @example_started_at = Time.now
       end
 
       def example_passed(example)
+        @test_groups[example] ||= @current_example_group
         @test_times[example] = Time.now - @example_started_at
         @test_results[example] = 'passed'
       end
 
       def example_failed(example, counter, failure)
+        @test_groups[example] ||= @current_example_group
         @test_times[example] = Time.now - @example_started_at
         @test_results[example] = 'failed'
         @test_failures[example] = failure
       end
 
       def example_pending(example, message, deprecated_pending_location=nil)
+        @test_groups[example] ||= @current_example_group
         @test_times[example] = Time.now - @example_started_at
         @test_results[example] = 'pending'
       end
