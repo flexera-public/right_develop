@@ -32,15 +32,15 @@ end
 group :test do
   # Gems that shouldn't be installed under Windows; used only for testing RightDevelop::Parsers,
   # which aren't used with Windows and will gracefully fail to instantiate if either gem is not
-  # availablje.
-  platform :ruby do
-    gem "libxml-ruby", "~> 2.7"
-    gem "json", "~> 1.6"
-  end
+  # available.
+  # 
+  # In addition, json is built into Ruby >= 2.0 and should not be installed there.
+  gem "libxml-ruby", "~> 2.7", :platforms => [:mri]
+  gem "json", "~> 1.6", :platforms => [:mri_18, :mri_19]
 
   # Enable debugging of the specs and cukes
   gem "ruby-debug", ">= 0.10", :platforms => :ruby_18
-  gem "debugger", ">= 1.6", :platforms => :ruby_19
+  gem "debugger", ">= 1.6.6", :platforms => [:ruby_19, :ruby_20, :ruby_21]
 
   gem "nokogiri", "~> 1.5"
 end
