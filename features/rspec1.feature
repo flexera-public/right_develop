@@ -15,7 +15,7 @@ Feature: RSpec 1.x support
     When I install the bundle
     And I rake 'ci:spec'
     Then the command should succeed
-    And the file 'measurement/rspec/rspec.xml' should mention 2 passing test cases
+    And the file 'measurement/rspec/rspec.xml' should mention 1 passing test case
     And the file 'measurement/rspec/rspec.xml' should mention 0 failing test cases
 
   Scenario: failing examples
@@ -23,8 +23,16 @@ Feature: RSpec 1.x support
     When I install the bundle
     And I rake 'ci:spec'
     Then the command should fail
-    And the file 'measurement/rspec/rspec.xml' should mention 2 passing test cases
+    And the file 'measurement/rspec/rspec.xml' should mention 1 passing test case
     And the file 'measurement/rspec/rspec.xml' should mention 1 failing test case
+
+  Scenario: pending examples
+    Given a trivial pending RSpec spec
+    When I install the bundle
+    And I rake 'ci:spec'
+    Then the command should succeed
+    And the file 'measurement/rspec/rspec.xml' should mention 1 passing test case
+    And the file 'measurement/rspec/rspec.xml' should mention 2 skipped test case
 
   Scenario: override input file pattern
     Given an RSpec spec named 'passing_spec.rb' with content:

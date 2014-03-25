@@ -62,25 +62,36 @@ Given /^the Rakefile contains:$/ do |content|
   end
 end
 
-Given /^a trivial (failing )?RSpec spec$/ do |failing|
+Given /^a trivial (failing|pending)? ?RSpec spec$/ do |failing_pending|
   spec_dir = ruby_app_path('spec')
   spec = ruby_app_path('spec', 'trivial_spec.rb')
   FileUtils.mkdir_p(spec_dir)
   File.open(spec, 'w') do |file|
+    # always include one passing test case as a baseline
     file.puts "describe String do"
     file.puts "  it 'has a size' do"
     file.puts "    'joe'.size.should == 3"
     file.puts "  end"
-    file.puts
-    file.puts "  it 'is stringy' do"
-    file.puts "    pending"
-    file.puts "  end"
-    unless failing.nil?
+
+    case failing_pending
+    when 'failing'
+      # include a failing spec
       file.puts
       file.puts "it 'meets an impossible ideal' do"
       file.puts "  raise NotImplementedError, 'inconceivable!'"
       file.puts "end"
+    when 'pending'
+      # include two pending specs: one implicit and one explicit
+      file.puts
+      file.puts "it 'supports some awesome new feature' do"
+      file.puts "  pending"
+      file.puts "end"
+      file.puts ""
+      file.puts "it 'has some useful behavior'"
+    else
+      # no further examples
     end
+
     file.puts "end"
   end
 end
@@ -162,7 +173,7 @@ Then /^the file '(.*)' should (not )?exist?$/ do |file, negatory|
   end
 end
 
-Then /^the file '(.*)' should mention ([0-9]) (passing|failing) test cases?$/ do |file, n, pass_fail|
+Then /^the file '(.*)' should mention ([0-9]) (passing|failing|skipped) test cases?$/ do |file, n, pass_fail_skip|
   file = ruby_app_path(file)
   n = Integer(n)
 
@@ -172,15 +183,18 @@ Then /^the file '(.*)' should mention ([0-9]) (passing|failing) test cases?$/ do
 
   all_testcases = doc.css('testcase').size
   failing_testcases = doc.css('testcase failure').size
-  passing_testcases = all_testcases - failing_testcases
+  skipped_testcases = doc.css('testcase skipped').size
+  passing_testcases = all_testcases - failing_testcases - skipped_testcases
 
-  case pass_fail
+  case pass_fail_skip
   when 'passing'
     passing_testcases.should == n
   when 'failing'
     failing_testcases.should == n
+  when 'skipped'
+    skipped_testcases.should == n
   else
-    raise NotImplementedError, "WTF #{pass_fail}"
+    raise NotImplementedError, "WTF #{pass_fail_skip}"
   end
 end
 
