@@ -42,7 +42,5 @@ group :test do
   gem "ruby-debug", ">= 0.10", :platforms => :ruby_18
   gem "debugger", ">= 1.6", :platforms => :ruby_19
 
-  gem "syntax", "~> 1.0.0" #rspec will syntax-highlight code snippets if this gem is available
   gem "nokogiri", "~> 1.5"
-  gem "flexmock", "~> 0.8.7", :require => nil
 end
