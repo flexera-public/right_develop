@@ -36,5 +36,16 @@ module RightDevelop::CI
 
       result
     end
+
+    # Strip invalid UTF-8 characters from a string. If test output contains weird characters,
+    # we could end up generating invalid JUnit XML which will choke Java. Preserve the purity of
+    # essence of our precious XML fluids!
+    def purify(untrusted)
+      if RUBY_VERSION =~ /^1\.8/
+        untrusted.unpack('C*').pack('U*')
+      else
+        untrusted.force_encoding(Encoding::BINARY).encode('UTF-8', :undef=>:replace, :replace=>'?')
+      end
+    end
   end
 end

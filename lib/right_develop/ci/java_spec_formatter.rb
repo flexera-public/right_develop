@@ -71,8 +71,8 @@ module RightDevelop::CI
         builder.testsuite :errors => 0, :failures => failure_count, :skipped => pending_count, :tests => example_count, :time => duration, :timestamp => Time.now.iso8601 do
           builder.properties
           @test_results.each do |test|
-            classname        = classname_for(test)
-            full_description = test.full_description
+            classname        = purify(classname_for(test))
+            full_description = purify(test.full_description)
             time             = test.metadata[:execution_result][:run_time]
 
             # The full description always begins with the classname, but this is useless info when
@@ -85,7 +85,7 @@ module RightDevelop::CI
               case test.metadata[:execution_result][:status]
               when "failed"
                 builder.failure :message => "failed #{full_description}", :type => "failed" do
-                  builder.cdata! failure_details_for test
+                  builder.cdata! purify(failure_details_for(test))
                 end
               when "pending" then
                 builder.skipped
@@ -94,6 +94,10 @@ module RightDevelop::CI
           end
         end
         output.puts builder.target!
+      end
+
+      def purify(untrusted)
+        RightDevelop::CI::Util.purify(untrusted)
       end
     end
   elsif defined?(::Spec::Runner)
@@ -142,8 +146,8 @@ module RightDevelop::CI
         builder.testsuite :errors => 0, :failures => failure_count, :skipped => pending_count, :tests => example_count, :time => duration, :timestamp => Time.now.iso8601 do
           builder.properties
           @test_results.each_pair do |test, result|
-            classname        = classname_for(test)
-            full_description = test.description
+            classname        = purify(classname_for(test))
+            full_description = purify(test.description)
 
             # The full description always begins with the classname, but this is useless info when
             # generating the XML report.
@@ -155,7 +159,7 @@ module RightDevelop::CI
               case result
               when "failed"
                 builder.failure :message => "failed #{full_description}", :type => "failed" do
-                  builder.cdata! failure_details_for(test)
+                  builder.cdata! purify(failure_details_for(test))
                 end
               when "pending" then
                 builder.skipped
@@ -188,6 +192,10 @@ module RightDevelop::CI
         klass = group.description.split(/\s+/).first
         klass = RightDevelop::CI::Util.pseudo_java_class_name(klass)
         "rspec.#{klass}"
+      end
+
+      def purify(untrusted)
+        RightDevelop::CI::Util.purify(untrusted)
       end
     end
   else
