@@ -21,6 +21,8 @@ describe RightDevelop::CI::Util do
 
   context '.purify' do
     let(:bad_utf8) { "hello\xc1world" }
+    let(:bad_cdata) { "hello\x12\vworld" }
+    let(:good_cdata) { "hello\r\n\tworld" }
 
     it 'strips invalid UTF-8' do
       result = subject.purify(bad_utf8)
@@ -29,6 +31,11 @@ describe RightDevelop::CI::Util do
       else
         expect(result).to eq 'helloworld'
       end
+    end
+
+    it 'entity escapes non-XML control characters' do
+      expect(subject.purify(bad_cdata)).to eq 'hello&#x12;&#x0b;world'
+      expect(subject.purify(good_cdata)).to eq good_cdata
     end
   end
 end
