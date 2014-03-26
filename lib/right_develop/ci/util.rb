@@ -1,3 +1,7 @@
+if RUBY_VERSION =~ /^1\.8/
+  require 'iconv'
+end
+
 module RightDevelop::CI
   module Util
     module_function
@@ -37,14 +41,18 @@ module RightDevelop::CI
       result
     end
 
-    # Strip invalid UTF-8 characters from a string. If test output contains weird characters,
+    # Strip invalid UTF-8 sequences from a string. If test output contains weird data,
     # we could end up generating invalid JUnit XML which will choke Java. Preserve the purity of
     # essence of our precious XML fluids!
+    #
+    # @return [String] the input with all invalid UTF-8 replaced by the empty string
+    # @param [String] untrusted a string (of any encoding) that might contain invalid UTF-8 sequences
     def purify(untrusted)
       if RUBY_VERSION =~ /^1\.8/
-        untrusted.unpack('C*').pack('U*')
+        iconv = Iconv.new('UTF-8//IGNORE', 'UTF-8')
+        iconv.iconv(untrusted)
       else
-        untrusted.force_encoding(Encoding::BINARY).encode('UTF-8', :undef=>:replace, :replace=>'?')
+        untrusted.force_encoding(Encoding::BINARY).encode('UTF-8', :undef=>:replace, :replace=>'')
       end
     end
   end

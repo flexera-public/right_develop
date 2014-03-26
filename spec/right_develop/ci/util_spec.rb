@@ -25,9 +25,9 @@ describe RightDevelop::CI::Util do
     it 'strips invalid UTF-8' do
       result = subject.purify(bad_utf8)
       if RUBY_VERSION =~ /^1\.8/
-        expect(result).to eq "hello\303\201world"
+        expect(result).to eq "helloworld"
       else
-        expect(result).to eq 'hello?world'
+        expect(result).to eq 'helloworld'
       end
     end
   end
