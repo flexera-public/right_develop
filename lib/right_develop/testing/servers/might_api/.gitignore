@@ -1,0 +1,3 @@
+config/might_deploy.yml
+fixtures/
+*.log

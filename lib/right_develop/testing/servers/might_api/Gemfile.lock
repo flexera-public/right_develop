@@ -1,0 +1,18 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    extlib (0.9.16)
+    mime-types (2.2)
+    rack (1.5.2)
+    rest-client (1.6.7)
+      mime-types (>= 1.16)
+    right_support (2.8.20)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  extlib
+  rack
+  rest-client
+  right_support
