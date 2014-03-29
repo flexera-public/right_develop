@@ -29,6 +29,7 @@ module RightDevelop
   autoload :Commands, 'right_develop/commands'
   autoload :Git,      'right_develop/git'
   autoload :Parsers,  'right_develop/parsers'
+  autoload :Testing,  'right_develop/testing'
   autoload :Utility,  'right_develop/utility'
 end
 
