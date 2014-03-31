@@ -49,14 +49,24 @@ module RightDevelop::Testing::Client::Rest::Request
 
     def record_response(response)
       code = response.code
-      headers = {}
-      response.each_key { |k| headers[k.to_s.gsub('-', '_').upcase] = response[k].to_s }
+      headers = response.to_hash.inject({}) do |r, (k, v)|
+        # value is in raw form as array of sequential header values
+        r[k.to_s.gsub('-', '_').upcase] = v
+        r
+      end
+      #response.each_key { |k| headers[k.to_s.gsub('-', '_').upcase] = response[k] }
       body = response.body
 
       # obfuscate any cookies as they won't be needed for playback.
-      if headers['SET_COOKIE']
-        headers = headers.dup
-        headers['SET_COOKIE'] = '<cookie omitted>'
+      if cookies = headers['SET_COOKIE']
+        headers['SET_COOKIE'] = cookies.map do |cookie|
+          if offset = cookie.index('=')
+            cookie_name = cookie[0..(offset-1)]
+            "#{cookie_name}=hidden_credential"
+          else
+            cookie
+          end
+        end
       end
       ['CONNECTION', 'STATUS'].each { |key| headers.delete(key) }
 
@@ -76,7 +86,7 @@ module RightDevelop::Testing::Client::Rest::Request
       ::File.open(file_path, 'w') do |f|
         f.write(record_metadata[:normalized_body])
       end
-      logger.debug("Recorded reponse at #{file_path.inspect}.")
+      logger.debug("Recorded request at #{file_path.inspect}.")
 
       # response
       file_path = response_file_path(record_metadata)
@@ -84,6 +94,7 @@ module RightDevelop::Testing::Client::Rest::Request
       ::File.open(file_path, 'w') do |f|
         f.puts(::YAML.dump(response_hash))
       end
+      logger.debug("Recorded response at #{file_path.inspect}.")
       true
     end
 

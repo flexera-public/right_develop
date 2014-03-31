@@ -164,11 +164,22 @@ EOF
           payload:    body)
         response = nil
         request_proxy.execute do |rest_response, rest_request, net_http_response, &block|
-          response_headers = rest_response.headers.inject({}) do |h, (k, v)|
-            h[k.to_s.gsub('-', '_').upcase] = v.to_s
+          response_headers = net_http_response.to_hash.inject({}) do |h, (k, v)|
+            # rack has a convention of newline-delimited header multi-values.
+            #
+            # HACK: change underscore to dash to defeat
+            # RestClient::AbstractResponse line 27 (on client side) from failing
+            # to parse cookies array; it incorrectly calls .inject on the
+            # stringized form instead of using the raw array form or parsing the
+            # cookies into a hash, but only if the raw name is 'set_cookie'
+            # ('set-cookie' is okay).
+            #
+            # even wierder, on line 78 it assumes the raw name is 'set-cookie'
+            # and that works out for us here.
+            h[k.to_s.gsub('_', '-').downcase] = v.join("\n")
             h
           end
-          ['CONNECTION', 'STATUS'].each { |key| response_headers.delete(key) }
+          ['connection', 'status'].each { |key| response_headers.delete(key) }
           response = [
             Integer(rest_response.code),
             response_headers,

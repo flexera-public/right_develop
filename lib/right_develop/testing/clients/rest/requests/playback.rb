@@ -38,26 +38,30 @@ module RightDevelop::Testing::Client::Rest::Request
 
     # fake Net::HTTPResponse
     class FakeNetHttpResponse
-      attr_reader :code, :headers, :body
+      attr_reader :code, :body
 
       def initialize(file_path)
         response_hash = ::YAML.load_file(file_path)
         @code = response_hash[:code]
         @headers = response_hash[:headers].inject({}) do |h, (k, v)|
-          h[k] = [v]  # expected to be an array
+          h[k] = Array(v)  # expected to be an array
           h
         end
-        @body = response_hash[:body]
-        unless @code && @headers && @body
+        @body = response_hash[:body]  # optional
+        unless @code && @headers
           raise PlaybackError, "Invalid response file: #{file_path.inspect}"
         end
       end
 
       def [](key)
-        (headers[key.downcase] || []).first
+        if header = @headers[key.downcase]
+          header.join(', ')
+        else
+          nil
+        end
       end
 
-      def to_hash; headers; end
+      def to_hash; @headers; end
     end
 
     # Overrides log_request to interrupt transmit before any connection is made.
@@ -97,7 +101,7 @@ module RightDevelop::Testing::Client::Rest::Request
       # statefulness.
 
       if ::File.file?(file_path)
-        logger.debug("Played back reponse from #{file_path.inspect}.")
+        logger.debug("Played back response from #{file_path.inspect}.")
         FakeNetHttpResponse.new(file_path)
       else
         raise PlaybackError, "Unable to locate response: #{file_path.inspect}"
