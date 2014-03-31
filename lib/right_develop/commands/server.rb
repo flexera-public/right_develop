@@ -52,12 +52,14 @@ Where <task> is one of:
 
 And [options] are selected from:
         EOS
-        opt :test_dir, 'Root directory for config and fixtures.',
+        opt :test_dir, 'Root directory for config and fixtures',
             :type => :string,
             :default => ::Dir.pwd
         opt :ruby_version, 'Ruby version to select with rbenv when running server. Requires a minimum of ruby v1.9.3',
             :type => :string,
             :default => '2.1.0'
+        opt :port, 'Port on which server will listen',
+            :default => 9292
         opt :force, 'Force overwrite of any existing recording',
             :default => false
         opt :debug, 'Enable verbose debug output',
@@ -152,7 +154,7 @@ And [options] are selected from:
           cmd = options[:debug] ? 'DEBUG=true ' : ''
           cmd << "RS_MIGHT_API_ROOT_DIR=#{::Shellwords.escape(test_root_dir).inspect} "
           cmd << "RS_MIGHT_API_MODE=#{mode} "
-          cmd << 'bundle exec rackup'
+          cmd << "bundle exec rackup --port #{options[:port]}"
           shell.execute(cmd)
         rescue ::Interrupt
           # server runs in foreground so interrupt is normal
