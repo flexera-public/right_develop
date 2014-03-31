@@ -75,7 +75,8 @@ module RightDevelop::Testing::Client::Rest::Request
       end
 
       # payload is an I/O object but we can quickly get body from .string if it
-      # is a StringIO object, which it usually is.
+      # is a StringIO object. assume it always is a string unless streaming a
+      # large file, in which case we don't support it currently.
       stream = @payload.instance_variable_get(:@stream)
       if stream && stream.respond_to?(:string)
         body = stream.string
@@ -115,8 +116,11 @@ module RightDevelop::Testing::Client::Rest::Request
       }
     end
 
+    HIDDEN_CREDENTIAL_NAMES = %w(email password user user_name)
+
     # Sort the given query string fields because order of parameters should not
     # matter but multiple invocations might shuffle the parameter order.
+    # Also attempts to obfuscate any user credentials.
     #
     # @param [String] query_string to normalize
     #
@@ -125,14 +129,23 @@ module RightDevelop::Testing::Client::Rest::Request
       query = []
       ::CGI.parse(query_string).sort.each do |k, v|
         # right-hand-side of CGI.parse hash is always an array
-        v.sort.each { |item| query << "#{k}=#{item}" }
+        normalized_key = normalized_parameter_name(k)
+        v.sort.each do |item|
+          # top-level obfuscation (FIX: deeper?)
+          if HIDDEN_CREDENTIAL_NAMES.include?(normalized_key)
+            item = 'hidden_credential'
+          end
+          query << "#{k}=#{item}"
+        end
       end
       query.join('&')
     end
 
-    # Deep-sorts the given JSON string. If the payload contains arrays that
-    # contain hashes then those hashes are not sorted due to a limitation of
-    # deep_sorted_json.
+    # Deep-sorts the given JSON string and attempts to obfuscate any user
+    # credentails.
+    #
+    # Note that if the payload contains arrays that contain hashes then those
+    # hashes are not sorted due to a limitation of deep_sorted_json.
     #
     # FIX: deep_sorted_json could traverse arrays and sort sub-hashes if
     # necessary.
@@ -141,8 +154,22 @@ module RightDevelop::Testing::Client::Rest::Request
     #
     # @return [String] normalized JSON string
     def normalize_json(json)
-      hash = ::JSON.load(json)
+      # top-level obfuscation (FIX: deeper?)
+      hash = ::JSON.load(json).inject({}) do |h, (k, v)|
+        normalized_key = normalized_parameter_name(k)
+        if HIDDEN_CREDENTIAL_NAMES.include?(normalized_key)
+          v = 'hidden_credential'
+        end
+        h[k] = v
+      end
       ::RightSupport::Data::HashTools.deep_sorted_json(hash, pretty = true)
+    end
+
+    # Converts header/payload keys to a form consistent with parameter passing
+    # logic. The various layers of Net::HTTP, RestClient and Rack all seem to
+    # have different conventions for header/parameter names.
+    def normalized_parameter_name(key)
+      key.to_s.gsub('-', '_').downcase
     end
 
     def request_file_path(record_metadata)
