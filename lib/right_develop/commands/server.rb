@@ -58,6 +58,8 @@ And [options] are selected from:
         opt :ruby_version, 'Ruby version to select with rbenv when running server. Requires a minimum of ruby v1.9.3',
             :type => :string,
             :default => '2.1.0'
+        opt :force, 'Force overwrite of any existing recording',
+            :default => false
         opt :debug, 'Enable verbose debug output',
             :default => false
       end
@@ -123,7 +125,12 @@ And [options] are selected from:
       case mode
       when :record
         if ::File.directory?(fixtures_dir)
-          ::Trollop.die "Cannot record over existing directory: #{fixtures_dir.inspect}"
+          if options[:force]
+            logger.warn("Overwriting existing #{fixtures_dir.inspect} due to force=true")
+            ::FileUtils.rm_rf(fixtures_dir)
+          else
+            ::Trollop.die "Cannot record over existing directory: #{fixtures_dir.inspect}"
+          end
         end
       when :playback
         unless ::File.directory?(fixtures_dir)
