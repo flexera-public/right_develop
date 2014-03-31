@@ -48,13 +48,20 @@ module RightDevelop::Testing::Client::Rest::Request
     protected
 
     def record_response(response)
+      # never record redirects because a redirect cannot be proxied back to the
+      # client (i.e. the client cannot update it's request url when proxied).
       code = response.code
+      http_status = Integer(code)
+      if http_status >= 300 && http_status < 400
+        return true
+      end
+
+      # use raw headers instead of converting arrays to comma-delimited strings.
       headers = response.to_hash.inject({}) do |r, (k, v)|
         # value is in raw form as array of sequential header values
         r[k.to_s.gsub('-', '_').upcase] = v
         r
       end
-      #response.each_key { |k| headers[k.to_s.gsub('-', '_').upcase] = response[k] }
       body = response.body
 
       # obfuscate any cookies as they won't be needed for playback.

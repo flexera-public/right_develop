@@ -109,7 +109,7 @@ module RightDevelop::Testing::Client::Rest::Request
       {
         current_timestamp:     current_timestamp,
         normalized_body:       normalized_body,
-        normalized_body_token:  normalized_body_token,
+        normalized_body_token: normalized_body_token,
         query_file_name:       query_file_name,
         relative_request_dir:  relative_request_dir,
         relative_response_dir: relative_response_dir,

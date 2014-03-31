@@ -29,6 +29,8 @@ module RightDevelop::Testing::Servers::MightApi
   module App
     class Base
 
+      MAX_REDIRECTS = 10  # 500 after so many redirects
+
       # exceptions
       class MightError < StandardError; end
       class MissingRoute < MightError; end
@@ -149,42 +151,78 @@ EOF
           raise MissingRoute, "No route configured for #{uri.path.inspect}"
         end
         route_data = route.last
-        proxied_url = ::File.join(route_data[:url], uri.path)
-        unless uri.query.to_s.empty?
-          proxied_url << '?' << uri.query
-        end
-        record_dir = route_data[:record_dir]
-
-        request_proxy = request_class.new(
-          record_dir: record_dir,
-          logger:     logger,
-          method:     verb.downcase.to_sym,
-          url:        proxied_url,
-          headers:    headers,
-          payload:    body)
         response = nil
-        request_proxy.execute do |rest_response, rest_request, net_http_response, &block|
-          response_headers = net_http_response.to_hash.inject({}) do |h, (k, v)|
-            # rack has a convention of newline-delimited header multi-values.
-            #
-            # HACK: change underscore to dash to defeat
-            # RestClient::AbstractResponse line 27 (on client side) from failing
-            # to parse cookies array; it incorrectly calls .inject on the
-            # stringized form instead of using the raw array form or parsing the
-            # cookies into a hash, but only if the raw name is 'set_cookie'
-            # ('set-cookie' is okay).
-            #
-            # even wierder, on line 78 it assumes the raw name is 'set-cookie'
-            # and that works out for us here.
-            h[k.to_s.gsub('_', '-').downcase] = v.join("\n")
-            h
+        max_redirects = MAX_REDIRECTS
+        loop do
+          begin
+            proxied_url = ::File.join(route_data[:url], uri.path)
+            unless uri.query.to_s.empty?
+              proxied_url << '?' << uri.query
+            end
+            record_dir = route_data[:record_dir]
+
+            logger.debug("proxied_url = #{proxied_url.inspect}")
+            request_proxy = request_class.new(
+              record_dir: record_dir,
+              logger:     logger,
+              method:     verb.downcase.to_sym,
+              url:        proxied_url,
+              headers:    headers,
+              payload:    body)
+
+            request_proxy.execute do |rest_response, rest_request, net_http_response, &block|
+
+              # rack has a convention of newline-delimited header multi-values.
+              #
+              # HACK: change underscore to dash to defeat
+              # RestClient::AbstractResponse line 27 (on client side) from failing
+              # to parse cookies array; it incorrectly calls .inject on the
+              # stringized form instead of using the raw array form or parsing the
+              # cookies into a hash, but only if the raw name is 'set_cookie'
+              # ('set-cookie' is okay).
+              #
+              # even wierder, on line 78 it assumes the raw name is 'set-cookie'
+              # and that works out for us here.
+              response_headers = net_http_response.to_hash.inject({}) do |h, (k, v)|
+                h[k.to_s.gsub('_', '-').downcase] = v.join("\n")
+                h
+              end
+              ['connection', 'status'].each { |key| response_headers.delete(key) }
+
+              case code = Integer(rest_response.code)
+              when 301, 302, 307
+                raise RestClient::Exceptions::EXCEPTIONS_MAP[code].new(rest_response, code)
+              else
+                response = [
+                  code,
+                  response_headers,
+                  [rest_response.body]
+                ]
+              end
+            end
+            break
+          rescue RestClient::Exception => e
+            max_redirects -= 1
+            if max_redirects >= 0
+              case e.http_code
+              when 301, 302, 307
+                if location = e.response.headers[:location]
+                  redirect_uri = ::URI.parse(location)
+                  redirect_uri.path = ''
+                  redirect_uri.query = nil
+                  logger.debug("#{e.message} from #{route_data[:url]} to #{redirect_uri}")
+                  route_data[:url] = redirect_uri.to_s
+                else
+                  logger.debug("#{e.message} was missing expected location header.")
+                  raise
+                end
+              else
+                raise
+              end
+            else
+              raise MightError.new('Exceeded max redirects')
+            end
           end
-          ['connection', 'status'].each { |key| response_headers.delete(key) }
-          response = [
-            Integer(rest_response.code),
-            response_headers,
-            [rest_response.body]
-          ]
         end
         raise MightError.new('Unexpected missing response') unless response
         response
