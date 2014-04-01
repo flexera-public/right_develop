@@ -14,6 +14,27 @@ To use our CI harness, just add the following to your Rakefile (or into lib/task
   require 'right_develop'
   RightDevelop::CI::RakeTask.new
 
+==== Integrating CI with Rails
+
+For stateful apps, it is generally necessary to run some sort of database setup step prior to running tests.
+Rails accomplishes this with the reusable "db:test:prepare" task which is declared as a dependency to the "spec"
+task, ensuring that the DB is prepared before running tests.
+
+RightDevelop has a similar hook; the ci:prep task is executed before running any ci:* task. If you need to perform
+app-specific CI setup, you can hook into it like this:
+
+  task 'ci:prep' => ['db:my_special_setup_task']
+
+Unfortunately, db:test:prepare does some things that aren't so useful in the CI environment, such as verifying
+that the development DB exists and is fully migrated. The development DB is irrelevant when running tests, and if someone
+has failed to commit changes to schema.rb then we _want_ the tests to break. Therefore, to setup a Rails app properly,
+use the following dependency:
+
+  # Make sure we run the Rails DB-setup stuff before any CI run. Avoid using db:test:prepare
+  # because it also checks for pending migrations in the dev database, which is not useful to us.
+  task 'ci:prep' => ['db:test:purge', 'db:test:load', 'db:schema:load']
+
+
 ==== Customizing your CI Harness
 
 You can override various aspects of the CI harness' behavior by passing a block to the constructor which
