@@ -133,7 +133,7 @@ module RightDevelop::Testing::Client::Rest::Request
         v.sort.each do |item|
           # top-level obfuscation (FIX: deeper?)
           if HIDDEN_CREDENTIAL_NAMES.include?(normalized_key)
-            item = 'hidden_credential'
+            item = 'hidden_credential' if item.is_a?(::String)
           end
           query << "#{k}=#{item}"
         end
@@ -158,7 +158,7 @@ module RightDevelop::Testing::Client::Rest::Request
       hash = ::JSON.load(json).inject({}) do |h, (k, v)|
         normalized_key = normalized_parameter_name(k)
         if HIDDEN_CREDENTIAL_NAMES.include?(normalized_key)
-          v = 'hidden_credential'
+          v = 'hidden_credential' if item.is_a?(::String)
         end
         h[k] = v
       end
