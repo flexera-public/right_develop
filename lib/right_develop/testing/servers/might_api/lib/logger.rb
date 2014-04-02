@@ -30,12 +30,19 @@ module RightDevelop::Testing::Servers::MightApi
       l = nil
       case Config.environment
       when 'development'
+        # file
         log_dir = ::File.join(Config.root_dir, 'log')
         log_file_path = ::File.join(log_dir, 'development.log')
         ::FileUtils.mkdir_p(log_dir)
-        file_logger = ::Logger.new(log_file_path)
+        log_file = ::File.open(log_file_path, 'a')
+        log_file.sync = true
+        file_logger = Logger.new(log_file)
+
+        # console
         STDOUT.sync = true
         console_logger = ::Logger.new(STDOUT)
+
+        # multiplexer
         l = ::RightSupport::Log::Multiplexer.new(file_logger, console_logger)
       when 'test'
         # any tests should mock logger to verify output.

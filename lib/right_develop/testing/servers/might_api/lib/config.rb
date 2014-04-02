@@ -20,10 +20,25 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+if ::ENV['RACK_ENV'].to_s.empty?
+  ::ENV['RACK_ENV'] = 'development'
+end
+
 require 'extlib'
 require 'logger'
 require 'uri'
 require 'yaml'
+
+# define the module hierarchy once so that it can be on a single line hereafter.
+module RightDevelop
+  module Testing
+    module Servers
+      module MightApi
+        # if only ruby could consume a single line module declaration...
+      end
+    end
+  end
+end
 
 module RightDevelop::Testing::Servers::MightApi
   class Config
@@ -34,17 +49,33 @@ module RightDevelop::Testing::Servers::MightApi
 
     RELATIVE_CONFIG_PATH = 'config/might_deploy.yml'
 
-    def self.setup
+    FIXTURES_DIR_NAME = 'fixtures'
+
+    VALID_MODES = ::Mash.new(
+      :echo     => 'Echoes request back as response and validates route.',
+      :playback => 'Playback a session for one or more stubbed web services.',
+      :record   => 'Record a session for one or more proxied web services.'
+    ).freeze
+
+    # Setup configuration. Defaults to using environment variables for setup due
+    # to rackup not allowing custom arguments to be passed on command line.
+    #
+    # @param [String] root_to_set as base directory containing configuration and fixtures or nil for env var or working directory
+    # @param [String] mode_to_set as server mode or nil for env var
+    #
+    # @return [Config] self
+    def self.setup(root_to_set = nil, mode_to_set = nil)
       # rack doesn't allow for custom command line arguments so we are limited
       # to loading a config by env var or relative to working directory.
-      root = ::ENV[ROOT_DIR_ENV_VAR] || ::Dir.pwd
-      config_file_path(::File.expand_path(RELATIVE_CONFIG_PATH, root))
+      root_to_set ||= ::ENV[ROOT_DIR_ENV_VAR] || ::Dir.pwd
+      config_file_path(::File.expand_path(RELATIVE_CONFIG_PATH, root_to_set))
       config = ::Mash.new(::YAML.load_file(config_file_path))
-      root_dir(config['root_dir'] || root)
-      mode(::ENV[MODE_ENV_VAR].to_s)
+      root_dir(config['root_dir'] || root_to_set)
+      mode(mode_to_set || ::ENV[MODE_ENV_VAR].to_s)
       routes(config['routes'] || {})
       log_level(::ENV[DEBUG_ENV_VAR] ? :debug : (config['log_level'] || :info))
       @config = config
+      self
     end
 
     def self.config_file_path(value = nil)
@@ -63,9 +94,13 @@ module RightDevelop::Testing::Servers::MightApi
         unless ::File.directory?(value)
           raise ::ArgumentError, 'root_dir must be an existing directory.'
         end
-        @root_dir = value
+        @root_dir = ::File.expand_path(value)
       end
       @root_dir
+    end
+
+    def self.fixtures_dir
+      @fixtures_dir ||= ::File.join(root_dir, FIXTURES_DIR_NAME)
     end
 
     def self.environment
@@ -74,14 +109,13 @@ module RightDevelop::Testing::Servers::MightApi
 
     def self.mode(value = nil)
       if value
-        value = value.to_s.to_sym
-        case value
-        when :''
+        value = value.to_s
+        if value.empty?
           raise ::ArgumentError, "#{MODE_ENV_VAR} must be set"
-        when :echo, :record, :playback
-          @mode = value
+        elsif VALID_MODES.has_key?(value)
+          @mode = value.to_sym
         else
-          raise ::ArgumentError, "mode must be one of [echo, record, playback]: #{value.inspect}"
+          raise ::ArgumentError, "mode must be one of #{VALID_MODES.keys.sort.inspect}: #{value.inspect}"
         end
       end
       @mode

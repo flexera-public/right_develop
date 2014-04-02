@@ -44,7 +44,9 @@ module RightDevelop::Testing::Servers::MightApi::App
       end
 
       # echo request back as response.
-      response.write "\nenv = #{::RightSupport::Data::HashTools.deep_sorted_json(env, true)}\n\n"
+      response.write "\nruby %sp%s\n\n" % [RUBY_VERSION, RUBY_PATCHLEVEL]
+      response.write "env = #{::RightSupport::Data::HashTools.deep_sorted_json(env, true)}\n\n"
+      response.write "ENV = #{::RightSupport::Data::HashTools.deep_sorted_json(::ENV, true)}\n\n"
       response.write "verb = #{verb.inspect}\n\n"
       response.write "uri = #{uri}\n\n"
       response.write "headers = #{::RightSupport::Data::HashTools.deep_sorted_json(headers, true)}\n\n"

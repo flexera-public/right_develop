@@ -21,24 +21,12 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 # fixup RACK_ENV
-if ::ENV['RACK_ENV'].to_s.empty?
-  ::ENV['RACK_ENV'] = 'development'
-end
-
 require 'right_develop'
 
-# define the module hierarchy once so that it can be on a single line hereafter.
-module RightDevelop
-  module Testing
-    module Servers
-      module MightApi
-        require ::File.expand_path('../../lib/config', __FILE__)
-        require ::File.expand_path('../../lib/logger', __FILE__)
+require ::File.expand_path('../../lib/config', __FILE__)
+require ::File.expand_path('../../lib/logger', __FILE__)
 
-        Config.setup
-
-        logger.info("MightApi initialized in #{Config.mode} mode.")
-      end
-    end
-  end
+module RightDevelop::Testing::Servers::MightApi
+  Config.setup
+  logger.info("MightApi initialized in #{Config.mode} mode.")
 end

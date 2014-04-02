@@ -21,13 +21,14 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 require 'right_develop'
+require 'right_develop/testing/servers/might_api/lib/config'
 require 'shellwords'
 
 module RightDevelop::Commands
   class Server
     include RightSupport::Log::Mixin
 
-    TASKS = %w(echo playback record)
+    TASKS = ::RightDevelop::Testing::Servers::MightApi::Config::VALID_MODES
 
     class PlainFormatter < ::Logger::Formatter
       def call(severity, time, progname, msg)
@@ -37,7 +38,9 @@ module RightDevelop::Commands
 
      # Parse command-line options and create a Command object
     def self.create
-      task_list = TASKS.map { |c| "       * #{c}" }.join("\n")
+      task_list = TASKS.sort.inject([]) do |a, (k, v)|
+        a << ' * %s%s' % [k.to_s.ljust(10), v]
+      end.join("\n")
 
       options = Trollop.options do
         banner <<-EOS
@@ -55,9 +58,6 @@ And [options] are selected from:
         opt :test_dir, 'Root directory for config and fixtures',
             :type => :string,
             :default => ::Dir.pwd
-        opt :ruby_version, 'Ruby version to select with rbenv when running server. Requires a minimum of ruby v1.9.3',
-            :type => :string,
-            :default => '2.1.0'
         opt :port, 'Port on which server will listen',
             :default => 9292
         opt :force, 'Force overwrite of any existing recording',
@@ -66,12 +66,11 @@ And [options] are selected from:
             :default => false
       end
 
-      task = ARGV.shift.to_s.to_sym
-      case task
-      when :echo, :playback, :record
-        self.new(task, options)
+      task = ARGV.shift.to_s
+      if TASKS.keys.include?(task)
+        self.new(task.to_sym, options)
       else
-        Trollop.die "unknown task #{task}"
+        ::Trollop.die "unknown task #{task}"
       end
     end
 
@@ -83,7 +82,7 @@ And [options] are selected from:
       logger = ::Logger.new(STDOUT)
       logger.level = options[:debug] ? ::Logger::DEBUG : ::Logger::WARN
       logger.formatter = PlainFormatter.new
-      RightSupport::Log::Mixin.default_logger = logger
+      ::RightSupport::Log::Mixin.default_logger = logger
 
       @task = task
       @options = options
@@ -92,12 +91,7 @@ And [options] are selected from:
     # Run the task that was specified when this object was instantiated. This
     # method does no work; it just delegates to a task method.
     def run
-      case @task
-      when :echo, :playback, :record
-        run_might_api(@task, @options)
-      else
-        raise ::ArgumentError, 'Unexpected task'
-      end
+      run_might_api(@task, @options)
     end
 
     protected
@@ -108,7 +102,10 @@ And [options] are selected from:
 
     def run_might_api(mode, options)
       if shell.is_windows?
-        raise ::NotImplementedError, 'Not supported under Windows'
+        ::Trollop.die 'Not supported under Windows'
+      end
+      if RUBY_VERSION < '1.9.3'
+        ::Trollop.die 'Requires a minimum of ruby 1.9.3'
       end
       server_root_dir = ::File.expand_path('../../testing/servers/might_api', __FILE__)
       test_root_dir = ::File.expand_path(options[:test_dir])
@@ -119,11 +116,12 @@ And [options] are selected from:
       end
 
       # sanity checks.
-      config_file_path = ::File.join(test_root_dir, 'config', 'might_deploy.yml')
+      config = ::RightDevelop::Testing::Servers::MightApi::Config.setup(test_root_dir, mode)
+      config_file_path = config.config_file_path
       unless ::File.file?(config_file_path)
         ::Trollop.die "Missing expected configuration file: #{config_file_path.inspect}"
       end
-      fixtures_dir = ::File.join(test_root_dir, 'fixtures')
+      fixtures_dir = config.fixtures_dir
       case mode
       when :record
         if ::File.directory?(fixtures_dir)
@@ -135,7 +133,7 @@ And [options] are selected from:
           end
         end
       when :playback
-        unless ::File.directory?(fixtures_dir)
+        if ::File.directory?(fixtures_dir)
           ::Trollop.die "Missing expected directory: #{fixtures_dir.inspect}"
         end
       end
@@ -143,11 +141,6 @@ And [options] are selected from:
       ::Dir.chdir(server_root_dir) do
         logger.warn("in #{server_root_dir.inspect}")
         logger.warn('Preparing to run server...')
-        if `which rbenv`.strip.empty?
-          logger.warn('Unable to invoke rbenv to ensure ruby version.')
-        else
-          shell.execute("rbenv local #{options[:ruby_version]}")
-        end
         shell.execute('bundle check || bundle install')
         logger.level = options[:debug] ? ::Logger::DEBUG : ::Logger::INFO
         begin
