@@ -198,6 +198,21 @@ Then /^the file '(.*)' should mention ([0-9]) (passing|failing|skipped) test cas
   end
 end
 
+Then /^the file '(.*)' should (not )?mention the class (.*)$/ do |file, negate, klass|
+  file = ruby_app_path(file)
+
+  Pathname.new(file).should exist
+
+  doc = Nokogiri.XML(File.open(file, 'r'))
+  classnames = doc.css('testcase').map { |t| t['classname'][6..-1] }
+
+  if negate
+    classnames.should_not include(klass)
+  else
+    classnames.should include(klass)
+  end
+end
+
 Then /^the command should (succeed|fail)$/ do |success|
   if success == 'succeed'
     $?.exitstatus.should == 0
