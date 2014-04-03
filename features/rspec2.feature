@@ -76,3 +76,27 @@ Feature: RSpec 2.x support
     And I rake 'ci:spec'
     Then the command should succeed
     And the file 'measurement/rspec/awesome.xml' should exist
+
+  Scenario: add command-line options
+    Given an RSpec spec named 'tagged_spec.rb' with content:
+    """
+    describe String, :string => true do
+      it 'is cool' do
+        'cool'.should == 'cool'
+      end
+    end
+    describe Integer do
+      it 'is zero' do
+        1.should == 0
+      end
+    end
+    """
+    And the Rakefile contains:
+    """
+    RightDevelop::CI::RakeTask.new do |task|
+      task.rspec_opts = ['-t', 'string']
+    end
+    """
+    When I install the bundle
+    And I rake 'ci:spec'
+    Then the command should succeed
