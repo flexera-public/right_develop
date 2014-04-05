@@ -40,7 +40,7 @@ module RightDevelop::Testing::Client::Rest::Request
     #
     # @return [Object] undefined
     def log_response(response)
-      result = super(response)
+      result = super
       record_response(response)
       result
     end
@@ -64,12 +64,17 @@ module RightDevelop::Testing::Client::Rest::Request
       end
       body = response.body
 
+      # record elapsed time in (integral) seconds. not intended to be a precise
+      # measure of time but rather used to throttle server if client is time-
+      # sensitive for some reason.
+      elapsed_seconds = @response_timestamp - @request_timestamp
+
       # obfuscate any cookies as they won't be needed for playback.
       if cookies = headers['SET_COOKIE']
         headers['SET_COOKIE'] = cookies.map do |cookie|
           if offset = cookie.index('=')
             cookie_name = cookie[0..(offset-1)]
-            "#{cookie_name}=hidden_credential"
+            "#{cookie_name}=#{HIDDEN_CREDENTIAL_VALUE}"
           else
             cookie
           end
@@ -78,31 +83,61 @@ module RightDevelop::Testing::Client::Rest::Request
       ['CONNECTION', 'STATUS'].each { |key| headers.delete(key) }
 
       response_hash = {
-        code:    code,
-        headers: headers,
-        body:    body
+        elapsed_seconds: elapsed_seconds,
+        code:            Integer(code),
+        headers:         headers,
+        body:            body
       }
 
-      # TODO update timestamp whenever a recording collision is detected to
-      # provide statefulness. until then, it's clobberin' time!
+      # detect collision, if any, to determine if we have entered a new epoch.
+      record_metadata = compute_record_metadata
+      checksum_key = response_checksum_key(record_metadata)
+      last_checksum_value = (state[:response_checksums] ||= {})[checksum_key]
+      next_checksum_value = response_checksum_value(response_hash)
+      if last_checksum_value && last_checksum_value != next_checksum_value
+        state[:epoch] += 100             # leave room to insert custom epochs
+        state[:response_checksums] = {}  # reset checksums for next epoch
+        logger.debug("A new epoch=#{state[:epoch]} begins due to #{method.to_s.upcase} \"#{record_metadata[:uri]}\"")
+      end
+      state[:response_checksums][checksum_key] = next_checksum_value
 
       # request
-      record_metadata = compute_record_metadata
-      file_path = request_file_path(record_metadata)
-      ::FileUtils.mkdir_p(::File.dirname(file_path))
-      ::File.open(file_path, 'w') do |f|
+      request_file_path = request_file_path(record_metadata)
+      ::FileUtils.mkdir_p(::File.dirname(request_file_path))
+      ::File.open(request_file_path, 'w') do |f|
         f.write(record_metadata[:normalized_body])
       end
-      logger.debug("Recorded request at #{file_path.inspect}.")
+      logger.debug("Recorded request at #{request_file_path.inspect}.")
 
       # response
-      file_path = response_file_path(record_metadata)
-      ::FileUtils.mkdir_p(::File.dirname(file_path))
-      ::File.open(file_path, 'w') do |f|
+      response_file_path = response_file_path(record_metadata)
+      ::FileUtils.mkdir_p(::File.dirname(response_file_path))
+      ::File.open(response_file_path, 'w') do |f|
         f.puts(::YAML.dump(response_hash))
       end
-      logger.debug("Recorded response at #{file_path.inspect}.")
+
+      # persist state for every successful recording.
+      save_state
+      logger.debug("Recorded response at #{response_file_path.inspect}.")
       true
+    end
+
+    # @return [String] key for quick lookup of responses in current epoch
+    def response_checksum_key(record_metadata)
+      ::File.join(
+        record_metadata[:relative_response_dir],
+        record_metadata[:query_file_name])
+    end
+
+    # Computes the checksum for response code and body. Response headers are
+    # ignored because they represent metadata that can vary for similar
+    # responses (DATE, etc.).
+    #
+    # @param [Hash] response_hash to encode
+    #
+    # @return [String] encoded code and body
+    def response_checksum_value(response_hash)
+      "#{response_hash[:code]}-#{checksum(response_hash[:body])}"
     end
 
   end # Base

@@ -35,12 +35,17 @@ module RightDevelop::Testing::Servers::MightApi
       class MightError < StandardError; end
       class MissingRoute < MightError; end
 
-      attr_reader :config, :env, :logger, :request
+      attr_reader :config, :env, :logger, :request, :state_file_path
+
+      def initialize(state_file_name)
+        @config = ::RightDevelop::Testing::Servers::MightApi::Config
+        @logger = ::RightDevelop::Testing::Servers::MightApi.logger
+
+        @state_file_path = state_file_name ? ::File.join(@config.fixtures_dir, state_file_name) : nil
+      end
 
       def call(env)
-        @config = ::RightDevelop::Testing::Servers::MightApi::Config
         @env = env
-        @logger = ::RightDevelop::Testing::Servers::MightApi.logger
         @env['rack.logger'] ||= @logger
 
         # read body from stream.
@@ -95,9 +100,9 @@ EOF
         message = "#{e.class} #{e.message}"
         logger.debug(message)
         if config.routes.empty?
-          logger.debug("No routes configured in #{config.config_file_path.inspect}.")
+          logger.debug("No routes configured.")
         else
-          logger.debug("The following routes are configured in #{config.config_file_path.inspect}.:")
+          logger.debug("The following routes are configured:")
           config.routes.keys.each do |prefix|
             logger.debug("  #{prefix}...")
           end
@@ -142,9 +147,10 @@ EOF
       # @param [URI] uri parsed from full url
       # @param [Hash] headers for proxy call with any non-proxy data omitted
       # @param [String] body streamed from payload or empty
+      # @param [Integer] throttle for playback or nil
       #
       # @return [Array] rack-style tuple of [code, headers, [body]]
-      def proxy(request_class, verb, uri, headers, body)
+      def proxy(request_class, verb, uri, headers, body, throttle = nil)
 
         # check routes.
         unless route = find_route
@@ -159,16 +165,20 @@ EOF
             unless uri.query.to_s.empty?
               proxied_url << '?' << uri.query
             end
-            record_dir = route_data[:record_dir]
 
             logger.debug("proxied_url = #{proxied_url.inspect}")
-            request_proxy = request_class.new(
-              record_dir: record_dir,
-              logger:     logger,
-              method:     verb.downcase.to_sym,
-              url:        proxied_url,
-              headers:    headers,
-              payload:    body)
+            request_options = {
+              fixtures_dir:     config.fixtures_dir,
+              logger:           logger,
+              route_record_dir: route_data[:record_dir],
+              state_file_path:  state_file_path,
+              method:           verb.downcase.to_sym,
+              url:              proxied_url,
+              headers:          headers,
+              payload:          body
+            }
+            request_options[:throttle] = throttle if throttle
+            request_proxy = request_class.new(request_options)
 
             request_proxy.execute do |rest_response, rest_request, net_http_response, &block|
 

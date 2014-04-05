@@ -25,6 +25,7 @@ if ::ENV['RACK_ENV'].to_s.empty?
 end
 
 require 'extlib'
+require 'json'
 require 'logger'
 require 'uri'
 require 'yaml'
@@ -43,13 +44,11 @@ end
 module RightDevelop::Testing::Servers::MightApi
   class Config
 
-    DEBUG_ENV_VAR    = 'DEBUG'
-    ROOT_DIR_ENV_VAR = 'RS_MIGHT_API_ROOT_DIR'
-    MODE_ENV_VAR     = 'RS_MIGHT_API_MODE'
-
-    RELATIVE_CONFIG_PATH = 'config/might_deploy.yml'
-
+    CONFIG_DIR_NAME   = 'config'
     FIXTURES_DIR_NAME = 'fixtures'
+    LOG_DIR_NAME      = 'log'
+
+    RELATIVE_CONFIG_PATH = ::File.join(CONFIG_DIR_NAME, 'might_deploy.yml')
 
     VALID_MODES = ::Mash.new(
       :echo     => 'Echoes request back as response and validates route.',
@@ -57,50 +56,60 @@ module RightDevelop::Testing::Servers::MightApi
       :record   => 'Record a session for one or more proxied web services.'
     ).freeze
 
+    # Loads the config hash from given path or a relative location.
+    #
+    # @param [String] path to configuration or nil for relative path
+    #
+    # @return [Hash] configuration hash
+    #
+    # @raise [ArgumentError] on failure to load
+    def self.load_config_hash(path = nil)
+      path ||= ::File.expand_path(RELATIVE_CONFIG_PATH, ::Dir.pwd)
+      unless ::File.file?(path)
+        raise ::ArgumentError,
+              "Missing expected configuration file: #{path.inspect}"
+      end
+      ::YAML.load_file(path)
+    end
+
     # Setup configuration. Defaults to using environment variables for setup due
     # to rackup not allowing custom arguments to be passed on command line.
     #
-    # @param [String] root_to_set as base directory containing configuration and fixtures or nil for env var or working directory
-    # @param [String] mode_to_set as server mode or nil for env var
+    # @param [Hash] config as raw configuration data or nil to load relative path
     #
     # @return [Config] self
-    def self.setup(root_to_set = nil, mode_to_set = nil)
-      # rack doesn't allow for custom command line arguments so we are limited
-      # to loading a config by env var or relative to working directory.
-      root_to_set ||= ::ENV[ROOT_DIR_ENV_VAR] || ::Dir.pwd
-      config_file_path(::File.expand_path(RELATIVE_CONFIG_PATH, root_to_set))
-      config = ::Mash.new(::YAML.load_file(config_file_path))
-      root_dir(config['root_dir'] || root_to_set)
-      mode(mode_to_set || ::ENV[MODE_ENV_VAR].to_s)
-      routes(config['routes'] || {})
-      log_level(::ENV[DEBUG_ENV_VAR] ? :debug : (config['log_level'] || :info))
-      @config = config
+    #
+    # @raise [ArgumentError] on failure to load
+    def self.setup(config_hash = nil)
+      config_hash = load_config_hash unless config_hash
+      current_dir = ::Dir.pwd
+      config_hash = ::Mash.new(
+        'mode'         => :playback,
+        'routes'       => {},
+        'fixtures_dir' => ::File.expand_path(FIXTURES_DIR_NAME, current_dir),
+        'log_level'    => :info,
+        'log_dir'      => ::File.expand_path(LOG_DIR_NAME, current_dir),
+        'throttle'     => 0,
+      ).merge(config_hash)
+
+      @config_hash = ::Mash.new
+      mode(config_hash['mode'])
+      routes(config_hash['routes'])
+      log_dir(config_hash['log_dir'])
+      log_level(config_hash['log_level'])
+      fixtures_dir(config_hash['fixtures_dir'])
+      throttle(config_hash['throttle'])
       self
     end
 
-    def self.config_file_path(value = nil)
-      if value
-        unless ::File.file?(value)
-          raise ::ArgumentError,
-                "Missing required configuration file (or invalid #{ROOT_DIR_ENV_VAR}): #{value.inspect}"
-        end
-        @config_file_path = value
-      end
-      @config_file_path
+    def self.to_hash
+      # unmash to hash
+      JSON.load(@config_hash.to_json)
     end
 
-    def self.root_dir(value = nil)
-      if value
-        unless ::File.directory?(value)
-          raise ::ArgumentError, 'root_dir must be an existing directory.'
-        end
-        @root_dir = ::File.expand_path(value)
-      end
-      @root_dir
-    end
-
-    def self.fixtures_dir
-      @fixtures_dir ||= ::File.join(root_dir, FIXTURES_DIR_NAME)
+    def self.fixtures_dir(value = nil)
+      @config_hash['fixtures_dir'] = value if value
+      @config_hash['fixtures_dir']
     end
 
     def self.environment
@@ -113,19 +122,19 @@ module RightDevelop::Testing::Servers::MightApi
         if value.empty?
           raise ::ArgumentError, "#{MODE_ENV_VAR} must be set"
         elsif VALID_MODES.has_key?(value)
-          @mode = value.to_sym
+          @config_hash['mode'] = value.to_sym
         else
           raise ::ArgumentError, "mode must be one of #{VALID_MODES.keys.sort.inspect}: #{value.inspect}"
         end
       end
-      @mode
+      @config_hash['mode']
     end
 
     def self.routes(value = nil)
       if value
         case value
         when Hash
-          @routes = value.inject({}) do |r, (k, v)|
+          @config_hash['routes'] = value.inject({}) do |r, (k, v)|
             r[normalize_route_prefix(k)] = normalize_route_data(v)
             r
           end
@@ -133,7 +142,7 @@ module RightDevelop::Testing::Servers::MightApi
           raise ::ArgumentError, 'routes must be a hash'
         end
       end
-      @routes
+      @config_hash['routes']
     end
 
     def self.normalize_route_prefix(prefix)
@@ -167,7 +176,6 @@ module RightDevelop::Testing::Servers::MightApi
         if record_dir.nil? || record_dir.empty?
           raise ::ArgumentError, "route[record_dir] is required: #{data.inspect}"
         end
-        data['record_dir'] = ::File.expand_path(::File.join('fixtures', record_dir), @root_dir)  # no-op if already an absolute path
       else
         raise ::ArgumentError, "route must be a hash: #{data.class}"
       end
@@ -181,14 +189,30 @@ module RightDevelop::Testing::Servers::MightApi
           if value < ::Logger::DEBUG || value >= ::Logger::UNKNOWN
             raise ::ArgumentError, "log_level is out of range: #{value}"
           end
-          @log_level = value
+          @config_hash['log_level'] = value
         when String, Symbol
-          @log_level = ::Logger.const_get(value.to_s.upcase)
+          @config_hash['log_level'] = ::Logger.const_get(value.to_s.upcase)
         else
           raise ::ArgumentError, "log_level is unexpected type: #{log_level}"
         end
       end
-      @log_level
+      @config_hash['log_level']
+    end
+
+    def self.log_dir(value = nil)
+      @config_hash['log_dir'] = value if value
+      @config_hash['log_dir']
+    end
+
+    def self.throttle(value = nil)
+      if value
+        value = Integer(value)
+        if value < 0 || value > 100
+          raise ::ArgumentError, "throttle is out of range: #{value}"
+        end
+        @config_hash['throttle'] = value
+      end
+      @config_hash['throttle']
     end
 
   end # Config

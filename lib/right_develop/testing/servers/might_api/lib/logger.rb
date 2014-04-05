@@ -31,7 +31,7 @@ module RightDevelop::Testing::Servers::MightApi
       case Config.environment
       when 'development'
         # file
-        log_dir = ::File.join(Config.root_dir, 'log')
+        log_dir = Config.log_dir
         log_file_path = ::File.join(log_dir, 'development.log')
         ::FileUtils.mkdir_p(log_dir)
         log_file = ::File.open(log_file_path, 'a')

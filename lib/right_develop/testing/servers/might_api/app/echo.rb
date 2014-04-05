@@ -29,6 +29,10 @@ module RightDevelop::Testing::Servers::MightApi::App
   # Implements an echo service.
   class Echo < ::RightDevelop::Testing::Servers::MightApi::App::Base
 
+    def initialize
+      super(nil)
+    end
+
     # @see RightDevelop::Testing::Servers::MightApi::App::Base#handle_request
     def handle_request(verb, uri, headers, body)
 
@@ -45,6 +49,7 @@ module RightDevelop::Testing::Servers::MightApi::App
 
       # echo request back as response.
       response.write "\nruby %sp%s\n\n" % [RUBY_VERSION, RUBY_PATCHLEVEL]
+      response.write "config = #{::RightSupport::Data::HashTools.deep_sorted_json(config.to_hash, true)}\n\n"
       response.write "env = #{::RightSupport::Data::HashTools.deep_sorted_json(env, true)}\n\n"
       response.write "ENV = #{::RightSupport::Data::HashTools.deep_sorted_json(::ENV, true)}\n\n"
       response.write "verb = #{verb.inspect}\n\n"

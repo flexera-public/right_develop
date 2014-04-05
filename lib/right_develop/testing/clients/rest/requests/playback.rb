@@ -38,11 +38,12 @@ module RightDevelop::Testing::Client::Rest::Request
 
     # fake Net::HTTPResponse
     class FakeNetHttpResponse
-      attr_reader :code, :body
+      attr_reader :code, :body, :elapsed_seconds
 
       def initialize(file_path)
         response_hash = ::YAML.load_file(file_path)
-        @code = response_hash[:code]
+        @elapsed_seconds = Integer(response_hash[:elapsed_seconds] || 0)
+        @code = response_hash[:code].to_s
         @headers = response_hash[:headers].inject({}) do |h, (k, v)|
           h[k] = Array(v)  # expected to be an array
           h
@@ -64,6 +65,21 @@ module RightDevelop::Testing::Client::Rest::Request
       def to_hash; @headers; end
     end
 
+    attr_reader :throttle
+
+    def initialize(args)
+      if args[:throttle]
+        args = args.dup
+        @throttle = Integer(args.delete(:throttle))
+        if @throttle < 0 || @throttle > 100
+          raise ::ArgumentError, 'throttle must be a percentage between 0 and 100'
+        end
+      else
+        @throttle = 0
+      end
+      super(args)
+    end
+
     # Overrides log_request to interrupt transmit before any connection is made.
     #
     # @raise [Symbol] always throws HALT_TRANSMIT
@@ -83,6 +99,13 @@ module RightDevelop::Testing::Client::Rest::Request
       caught = catch(HALT_TRANSMIT) { super }
       if caught == HALT_TRANSMIT
         response = fetch_response
+
+        # delay, if throttled, to simulate server response time.
+        if @throttle > 0 && response.elapsed_seconds > 0
+          delay = (Float(response.elapsed_seconds) * @throttle) / 100.0
+          logger.debug("throttle delay = #{delay}")
+          sleep delay
+        end
         log_response(response)
         process_result(response, &block)
       else
@@ -94,18 +117,77 @@ module RightDevelop::Testing::Client::Rest::Request
     protected
 
     def fetch_response
+      # response must exist in the current epoch (i.e. can only enter next epoch
+      # after a valid response is found).
       record_metadata = compute_record_metadata
       file_path = response_file_path(record_metadata)
-
-      # TODO update timestamp looking for a 'current' response to provide
-      # statefulness.
-
       if ::File.file?(file_path)
         logger.debug("Played back response from #{file_path.inspect}.")
-        FakeNetHttpResponse.new(file_path)
+        result = FakeNetHttpResponse.new(file_path)
       else
         raise PlaybackError, "Unable to locate response: #{file_path.inspect}"
       end
+
+      # determine if epoch is done, which it is if every known request has been
+      # responded to for the current epoch. there is a steady state at the end
+      # of time when all responses are given but there is no next epoch.
+      dirty = false
+      logger.debug("BEGIN playback state = #{state.inspect}")
+      unless state[:end_of_time]
+        # state usually changes except for a specific case.
+        dirty = true
+
+        # list epochs once.
+        unless epochs = state[:epochs]
+          epochs = []
+          ::Dir[::File.join(fixtures_dir, '*')].each do |path|
+            if ::File.directory?(path)
+              name = ::File.basename(path)
+              epochs << Integer(name) if name =~ /^\d+$/
+            end
+          end
+          state[:epochs] = epochs = epochs.sort
+        end
+
+        # current epoch must be listed.
+        current_epoch = state[:epoch]
+        unless index = epochs.index(current_epoch)
+          raise PlaybackError,
+                "Unable to locate current epoch directory: #{::File.join(fixtures_dir, current_epoch.to_s).inspect}"
+        end
+
+        # sorted epochs reveal the future.
+        if next_epoch = epochs[index + 1]
+          # list all responses in current epoch once.
+          unless state[:remaining_responses]
+            search_path = response_file_path(relative_response_dir: '**', query_file_name: '*')
+            state[:remaining_responses] = ::Dir[search_path]
+          end
+
+          # may have been reponded before in same epoch; only care if this is
+          # the first time response was used.
+          if state[:remaining_responses].delete(file_path)
+            if state[:remaining_responses].empty?
+              # time marches on.
+              state[:epoch] = next_epoch
+              state.delete(:remaining_responses)
+              logger.debug("A new epoch=#{state[:epoch]} begins due to #{method.to_s.upcase} \"#{record_metadata[:uri]}\"")
+            end
+          else
+            dirty = false
+          end
+        else
+          # the future is now.
+          state.delete(:remaining_responses)
+          state.delete(:epochs)
+          state[:end_of_time] = true
+        end
+
+        # state didn't necesessarily change.
+        save_state if dirty
+      end
+      logger.debug("END playback state (dirty = #{dirty}) = #{state.inspect}")
+      result
     end
 
   end # Base

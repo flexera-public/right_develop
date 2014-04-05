@@ -27,6 +27,13 @@ require ::File.expand_path('../../lib/config', __FILE__)
 require ::File.expand_path('../../lib/logger', __FILE__)
 
 module RightDevelop::Testing::Servers::MightApi
-  Config.setup
+
+  # attempt to read stdin for configuration or else expect relative file path.
+  # note the following .fcntl call returns zero when data is available on $stdin
+  config_yaml = ($stdin.tty? || 0 != $stdin.fcntl(::Fcntl::F_GETFL, 0)) ? '' : $stdin.read
+  config_hash = config_yaml.empty? ? nil : ::YAML.load(config_yaml)
+  Config.setup(config_hash)
+
+  # ready.
   logger.info("MightApi initialized in #{Config.mode} mode.")
 end

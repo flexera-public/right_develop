@@ -22,13 +22,15 @@
 
 require 'right_develop'
 require 'right_develop/testing/servers/might_api/lib/config'
-require 'shellwords'
+require 'tmpdir'
 
 module RightDevelop::Commands
   class Server
     include RightSupport::Log::Mixin
 
-    TASKS = ::RightDevelop::Testing::Servers::MightApi::Config::VALID_MODES
+    CONFIG_CLASS = ::RightDevelop::Testing::Servers::MightApi::Config
+
+    TASKS = CONFIG_CLASS::VALID_MODES
 
     class PlainFormatter < ::Logger::Formatter
       def call(severity, time, progname, msg)
@@ -55,13 +57,14 @@ Where <task> is one of:
 
 And [options] are selected from:
         EOS
-        opt :test_dir, 'Root directory for config and fixtures',
-            :type => :string,
+        opt :root_dir, 'Root directory for config and fixtures',
             :default => ::Dir.pwd
         opt :port, 'Port on which server will listen',
             :default => 9292
         opt :force, 'Force overwrite of any existing recording',
             :default => false
+        opt :throttle, 'Playback delay as a percentage of recorded response time',
+            :default => 0
         opt :debug, 'Enable verbose debug output',
             :default => false
       end
@@ -108,20 +111,25 @@ And [options] are selected from:
         ::Trollop.die 'Requires a minimum of ruby 1.9.3'
       end
       server_root_dir = ::File.expand_path('../../testing/servers/might_api', __FILE__)
-      test_root_dir = ::File.expand_path(options[:test_dir])
-      [server_root_dir, test_root_dir].each do |dir|
+      root_dir = ::File.expand_path(options[:root_dir])
+      [server_root_dir, root_dir].each do |dir|
         unless ::File.directory?(dir)
           ::Trollop.die "Missing expected directory: #{dir.inspect}"
         end
       end
 
       # sanity checks.
-      config = ::RightDevelop::Testing::Servers::MightApi::Config.setup(test_root_dir, mode)
-      config_file_path = config.config_file_path
-      unless ::File.file?(config_file_path)
-        ::Trollop.die "Missing expected configuration file: #{config_file_path.inspect}"
+      config = nil
+      ::Dir.chdir(root_dir) do
+        config_hash = CONFIG_CLASS.load_config_hash
+        config_hash['mode'] = mode
+        config_hash['log_level'] = options[:debug] ? :debug : :info
+        config_hash['throttle'] = options[:throttle]
+        config = CONFIG_CLASS.setup(config_hash)
       end
       fixtures_dir = config.fixtures_dir
+      tmp_root_dir = ::Dir.mktmpdir
+      tmp_config_path = ::File.join(tmp_root_dir, CONFIG_CLASS::RELATIVE_CONFIG_PATH)
       case mode
       when :record
         if ::File.directory?(fixtures_dir)
@@ -133,10 +141,27 @@ And [options] are selected from:
           end
         end
       when :playback
-        if ::File.directory?(fixtures_dir)
+        unless ::File.directory?(fixtures_dir)
           ::Trollop.die "Missing expected directory: #{fixtures_dir.inspect}"
         end
+
+        # copy fixtures tmp location so that multiple server instances can
+        # playback the same fixture directory but keep their own state (even if
+        # original gets re-recorded, etc.).
+        tmp_fixtures_dir = ::File.expand_path(CONFIG_CLASS::FIXTURES_DIR_NAME, tmp_root_dir)
+        ::FileUtils.mkdir_p(tmp_fixtures_dir)
+        ::FileUtils.cp_r(::File.join(fixtures_dir, '.'), tmp_fixtures_dir)
+        config.fixtures_dir(tmp_fixtures_dir)
+
+        # remove any residual state files copied into tmp fixtures directory.
+        ::Dir[::File.join(tmp_fixtures_dir, '*.yml')].each do |path|
+          ::File.unlink(path) if ::File.file?(path)
+        end
       end
+
+      # write updated config to tmp location.
+      ::FileUtils.mkdir_p(::File.dirname(tmp_config_path))
+      ::File.open(tmp_config_path, 'w') { |f| f.puts ::YAML.dump(config.to_hash) }
 
       ::Dir.chdir(server_root_dir) do
         logger.warn("in #{server_root_dir.inspect}")
@@ -144,13 +169,16 @@ And [options] are selected from:
         shell.execute('bundle check || bundle install')
         logger.level = options[:debug] ? ::Logger::DEBUG : ::Logger::INFO
         begin
-          cmd = options[:debug] ? 'DEBUG=true ' : ''
-          cmd << "RS_MIGHT_API_ROOT_DIR=#{::Shellwords.escape(test_root_dir).inspect} "
-          cmd << "RS_MIGHT_API_MODE=#{mode} "
-          cmd << "bundle exec rackup --port #{options[:port]}"
+          cmd = "cat #{tmp_config_path.inspect} | bundle exec rackup --port #{options[:port]}"
           shell.execute(cmd)
         rescue ::Interrupt
           # server runs in foreground so interrupt is normal
+        ensure
+          begin
+            ::FileUtils.rm_rf(tmp_root_dir)
+          rescue ::Exception => e
+            logger.error("Unable to remove #{tmp_root_dir.inspect}:\n  #{e.class}: #{e.message}")
+          end
         end
       end
     end

@@ -23,24 +23,35 @@
 # ancestor
 require 'right_develop/testing/clients/rest'
 
+require 'digest/md5'
 require 'rest_client'
 require 'right_support'
-require 'digest/md5'
+require 'yaml'
 
 module RightDevelop::Testing::Client::Rest::Request
 
   # Base class for record/playback request implementations.
   class Base < ::RestClient::Request
 
-    attr_reader :record_dir, :logger
+    HIDDEN_CREDENTIAL_NAMES = %w(email password user username)
+    HIDDEN_CREDENTIAL_VALUE = 'hidden_credential'
+
+    attr_reader :fixtures_dir, :logger, :route_record_dir, :state_file_path
+    attr_reader :request_timestamp, :response_timestamp
 
     def initialize(args)
       args = args.dup
-      unless @record_dir = args.delete(:record_dir)
-        raise ::ArgumentError, 'record_dir is required'
+      unless @fixtures_dir = args.delete(:fixtures_dir)
+        raise ::ArgumentError, 'fixtures_dir is required'
       end
       unless @logger = args.delete(:logger)
         raise ::ArgumentError, 'logger is required'
+      end
+      unless @route_record_dir = args.delete(:route_record_dir)
+        raise ::ArgumentError, 'route_record_dir is required'
+      end
+      unless @state_file_path = args.delete(:state_file_path)
+        raise ::ArgumentError, 'state_file_path is required'
       end
 
       super(args)
@@ -54,7 +65,57 @@ module RightDevelop::Testing::Client::Rest::Request
       end
     end
 
+    # Overrides log_request to capture start-time for network request.
+    #
+    # @return [Object] undefined
+    def log_request
+      result = super
+      @request_timestamp = ::Time.now.to_i
+      result
+    end
+
+    # Overrides log_response to capture end-time for network request.
+    #
+    # @param [RestClient::Response] to capture
+    #
+    # @return [Object] undefined
+    def log_response(response)
+      @response_timestamp = ::Time.now.to_i
+      super
+    end
+
     protected
+
+    # @return [Hash] current state
+    def state
+      @state ||= initialize_state
+    end
+
+    # Initializes the state used to keep track of the current epoch (in seconds
+    # since start of run, etc.) for record/playback.
+    #
+    # @return [Hash] initialized state
+    def initialize_state
+      if ::File.file?(state_file_path)
+        ::YAML.load_file(state_file_path)
+      else
+        { epoch: 0 }
+      end
+    end
+
+    # Saves the state file.
+    #
+    # @return [TrueClass] always true
+    def save_state
+      ::File.open(state_file_path, 'w') { |f| f.puts(::YAML.dump(state)) }
+      true
+    end
+
+    # @return [String] checksum for given value or 'empty'
+    def checksum(value)
+      value = value.to_s
+      value.empty? ? 'empty' : ::Digest::MD5.hexdigest(value)
+    end
 
     # Computes the metadata used to identify where the request/response should
     # be stored-to/retrieved-from. Recording the request is not strictly
@@ -102,12 +163,16 @@ module RightDevelop::Testing::Client::Rest::Request
       relative_request_dir = ::File.join('requests', uri.path)
       relative_response_dir = ::File.join('responses', uri.path)
 
-      # TODO determine current timestamp to provide statefulness.
-      current_timestamp = 0
+      # make URI relative to target server (eliminate proxy server detail).
+      uri.scheme = nil
+      uri.host = nil
+      uri.port = nil
+      uri.user = nil
+      uri.password = nil
 
       # result
       {
-        current_timestamp:     current_timestamp,
+        uri:                   uri,
         normalized_body:       normalized_body,
         normalized_body_token: normalized_body_token,
         query_file_name:       query_file_name,
@@ -115,8 +180,6 @@ module RightDevelop::Testing::Client::Rest::Request
         relative_response_dir: relative_response_dir,
       }
     end
-
-    HIDDEN_CREDENTIAL_NAMES = %w(email password user user_name)
 
     # Sort the given query string fields because order of parameters should not
     # matter but multiple invocations might shuffle the parameter order.
@@ -133,7 +196,7 @@ module RightDevelop::Testing::Client::Rest::Request
         v.sort.each do |item|
           # top-level obfuscation (FIX: deeper?)
           if HIDDEN_CREDENTIAL_NAMES.include?(normalized_key)
-            item = 'hidden_credential' if item.is_a?(::String)
+            item = HIDDEN_CREDENTIAL_VALUE if item.is_a?(::String)
           end
           query << "#{k}=#{item}"
         end
@@ -158,7 +221,7 @@ module RightDevelop::Testing::Client::Rest::Request
       hash = ::JSON.load(json).inject({}) do |h, (k, v)|
         normalized_key = normalized_parameter_name(k)
         if HIDDEN_CREDENTIAL_NAMES.include?(normalized_key)
-          v = 'hidden_credential' if item.is_a?(::String)
+          v = HIDDEN_CREDENTIAL_VALUE if item.is_a?(::String)
         end
         h[k] = v
       end
@@ -169,21 +232,23 @@ module RightDevelop::Testing::Client::Rest::Request
     # logic. The various layers of Net::HTTP, RestClient and Rack all seem to
     # have different conventions for header/parameter names.
     def normalized_parameter_name(key)
-      key.to_s.gsub('-', '_').downcase
+      key.to_s.gsub('-', '').gsub('_', '').downcase
     end
 
     def request_file_path(record_metadata)
       ::File.join(
-        @record_dir,
-        record_metadata[:current_timestamp].to_s,
+        @fixtures_dir,
+        state[:epoch].to_s,
+        @route_record_dir,
         record_metadata[:relative_request_dir],
         record_metadata[:query_file_name] + '.txt')
     end
 
     def response_file_path(record_metadata)
       ::File.join(
-        @record_dir,
-        record_metadata[:current_timestamp].to_s,
+        @fixtures_dir,
+        state[:epoch].to_s,
+        @route_record_dir,
         record_metadata[:relative_response_dir],
         record_metadata[:query_file_name] + '.yml')
     end
