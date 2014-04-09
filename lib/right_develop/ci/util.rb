@@ -21,7 +21,7 @@ module RightDevelop::CI
     # Regular expression that matches characters that need to be escaped inside CDATA
     # c.f. http://www.w3.org/TR/xml11/#charsets
     # RestrictedChar ::= [#x1-#x8] | [#xB-#xC] | [#xE-#x1F] | [#x7F-#x84] | [#x86-#x9F]
-    INVALID_CDATA_CHARACTER = /[\x01-\x08\x0b\x0c\x0e-\x1f\x7f-\x84\x86-\x9f]/
+    INVALID_CDATA_CHARACTER = Regexp.new '[\x01-\x08\x0b-\x0c\x0e-\x1f\x7f-\x84\x86-\x9f]', nil, 'n' # Ruby 1.8-2.1 compatible
 
     # Make a string suitable for parsing by Jenkins JUnit display plugin by escaping any non-valid
     # Java class name characters as an XML entity. This prevents Jenkins from interpreting "hi1.2"
