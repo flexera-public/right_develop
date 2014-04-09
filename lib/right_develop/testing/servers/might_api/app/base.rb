@@ -22,6 +22,7 @@
 
 require ::File.expand_path('../../config/init', __FILE__)
 
+require 'rack/chunked'
 require 'stringio'
 require 'uri'
 
@@ -203,11 +204,13 @@ EOF
               when 301, 302, 307
                 raise RestClient::Exceptions::EXCEPTIONS_MAP[code].new(rest_response, code)
               else
-                response = [
-                  code,
-                  response_headers,
-                  [rest_response.body]
-                ]
+                # special handling for chunked body.
+                if response_headers['transfer-encoding'] == 'chunked'
+                  reponse_body = ::Rack::Chunked::Body.new([rest_response.body])
+                else
+                  reponse_body = [rest_response.body]
+                end
+                response = [code, response_headers, reponse_body]
               end
             end
             break
