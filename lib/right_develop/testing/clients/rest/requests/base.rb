@@ -150,7 +150,8 @@ module RightDevelop::Testing::Client::Rest::Request
 
       # JSON data may be hash-ordered inconsistently between invocations.
       # attempt to sort JSON data before creating a key.
-      case headers['CONTENT_TYPE']
+      normalized_headers = normalize_headers(headers)
+      case normalized_headers['CONTENT_TYPE']
       when 'application/x-www-form-urlencoded'
         normalized_body = normalize_query_string(body)
       when 'application/json'
@@ -160,8 +161,6 @@ module RightDevelop::Testing::Client::Rest::Request
       end
       normalized_body_token = body.empty? ? 'empty' : ::Digest::MD5.hexdigest(body)
       query_file_name = "#{normalized_body_token}_#{query_file_name}"
-      relative_request_dir = ::File.join('requests', uri.path)
-      relative_response_dir = ::File.join('responses', uri.path)
 
       # make URI relative to target server (eliminate proxy server detail).
       uri.scheme = nil
@@ -173,11 +172,11 @@ module RightDevelop::Testing::Client::Rest::Request
       # result
       {
         uri:                   uri,
+        normalized_headers:    normalized_headers,
         normalized_body:       normalized_body,
         normalized_body_token: normalized_body_token,
         query_file_name:       query_file_name,
-        relative_request_dir:  relative_request_dir,
-        relative_response_dir: relative_response_dir,
+        relative_path:         uri.path,
       }
     end
 
@@ -235,13 +234,50 @@ module RightDevelop::Testing::Client::Rest::Request
       key.to_s.gsub('-', '').gsub('_', '').downcase
     end
 
+    def normalize_headers(headers)
+      normalized = headers.inject({}) do |h, (k, v)|
+        # value is in raw form as array of sequential header values
+        h[k.to_s.gsub('-', '_').upcase] = v
+        h
+      end
+
+      # eliminate headers that interfere with playback.
+      ['CONNECTION', 'STATUS'].each { |key| normalized.delete(key) }
+
+      # obfuscate any cookies as they won't be needed for playback.
+      ['COOKIE', 'SET_COOKIE'].each do |obfuscated_header|
+        if cookies = normalized[obfuscated_header]
+          if cookies.is_a?(::String)
+            cookies = cookies.split('; ')
+          end
+          normalized[obfuscated_header] = cookies.map do |cookie|
+            if offset = cookie.index('=')
+              cookie_name = cookie[0..(offset-1)]
+              "#{cookie_name}=#{HIDDEN_CREDENTIAL_VALUE}"
+            else
+              cookie
+            end
+          end
+        end
+      end
+
+      # other obfuscation.
+      ['AUTHORIZATION'].each do |obfuscated_header|
+        if normalized.has_key?(obfuscated_header)
+          normalized[obfuscated_header] = HIDDEN_CREDENTIAL_VALUE
+        end
+      end
+      normalized
+    end
+
     def request_file_path(record_metadata)
       ::File.join(
         @fixtures_dir,
         state[:epoch].to_s,
         @route_record_dir,
-        record_metadata[:relative_request_dir],
-        record_metadata[:query_file_name] + '.txt')
+        'requests',
+        record_metadata[:relative_path],
+        record_metadata[:query_file_name] + '.yml')
     end
 
     def response_file_path(record_metadata)
@@ -249,7 +285,8 @@ module RightDevelop::Testing::Client::Rest::Request
         @fixtures_dir,
         state[:epoch].to_s,
         @route_record_dir,
-        record_metadata[:relative_response_dir],
+        'responses',
+        record_metadata[:relative_path],
         record_metadata[:query_file_name] + '.yml')
     end
 

@@ -38,7 +38,7 @@ module RightDevelop::Testing::Client::Rest::Request
 
     # fake Net::HTTPResponse
     class FakeNetHttpResponse
-      attr_reader :code, :body, :elapsed_seconds
+      attr_reader :code, :body, :elapsed_seconds, :call_count
 
       def initialize(file_path)
         response_hash = ::YAML.load_file(file_path)
@@ -49,6 +49,7 @@ module RightDevelop::Testing::Client::Rest::Request
           h
         end
         @body = response_hash[:body]  # optional
+        @call_count = Integer(response_hash[:call_count]) || 1
         unless @code && @headers
           raise PlaybackError, "Invalid response file: #{file_path.inspect}"
         end
@@ -146,32 +147,66 @@ module RightDevelop::Testing::Client::Rest::Request
               epochs << Integer(name) if name =~ /^\d+$/
             end
           end
-          state[:epochs] = epochs = epochs.sort
+          state[:epochs] = epochs.sort!
         end
 
         # current epoch must be listed.
         current_epoch = state[:epoch]
-        unless index = epochs.index(current_epoch)
+        unless current_epoch == epochs.first
           raise PlaybackError,
                 "Unable to locate current epoch directory: #{::File.join(fixtures_dir, current_epoch.to_s).inspect}"
         end
 
         # sorted epochs reveal the future.
-        if next_epoch = epochs[index + 1]
+        if next_epoch = epochs[1]
           # list all responses in current epoch once.
-          unless state[:remaining_responses]
-            search_path = response_file_path(relative_response_dir: '**', query_file_name: '*')
-            state[:remaining_responses] = ::Dir[search_path]
+          unless remaining = state[:remaining_responses]
+            search_path = response_file_path(relative_path: '**', query_file_name: '*')
+            remaining = ::Dir[search_path].inject({}) do |h, path|
+              h[path] = { call_count: 0 }
+              h
+            end
+            state[:remaining_responses] = remaining
           end
 
           # may have been reponded before in same epoch; only care if this is
-          # the first time response was used.
-          if state[:remaining_responses].delete(file_path)
-            if state[:remaining_responses].empty?
-              # time marches on.
-              state[:epoch] = next_epoch
-              state.delete(:remaining_responses)
-              logger.debug("A new epoch=#{state[:epoch]} begins due to #{method.to_s.upcase} \"#{record_metadata[:uri]}\"")
+          # the first time response was used unless playback is throttled.
+          #
+          # when playback is not throttled, there is no time delay (beyond the
+          # time needed to compute response) and the minimum number of calls per
+          # response is one.
+          #
+          # when playback is throttled (non-zero) we must satisfy the call count
+          # before advancing epoch. the point of this is to force the client to
+          # repeat the request the recorded number of times before the state
+          # appears to change.
+          #
+          # note that the user can achieve minimum delay while checking call
+          # count by setting @throttle = 1
+          if response_data = remaining[file_path]
+            response_data[:call_count] += 1
+            exhausted_response =
+              (0 == @throttle) ||
+              (response_data[:call_count] >= result.call_count)
+            if exhausted_response
+              remaining.delete(file_path)
+              if remaining.empty?
+                # time marches on.
+                epochs.shift
+                state[:epoch] = next_epoch
+                state.delete(:remaining_responses)  # reset responses for next epoch
+                if logger.debug?
+                  message = <<EOF
+
+A new epoch = #{state[:epoch]} begins due to
+  method = #{method.to_s.upcase}
+  uri = \"#{record_metadata[:uri]}\"
+  throttle = #{@throttle}
+  call_count = #{@throttle == 0 ? '<ignored>' : "#{response_data[:call_count]} >= #{result.call_count}"}
+EOF
+                  logger.debug(message)
+                end
+              end
             end
           else
             dirty = false

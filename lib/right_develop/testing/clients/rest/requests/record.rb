@@ -56,60 +56,59 @@ module RightDevelop::Testing::Client::Rest::Request
         return true
       end
 
-      # use raw headers instead of converting arrays to comma-delimited strings.
-      headers = response.to_hash.inject({}) do |r, (k, v)|
-        # value is in raw form as array of sequential header values
-        r[k.to_s.gsub('-', '_').upcase] = v
-        r
-      end
+      # use raw headers instead of the usual RestClient behavior of converting
+      # arrays to comma-delimited strings.
+      headers = normalize_headers(response.to_hash)
       body = response.body
 
       # record elapsed time in (integral) seconds. not intended to be a precise
       # measure of time but rather used to throttle server if client is time-
       # sensitive for some reason.
       elapsed_seconds = @response_timestamp - @request_timestamp
-
-      # obfuscate any cookies as they won't be needed for playback.
-      if cookies = headers['SET_COOKIE']
-        headers['SET_COOKIE'] = cookies.map do |cookie|
-          if offset = cookie.index('=')
-            cookie_name = cookie[0..(offset-1)]
-            "#{cookie_name}=#{HIDDEN_CREDENTIAL_VALUE}"
-          else
-            cookie
-          end
-        end
-      end
-      ['CONNECTION', 'STATUS'].each { |key| headers.delete(key) }
-
       response_hash = {
         elapsed_seconds: elapsed_seconds,
         code:            Integer(code),
         headers:         headers,
-        body:            body
+        body:            body,
       }
 
       # detect collision, if any, to determine if we have entered a new epoch.
       record_metadata = compute_record_metadata
-      checksum_key = response_checksum_key(record_metadata)
-      last_checksum_value = (state[:response_checksums] ||= {})[checksum_key]
+      data_key = response_data_key(record_metadata)
+      call_count = 0
       next_checksum_value = response_checksum_value(response_hash)
-      if last_checksum_value && last_checksum_value != next_checksum_value
-        state[:epoch] += 100             # leave room to insert custom epochs
-        state[:response_checksums] = {}  # reset checksums for next epoch
-        logger.debug("A new epoch=#{state[:epoch]} begins due to #{method.to_s.upcase} \"#{record_metadata[:uri]}\"")
+      if response_data = (state[:response_data] ||= {})[data_key]
+        last_checksum_value = response_data[:checksum_value]
+        if last_checksum_value != next_checksum_value
+          state[:epoch] += 100        # leave room to insert custom epochs
+          state[:response_data] = {}  # reset checksums for next epoch
+          logger.debug("A new epoch=#{state[:epoch]} begins due to #{method.to_s.upcase} \"#{record_metadata[:uri]}\"")
+        else
+          call_count = response_data[:call_count]
+        end
       end
-      state[:response_checksums][checksum_key] = next_checksum_value
+      call_count += 1
+      state[:response_data][data_key] = {
+        checksum_value: next_checksum_value,
+        call_count:     call_count,
+      }
+      response_hash[:call_count] = call_count
 
-      # request
+      # write request unless already written.
       request_file_path = request_file_path(record_metadata)
-      ::FileUtils.mkdir_p(::File.dirname(request_file_path))
-      ::File.open(request_file_path, 'w') do |f|
-        f.write(record_metadata[:normalized_body])
+      unless ::File.file?(request_file_path)
+        ::FileUtils.mkdir_p(::File.dirname(request_file_path))
+        ::File.open(request_file_path, 'w') do |f|
+          request_hash = {
+            headers: record_metadata[:normalized_headers],
+            body:    record_metadata[:normalized_body]
+          }
+          f.puts(::YAML.dump(request_hash))
+        end
       end
       logger.debug("Recorded request at #{request_file_path.inspect}.")
 
-      # response
+      # response always written for incremented call count.
       response_file_path = response_file_path(record_metadata)
       ::FileUtils.mkdir_p(::File.dirname(response_file_path))
       ::File.open(response_file_path, 'w') do |f|
@@ -123,7 +122,7 @@ module RightDevelop::Testing::Client::Rest::Request
     end
 
     # @return [String] key for quick lookup of responses in current epoch
-    def response_checksum_key(record_metadata)
+    def response_data_key(record_metadata)
       ::File.join(
         record_metadata[:relative_response_dir],
         record_metadata[:query_file_name])
