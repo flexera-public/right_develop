@@ -88,29 +88,29 @@ module RightDevelop::Testing::Client::Rest::Request
 
     protected
 
-    # @return [Hash] current state
-    def state
-      @state ||= initialize_state
-    end
-
-    # Initializes the state used to keep track of the current epoch (in seconds
-    # since start of run, etc.) for record/playback.
+    # Holds the state file lock for block.
     #
-    # @return [Hash] initialized state
-    def initialize_state
-      if ::File.file?(state_file_path)
-        ::YAML.load_file(state_file_path)
-      else
-        { epoch: 0 }
+    # @yield [state] gives exclusive state access to block
+    # @yieldparam [Hash] state
+    # @yieldreturn [Object] anything
+    #
+    # @return [Object] block result
+    def with_state_lock
+      result = nil
+      ::File.open(state_file_path, ::File::RDWR | File::CREAT, 0644) do |f|
+        f.flock(::File::LOCK_EX)
+        state_yaml = f.read
+        if state_yaml.empty?
+          state = { epoch: 0 }
+        else
+          state = ::YAML.load(state_yaml)
+        end
+        result = yield(state)
+        f.seek(0)
+        f.truncate(0)
+        f.puts(::YAML.dump(state))
       end
-    end
-
-    # Saves the state file.
-    #
-    # @return [TrueClass] always true
-    def save_state
-      ::File.open(state_file_path, 'w') { |f| f.puts(::YAML.dump(state)) }
-      true
+      result
     end
 
     # @return [String] checksum for given value or 'empty'
@@ -305,7 +305,7 @@ module RightDevelop::Testing::Client::Rest::Request
       ::File.join('responses', record_metadata[:relative_path])
     end
 
-    def request_file_path(record_metadata)
+    def request_file_path(state, record_metadata)
       ::File.join(
         @fixtures_dir,
         state[:epoch].to_s,
@@ -314,7 +314,7 @@ module RightDevelop::Testing::Client::Rest::Request
         record_metadata[:query_file_name] + '.yml')
     end
 
-    def response_file_path(record_metadata)
+    def response_file_path(state, record_metadata)
       ::File.join(
         @fixtures_dir,
         state[:epoch].to_s,

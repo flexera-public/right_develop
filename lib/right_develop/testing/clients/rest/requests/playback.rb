@@ -99,7 +99,8 @@ module RightDevelop::Testing::Client::Rest::Request
     def transmit(uri, req, payload, &block)
       caught = catch(HALT_TRANSMIT) { super }
       if caught == HALT_TRANSMIT
-        response = fetch_response
+        response = nil
+        with_state_lock { |state| response = fetch_response(state) }
 
         # delay, if throttled, to simulate server response time.
         if @throttle > 0 && response.elapsed_seconds > 0
@@ -117,11 +118,11 @@ module RightDevelop::Testing::Client::Rest::Request
 
     protected
 
-    def fetch_response
+    def fetch_response(state)
       # response must exist in the current epoch (i.e. can only enter next epoch
       # after a valid response is found).
       record_metadata = compute_record_metadata
-      file_path = response_file_path(record_metadata)
+      file_path = response_file_path(state, record_metadata)
       if ::File.file?(file_path)
         logger.debug("Played back response from #{file_path.inspect}.")
         result = FakeNetHttpResponse.new(file_path)
@@ -132,11 +133,8 @@ module RightDevelop::Testing::Client::Rest::Request
       # determine if epoch is done, which it is if every known request has been
       # responded to for the current epoch. there is a steady state at the end
       # of time when all responses are given but there is no next epoch.
-      dirty = false
       logger.debug("BEGIN playback state = #{state.inspect}")
       unless state[:end_of_time]
-        # state usually changes except for a specific case.
-        dirty = true
 
         # list epochs once.
         unless epochs = state[:epochs]
@@ -161,7 +159,7 @@ module RightDevelop::Testing::Client::Rest::Request
         if next_epoch = epochs[1]
           # list all responses in current epoch once.
           unless remaining = state[:remaining_responses]
-            search_path = response_file_path(relative_path: '**', query_file_name: '*')
+            search_path = response_file_path(state, relative_path: '**', query_file_name: '*')
             remaining = ::Dir[search_path].inject({}) do |h, path|
               h[path] = { call_count: 0 }
               h
@@ -208,8 +206,6 @@ EOF
                 end
               end
             end
-          else
-            dirty = false
           end
         else
           # the future is now.
@@ -217,11 +213,8 @@ EOF
           state.delete(:epochs)
           state[:end_of_time] = true
         end
-
-        # state didn't necesessarily change.
-        save_state if dirty
       end
-      logger.debug("END playback state (dirty = #{dirty}) = #{state.inspect}")
+      logger.debug("END playback state = #{state.inspect}")
       result
     end
 

@@ -99,6 +99,10 @@ module RightDevelop::Testing::Servers::MightApi
       log_level(config_hash['log_level'])
       fixtures_dir(config_hash['fixtures_dir'])
       throttle(config_hash['throttle'])
+
+      # ensure fixture dir exists as result of configuration for better
+      # synchronization of any state file locking.
+      ::FileUtils.mkdir_p(fixtures_dir)
       self
     end
 

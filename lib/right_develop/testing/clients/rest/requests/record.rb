@@ -41,13 +41,13 @@ module RightDevelop::Testing::Client::Rest::Request
     # @return [Object] undefined
     def log_response(response)
       result = super
-      record_response(response)
+      with_state_lock { |state| record_response(state, response) }
       result
     end
 
     protected
 
-    def record_response(response)
+    def record_response(state, response)
       # never record redirects because a redirect cannot be proxied back to the
       # client (i.e. the client cannot update it's request url when proxied).
       code = response.code
@@ -95,10 +95,10 @@ module RightDevelop::Testing::Client::Rest::Request
       response_hash[:call_count] = call_count
 
       # write request unless already written.
-      request_file_path = request_file_path(record_metadata)
-      unless ::File.file?(request_file_path)
-        ::FileUtils.mkdir_p(::File.dirname(request_file_path))
-        ::File.open(request_file_path, 'w') do |f|
+      file_path = request_file_path(state, record_metadata)
+      unless ::File.file?(file_path)
+        ::FileUtils.mkdir_p(::File.dirname(file_path))
+        ::File.open(file_path, 'w') do |f|
           request_hash = {
             headers: record_metadata[:normalized_headers],
             body:    record_metadata[:normalized_body]
@@ -106,18 +106,15 @@ module RightDevelop::Testing::Client::Rest::Request
           f.puts(::YAML.dump(request_hash))
         end
       end
-      logger.debug("Recorded request at #{request_file_path.inspect}.")
+      logger.debug("Recorded request at #{file_path.inspect}.")
 
       # response always written for incremented call count.
-      response_file_path = response_file_path(record_metadata)
-      ::FileUtils.mkdir_p(::File.dirname(response_file_path))
-      ::File.open(response_file_path, 'w') do |f|
+      file_path = response_file_path(state, record_metadata)
+      ::FileUtils.mkdir_p(::File.dirname(file_path))
+      ::File.open(file_path, 'w') do |f|
         f.puts(::YAML.dump(response_hash))
       end
-
-      # persist state for every successful recording.
-      save_state
-      logger.debug("Recorded response at #{response_file_path.inspect}.")
+      logger.debug("Recorded response at #{file_path.inspect}.")
       true
     end
 
