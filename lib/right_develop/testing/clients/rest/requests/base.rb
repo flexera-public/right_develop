@@ -36,7 +36,7 @@ module RightDevelop::Testing::Client::Rest::Request
     HIDDEN_CREDENTIAL_NAMES = %w(
       email password user username globalsession accesstoken refreshtoken
     )
-    HIDDEN_CREDENTIAL_VALUE = 'hidden_credential'
+    HIDDEN_CREDENTIAL_VALUE = 'HIDDEN_CREDENTIAL'
 
     attr_reader :fixtures_dir, :logger, :route_record_dir, :state_file_path
     attr_reader :request_timestamp, :response_timestamp
@@ -154,7 +154,7 @@ module RightDevelop::Testing::Client::Rest::Request
       # attempt to sort JSON data before creating a key.
       normalized_headers = normalize_headers(headers)
       normalized_body = normalize_body(normalized_headers, body)
-      normalized_body_token = body.empty? ? 'empty' : ::Digest::MD5.hexdigest(body)
+      normalized_body_token = normalized_body.empty? ? 'empty' : ::Digest::MD5.hexdigest(normalized_body)
       query_file_name = "#{normalized_body_token}_#{query_file_name}"
 
       # make URI relative to target server (eliminate proxy server detail).
@@ -266,26 +266,35 @@ module RightDevelop::Testing::Client::Rest::Request
       result
     end
 
-    def normalize_body(headers, body)
-      if result = body
-        if content_type_key = headers.keys.find { |k| k.to_s.upcase.gsub('-', '_') == 'CONTENT_TYPE' }
-          # content type may be an array or an array of strings needing to be split.
-          content_type = headers[content_type_key]
-          content_type = Array(content_type).join('; ').split('; ')
-          content_type.each do |ct|
-            if ct.start_with?('application/')
-              case ct.strip
-              when 'application/x-www-form-urlencoded'
-                result = normalize_query_string(body)
-              when 'application/json'
-                result = normalize_json(body)
-              end
-              break
+    def normalize_body(normalized_headers, body)
+      if result = body.to_s
+        # content type may be an array or an array of strings needing to be split.
+        #
+        # example: ["application/json; charset=utf-8"]
+        content_type = normalized_headers['CONTENT_TYPE']
+        content_type = Array(content_type).join('; ').split('; ')
+        content_type.each do |ct|
+          if ct.start_with?('application/')
+            case ct.strip
+            when 'application/x-www-form-urlencoded'
+              result = normalize_query_string(body)
+              normalize_content_length(normalized_headers, result)
+            when 'application/json'
+              result = normalize_json(body)
+              normalize_content_length(normalized_headers, result)
             end
+            break
           end
         end
       end
       result
+    end
+
+    def normalize_content_length(normalized_headers, normalized_body)
+      if normalized_headers['CONTENT_LENGTH']
+        normalized_headers['CONTENT_LENGTH'] = normalized_body.length
+      end
+      true
     end
 
     def relative_request_dir(record_metadata)

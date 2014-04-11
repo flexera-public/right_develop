@@ -58,8 +58,8 @@ module RightDevelop::Testing::Client::Rest::Request
 
       # use raw headers instead of the usual RestClient behavior of converting
       # arrays to comma-delimited strings.
-      headers = normalize_headers(response.to_hash)
-      body = response.body
+      normalized_headers = normalize_headers(response.to_hash)
+      normalized_body = normalize_body(normalized_headers, response.body)
 
       # record elapsed time in (integral) seconds. not intended to be a precise
       # measure of time but rather used to throttle server if client is time-
@@ -68,8 +68,8 @@ module RightDevelop::Testing::Client::Rest::Request
       response_hash = {
         elapsed_seconds: elapsed_seconds,
         code:            Integer(code),
-        headers:         headers,
-        body:            normalize_body(response.to_hash, body),
+        headers:         normalized_headers,
+        body:            normalized_body,
       }
 
       # detect collision, if any, to determine if we have entered a new epoch.
