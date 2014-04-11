@@ -69,7 +69,7 @@ module RightDevelop::Testing::Client::Rest::Request
         elapsed_seconds: elapsed_seconds,
         code:            Integer(code),
         headers:         headers,
-        body:            body,
+        body:            normalize_body(response.to_hash, body),
       }
 
       # detect collision, if any, to determine if we have entered a new epoch.
@@ -124,7 +124,7 @@ module RightDevelop::Testing::Client::Rest::Request
     # @return [String] key for quick lookup of responses in current epoch
     def response_data_key(record_metadata)
       ::File.join(
-        record_metadata[:relative_response_dir],
+        relative_response_dir(record_metadata),
         record_metadata[:query_file_name])
     end
 

@@ -33,7 +33,9 @@ module RightDevelop::Testing::Client::Rest::Request
   # Base class for record/playback request implementations.
   class Base < ::RestClient::Request
 
-    HIDDEN_CREDENTIAL_NAMES = %w(email password user username)
+    HIDDEN_CREDENTIAL_NAMES = %w(
+      email password user username globalsession accesstoken refreshtoken
+    )
     HIDDEN_CREDENTIAL_VALUE = 'hidden_credential'
 
     attr_reader :fixtures_dir, :logger, :route_record_dir, :state_file_path
@@ -151,14 +153,7 @@ module RightDevelop::Testing::Client::Rest::Request
       # JSON data may be hash-ordered inconsistently between invocations.
       # attempt to sort JSON data before creating a key.
       normalized_headers = normalize_headers(headers)
-      case normalized_headers['CONTENT_TYPE']
-      when 'application/x-www-form-urlencoded'
-        normalized_body = normalize_query_string(body)
-      when 'application/json'
-        normalized_body = normalize_json(body)
-      else
-        normalized_body = body
-      end
+      normalized_body = normalize_body(normalized_headers, body)
       normalized_body_token = body.empty? ? 'empty' : ::Digest::MD5.hexdigest(body)
       query_file_name = "#{normalized_body_token}_#{query_file_name}"
 
@@ -220,11 +215,12 @@ module RightDevelop::Testing::Client::Rest::Request
       hash = ::JSON.load(json).inject({}) do |h, (k, v)|
         normalized_key = normalized_parameter_name(k)
         if HIDDEN_CREDENTIAL_NAMES.include?(normalized_key)
-          v = HIDDEN_CREDENTIAL_VALUE if item.is_a?(::String)
+          v = HIDDEN_CREDENTIAL_VALUE if v.is_a?(::String)
         end
         h[k] = v
+        h
       end
-      ::RightSupport::Data::HashTools.deep_sorted_json(hash, pretty = true)
+      ::RightSupport::Data::HashTools.deep_sorted_json(hash, pretty = false)
     end
 
     # Converts header/payload keys to a form consistent with parameter passing
@@ -235,22 +231,22 @@ module RightDevelop::Testing::Client::Rest::Request
     end
 
     def normalize_headers(headers)
-      normalized = headers.inject({}) do |h, (k, v)|
+      result = headers.inject({}) do |h, (k, v)|
         # value is in raw form as array of sequential header values
         h[k.to_s.gsub('-', '_').upcase] = v
         h
       end
 
       # eliminate headers that interfere with playback.
-      ['CONNECTION', 'STATUS'].each { |key| normalized.delete(key) }
+      ['CONNECTION', 'STATUS'].each { |key| result.delete(key) }
 
       # obfuscate any cookies as they won't be needed for playback.
       ['COOKIE', 'SET_COOKIE'].each do |obfuscated_header|
-        if cookies = normalized[obfuscated_header]
+        if cookies = result[obfuscated_header]
           if cookies.is_a?(::String)
             cookies = cookies.split('; ')
           end
-          normalized[obfuscated_header] = cookies.map do |cookie|
+          result[obfuscated_header] = cookies.map do |cookie|
             if offset = cookie.index('=')
               cookie_name = cookie[0..(offset-1)]
               "#{cookie_name}=#{HIDDEN_CREDENTIAL_VALUE}"
@@ -263,11 +259,41 @@ module RightDevelop::Testing::Client::Rest::Request
 
       # other obfuscation.
       ['AUTHORIZATION'].each do |obfuscated_header|
-        if normalized.has_key?(obfuscated_header)
-          normalized[obfuscated_header] = HIDDEN_CREDENTIAL_VALUE
+        if result.has_key?(obfuscated_header)
+          result[obfuscated_header] = HIDDEN_CREDENTIAL_VALUE
         end
       end
-      normalized
+      result
+    end
+
+    def normalize_body(headers, body)
+      if result = body
+        if content_type_key = headers.keys.find { |k| k.to_s.upcase.gsub('-', '_') == 'CONTENT_TYPE' }
+          # content type may be an array or an array of strings needing to be split.
+          content_type = headers[content_type_key]
+          content_type = Array(content_type).join('; ').split('; ')
+          content_type.each do |ct|
+            if ct.start_with?('application/')
+              case ct.strip
+              when 'application/x-www-form-urlencoded'
+                result = normalize_query_string(body)
+              when 'application/json'
+                result = normalize_json(body)
+              end
+              break
+            end
+          end
+        end
+      end
+      result
+    end
+
+    def relative_request_dir(record_metadata)
+      ::File.join('requests', record_metadata[:relative_path])
+    end
+
+    def relative_response_dir(record_metadata)
+      ::File.join('responses', record_metadata[:relative_path])
     end
 
     def request_file_path(record_metadata)
@@ -275,8 +301,7 @@ module RightDevelop::Testing::Client::Rest::Request
         @fixtures_dir,
         state[:epoch].to_s,
         @route_record_dir,
-        'requests',
-        record_metadata[:relative_path],
+        relative_request_dir(record_metadata),
         record_metadata[:query_file_name] + '.yml')
     end
 
@@ -285,8 +310,7 @@ module RightDevelop::Testing::Client::Rest::Request
         @fixtures_dir,
         state[:epoch].to_s,
         @route_record_dir,
-        'responses',
-        record_metadata[:relative_path],
+        relative_response_dir(record_metadata),
         record_metadata[:query_file_name] + '.yml')
     end
 
