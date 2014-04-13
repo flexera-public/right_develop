@@ -163,11 +163,15 @@ EOF
         loop do
           begin
             proxied_url = ::File.join(route_data[:url], uri.path)
-            unless uri.query.to_s.empty?
+            if uri.query.to_s.empty?
+              proxied_url.chomp!('/')
+            else
               proxied_url << '?' << uri.query
             end
+            proxied_headers = proxy_headers(headers, route_data)
 
             logger.debug("proxied_url = #{proxied_url.inspect}")
+            logger.debug("proxied_headers = #{proxied_headers.inspect}")
             request_options = {
               fixtures_dir:     config.fixtures_dir,
               logger:           logger,
@@ -175,7 +179,7 @@ EOF
               state_file_path:  state_file_path,
               method:           verb.downcase.to_sym,
               url:              proxied_url,
-              headers:          headers,
+              headers:          proxied_headers,
               payload:          body
             }
             request_options[:throttle] = throttle if throttle
@@ -244,6 +248,40 @@ EOF
       # @return [Array] pair of [prefix, data] or nil
       def find_route
         config.routes.find { |prefix, data| request.path.start_with?(prefix) }
+      end
+
+      # Sets the header style using configuration of the proxied service.
+      #
+      # @param [Hash] headers for proxy
+      # @param [Hash] route_data containing header configuration, if any
+      #
+      # @return [Mash] proxied headers
+      def proxy_headers(headers, route_data)
+        if header_data = route_data[:headers]
+          to_separator = (header_data[:separator] == :underscore) ? '_' : '-'
+          from_separator = (to_separator == '-') ? '_' : '-'
+          proxied = headers.inject(::Mash.new) do |h, (k, v)|
+            k = k.to_s
+            case header_data[:case]
+            when nil
+              k = k.gsub(from_separator, to_separator)
+            when :lower
+              k = k.downcase.gsub(from_separator, to_separator)
+            when :upper
+              k = k.upcase.gsub(from_separator, to_separator)
+            when :capitalize
+              k = k.split(/-|_/).map { |word| word.capitalize }.join(to_separator)
+            else
+              raise ::ArgumentError,
+                    "Unexpected header case: #{route_data.inspect}"
+            end
+            h[k] = v
+            h
+          end
+        else
+          proxied = ::Mash.new(headers)
+        end
+        proxied
       end
 
       # @return [Array] rack-style response for 500

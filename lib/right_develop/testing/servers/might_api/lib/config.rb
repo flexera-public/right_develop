@@ -165,7 +165,7 @@ module RightDevelop::Testing::Servers::MightApi
         when :record
           uri = nil
           begin
-            uri = ::URI.parse(data['url'])
+            uri = ::URI.parse(data[:url])
           rescue URI::InvalidURIError
             # defer handling
           end
@@ -175,8 +175,29 @@ module RightDevelop::Testing::Servers::MightApi
           unless uri.path.to_s.empty? && uri.query.to_s.empty?
             raise ::ArgumentError, "route[url] has unexpected path or query string: #{data.inspect}"
           end
+
+          if header_data = data[:headers]
+            if case_value = header_data[:case]
+              case case_value = case_value.to_s.to_sym
+              when :lower, :upper, :capitalize
+                header_data[:case] = case_value
+              else
+                raise ::ArgumentError,
+                      "Unexpected header case: #{data.inspect}"
+              end
+            end
+            if separator_value = header_data[:separator]
+              case separator_value = separator_value.to_s.to_sym
+              when :dash, :underscore
+                header_data[:separator] = separator_value
+              else
+                raise ::ArgumentError,
+                      "Unexpected header separator: #{data.inspect}"
+              end
+            end
+          end
         end
-        record_dir = data['record_dir']
+        record_dir = data[:record_dir]
         if record_dir.nil? || record_dir.empty?
           raise ::ArgumentError, "route[record_dir] is required: #{data.inspect}"
         end
