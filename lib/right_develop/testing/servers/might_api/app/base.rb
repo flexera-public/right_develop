@@ -55,10 +55,12 @@ module RightDevelop::Testing::Servers::MightApi
 
         # proxy any headers from env starting with HTTP_
         headers = env.inject({}) do |r, (k,v)|
+          # note that HTTP_HOST refers to this proxy server instead of the
+          # proxied target server. in the case of AWS authentication, it is
+          # necessary to pass the value through unmodified or else AWS auth
+          # fails.
           if k.start_with?('HTTP_')
-            unless ['HTTP_HOST'].include?(k)
-              r[k[5..-1]] = v
-            end
+            r[k[5..-1]] = v
           end
           r
         end
