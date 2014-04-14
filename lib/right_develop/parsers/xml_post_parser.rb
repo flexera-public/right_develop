@@ -113,6 +113,9 @@ module RightDevelop::Parsers
               end
               xml_object_node[parent_key] = child_node
             end
+          elsif parent_value.nil? && parent_key.pluralize == parent_key
+            #Wrap xml object in an array so it matches JSON format in cases where nothing is contained in parent node
+            xml_object_node[parent_key] = []
           end
           remove_nesting_node(parent_value)
         end
