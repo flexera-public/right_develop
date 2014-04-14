@@ -241,26 +241,28 @@ module RightDevelop::Testing::Client::Rest::Request
       ['CONNECTION', 'STATUS'].each { |key| result.delete(key) }
 
       # obfuscate any cookies as they won't be needed for playback.
-      ['COOKIE', 'SET_COOKIE'].each do |obfuscated_header|
-        if cookies = result[obfuscated_header]
-          if cookies.is_a?(::String)
-            cookies = cookies.split('; ')
-          end
-          result[obfuscated_header] = cookies.map do |cookie|
-            if offset = cookie.index('=')
-              cookie_name = cookie[0..(offset-1)]
-              "#{cookie_name}=#{HIDDEN_CREDENTIAL_VALUE}"
-            else
-              cookie
+      [/COOKIE/].each do |header_regex|
+        result.keys.each do |k|
+          if header_regex.match(k) && (cookies = result[k])
+            if cookies.is_a?(::String)
+              cookies = cookies.split(';').map { |c| c.strip }
+            end
+            result[k] = cookies.map do |cookie|
+              if offset = cookie.index('=')
+                cookie_name = cookie[0..(offset-1)]
+                "#{cookie_name}=#{HIDDEN_CREDENTIAL_VALUE}"
+              else
+                cookie
+              end
             end
           end
         end
       end
 
       # other obfuscation.
-      ['AUTHORIZATION'].each do |obfuscated_header|
-        if result.has_key?(obfuscated_header)
-          result[obfuscated_header] = HIDDEN_CREDENTIAL_VALUE
+      [/AUTHORIZATION/].each do |header_regex|
+        result.keys.each do |k|
+          result[k] = HIDDEN_CREDENTIAL_VALUE if header_regex.match(k)
         end
       end
       result
@@ -272,7 +274,7 @@ module RightDevelop::Testing::Client::Rest::Request
         #
         # example: ["application/json; charset=utf-8"]
         content_type = normalized_headers['CONTENT_TYPE']
-        content_type = Array(content_type).join('; ').split('; ')
+        content_type = Array(content_type).join(';').split(';').map { |ct| ct.strip }
         content_type.each do |ct|
           if ct.start_with?('application/')
             case ct.strip
