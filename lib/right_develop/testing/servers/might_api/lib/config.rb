@@ -175,25 +175,22 @@ module RightDevelop::Testing::Servers::MightApi
           unless uri.path.to_s.empty? && uri.query.to_s.empty?
             raise ::ArgumentError, "route[url] has unexpected path or query string: #{data.inspect}"
           end
-
-          if header_data = data[:headers]
-            if case_value = header_data[:case]
-              case case_value = case_value.to_s.to_sym
-              when :lower, :upper, :capitalize
-                header_data[:case] = case_value
-              else
-                raise ::ArgumentError,
-                      "Unexpected header case: #{data.inspect}"
-              end
+        end
+        if header_data = data[:headers]
+          if case_value = header_data[:case]
+            case case_value = case_value.to_s.to_sym
+            when :lower, :upper, :capitalize
+              header_data[:case] = case_value
+            else
+              raise ::ArgumentError, "route[headers][case] must be one of [lower, upper, capitalize]: #{data.inspect}"
             end
-            if separator_value = header_data[:separator]
-              case separator_value = separator_value.to_s.to_sym
-              when :dash, :underscore
-                header_data[:separator] = separator_value
-              else
-                raise ::ArgumentError,
-                      "Unexpected header separator: #{data.inspect}"
-              end
+          end
+          if separator_value = header_data[:separator]
+            case separator_value = separator_value.to_s.to_sym
+            when :dash, :underscore
+              header_data[:separator] = separator_value
+            else
+              raise ::ArgumentError, "route[headers][separator] must be one of [dash, underscore]: #{data.inspect}"
             end
           end
         end
