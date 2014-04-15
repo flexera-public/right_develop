@@ -22,8 +22,8 @@
 
 require ::File.expand_path('../base', __FILE__)
 
-module RightDevelop::Testing::Servers::MightApi::App
-  class Playback < ::RightDevelop::Testing::Servers::MightApi::App::Base
+module RightDevelop::Testing::Server::MightApi::App
+  class Playback < ::RightDevelop::Testing::Server::MightApi::App::Base
 
     STATE_FILE_NAME = 'playback_state.yml'
 
@@ -31,7 +31,7 @@ module RightDevelop::Testing::Servers::MightApi::App
       super(STATE_FILE_NAME)
     end
 
-    # @see RightDevelop::Testing::Servers::MightApi::App::Base#handle_request
+    # @see RightDevelop::Testing::Server::MightApi::App::Base#handle_request
     def handle_request(verb, uri, headers, body)
       proxy(
         ::RightDevelop::Testing::Client::Rest::Request::Playback,

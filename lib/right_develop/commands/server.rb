@@ -28,7 +28,7 @@ module RightDevelop::Commands
   class Server
     include RightSupport::Log::Mixin
 
-    CONFIG_CLASS = ::RightDevelop::Testing::Servers::MightApi::Config
+    CONFIG_CLASS = ::RightDevelop::Testing::Server::MightApi::Config
 
     TASKS = CONFIG_CLASS::VALID_MODES
 
@@ -137,7 +137,7 @@ And [options] are selected from:
             logger.warn("Overwriting existing #{fixtures_dir.inspect} due to force=true")
             ::FileUtils.rm_rf(fixtures_dir)
           else
-            ::Trollop.die "Cannot record over existing directory: #{fixtures_dir.inspect}"
+            ::Trollop.die "Unable to record over existing directory: #{fixtures_dir.inspect}"
           end
         end
       when :playback
@@ -152,11 +152,7 @@ And [options] are selected from:
         ::FileUtils.mkdir_p(tmp_fixtures_dir)
         ::FileUtils.cp_r(::File.join(fixtures_dir, '.'), tmp_fixtures_dir)
         config.fixtures_dir(tmp_fixtures_dir)
-
-        # remove any residual state files copied into tmp fixtures directory.
-        ::Dir[::File.join(tmp_fixtures_dir, '*.yml')].each do |path|
-          ::File.unlink(path) if ::File.file?(path)
-        end
+        config.normalize_fixtures_dir(logger)
       end
 
       # write updated config to tmp location.

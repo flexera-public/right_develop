@@ -23,7 +23,7 @@
 require 'logger'
 require 'right_support'
 
-module RightDevelop::Testing::Servers::MightApi
+module RightDevelop::Testing::Server::MightApi
 
   def self.logger
     @logger ||= lambda do

@@ -23,7 +23,6 @@
 # ancestor
 require 'right_develop/testing/clients/rest'
 
-require 'digest/md5'
 require 'rest_client'
 require 'right_support'
 require 'yaml'
@@ -32,6 +31,8 @@ module RightDevelop::Testing::Client::Rest::Request
 
   # Base class for record/playback request implementations.
   class Base < ::RestClient::Request
+
+    include ::RightDevelop::Testing::Client::ChecksumMixin
 
     HIDDEN_CREDENTIAL_NAMES = %w(
       email password user username globalsession accesstoken refreshtoken
@@ -113,12 +114,6 @@ module RightDevelop::Testing::Client::Rest::Request
       result
     end
 
-    # @return [String] checksum for given value or 'empty'
-    def checksum(value)
-      value = value.to_s
-      value.empty? ? 'empty' : ::Digest::MD5.hexdigest(value)
-    end
-
     # Computes the metadata used to identify where the request/response should
     # be stored-to/retrieved-from. Recording the request is not strictly
     # necessary (because the request maps to a MD5 used for response-only) but
@@ -154,7 +149,7 @@ module RightDevelop::Testing::Client::Rest::Request
       # attempt to sort JSON data before creating a key.
       normalized_headers = normalize_headers(headers)
       normalized_body = normalize_body(normalized_headers, body)
-      normalized_body_token = normalized_body.empty? ? 'empty' : ::Digest::MD5.hexdigest(normalized_body)
+      normalized_body_token = normalized_body.empty? ? empty_checksum_value : ::Digest::MD5.hexdigest(normalized_body)
       query_file_name = "#{normalized_body_token}_#{query_file_name}"
 
       # make URI relative to target server (eliminate proxy server detail).

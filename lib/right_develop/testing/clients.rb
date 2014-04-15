@@ -26,7 +26,8 @@ require 'right_develop/testing'
 module RightDevelop
   module Testing
     module Client
-      autoload :Rest, 'right_develop/testing/clients/rest'
+      autoload :ChecksumMixin, 'right_develop/testing/clients/checksum_mixin'
+      autoload :Rest,          'right_develop/testing/clients/rest'
     end
   end
 end

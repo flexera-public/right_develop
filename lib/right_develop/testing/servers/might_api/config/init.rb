@@ -26,7 +26,7 @@ require 'right_develop'
 require ::File.expand_path('../../lib/config', __FILE__)
 require ::File.expand_path('../../lib/logger', __FILE__)
 
-module RightDevelop::Testing::Servers::MightApi
+module RightDevelop::Testing::Server::MightApi
 
   # attempt to read stdin for configuration or else expect relative file path.
   # note the following .fcntl call returns zero when data is available on $stdin

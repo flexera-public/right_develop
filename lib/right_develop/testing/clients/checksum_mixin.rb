@@ -20,26 +20,32 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-require ::File.expand_path('../base', __FILE__)
+# ancestor
+require 'right_develop/testing/clients'
+require 'digest/md5'
 
-module RightDevelop::Testing::Server::MightApi::App
-  class Record < ::RightDevelop::Testing::Server::MightApi::App::Base
+module RightDevelop
+  module Testing
+    module Client
+      module ChecksumMixin
 
-    STATE_FILE_NAME = 'record_state.yml'
+        # @return [String] token representing the checksum value for empty or nil text
+        def empty_checksum_value
+          'empty'
+        end
 
-    def initialize
-      super(STATE_FILE_NAME)
+        # Computes the MD5 value or empty_checksum_value to make that case more
+        # human-readable.
+        #
+        # @param [String] value for checksum or nil or empty
+        #
+        # @return [String] hexadecimal checksum value or empty_checksum_value
+        def checksum(value)
+          value = value.to_s
+          value.empty? ? empty_checksum_value : ::Digest::MD5.hexdigest(value)
+        end
+
+      end
     end
-
-    # @see RightDevelop::Testing::Server::MightApi::App::Base#handle_request
-    def handle_request(verb, uri, headers, body)
-      proxy(
-        ::RightDevelop::Testing::Client::Rest::Request::Record,
-        verb,
-        uri,
-        headers,
-        body)
-    end
-
   end
 end

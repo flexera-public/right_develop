@@ -24,6 +24,7 @@ if ::ENV['RACK_ENV'].to_s.empty?
   ::ENV['RACK_ENV'] = 'development'
 end
 
+require 'right_develop'
 require 'extlib'
 require 'json'
 require 'logger'
@@ -33,7 +34,7 @@ require 'yaml'
 # define the module hierarchy once so that it can be on a single line hereafter.
 module RightDevelop
   module Testing
-    module Servers
+    module Server
       module MightApi
         # if only ruby could consume a single line module declaration...
       end
@@ -41,8 +42,10 @@ module RightDevelop
   end
 end
 
-module RightDevelop::Testing::Servers::MightApi
+module RightDevelop::Testing::Server::MightApi
   class Config
+
+    extend ::RightDevelop::Testing::Client::ChecksumMixin
 
     CONFIG_DIR_NAME   = 'config'
     FIXTURES_DIR_NAME = 'fixtures'
@@ -237,5 +240,80 @@ module RightDevelop::Testing::Servers::MightApi
       @config_hash['throttle']
     end
 
+    FIXTURE_FILE_NAME_REGEX = /^([^_]+)_(?:DELETE|GET|HEAD|PATCH|POST|PUT)(?:\?.+)?.yml$/i
+
+    # note that 'empty' is a special case used instead of computing the MD5
+    # constant of empty request body.
+    MD5_OR_EMPTY_REGEX = %r(^([0-9A-Fa-f]{32}|(?i)#{empty_checksum_value})$)
+
+    def self.normalize_fixtures_dir(logger)
+      # remove any residual state files at root of fixtures directory.
+      logger.info("Normalizing fixtures directory: #{fixtures_dir.inspect} ...")
+      ::Dir[::File.join(fixtures_dir, '*.yml')].each do |path|
+        ::File.unlink(path) if ::File.file?(path)
+      end
+
+      # recursively iterate requests/responses ensuring that both files exist
+      # and that they are MD5-prefixed. if not, then supply the MD5 by renaming
+      # both files. this allows a user to write custom request/responses without
+      # having to supply the MD5 checksum for the request body.
+      ::Dir[::File.join(fixtures_dir, '*/*')].sort.each do |epoch_api_dir|
+        if ::File.directory?(epoch_api_dir)
+          # request/response pairs must be identical.
+          requests_dir = epoch_api_dir + '/requests/'
+          responses_dir = epoch_api_dir + '/responses/'
+          request_files = ::Dir[requests_dir + '**/*.yml'].sort.map { |path| path[requests_dir.length..-1] }
+          response_files = ::Dir[responses_dir + '**/*.yml'].sort.map { |path| path[responses_dir.length..-1] }
+          if request_files != response_files
+            difference = ((request_files - response_files) | (response_files - request_files)).sort
+            message = 'Mismatched request/response file pairs under ' +
+                      "#{epoch_api_dir.inspect}: #{difference.inspect}"
+            raise ::ArgumentError, message
+          end
+
+          # convert filename prefix to MD5 wherever necessary.
+          request_files.each do |path|
+            # load request/response pair to validate.
+            request_file_path = ::File.join(requests_dir, path)
+            response_file_path = ::File.join(responses_dir, path)
+            request_data = ::Mash.new(::YAML.load_file(request_file_path))
+            response_data = ::Mash.new(::YAML.load_file(response_file_path))
+
+            # rename fixure file prefix only if given custom name by user.
+            name = ::File.basename(path)
+            if matched = FIXTURE_FILE_NAME_REGEX.match(name)
+              prefix = matched[1]
+              body = request_data[:body] || ''
+              checksum = checksum(body)
+              if MD5_OR_EMPTY_REGEX.match(prefix)
+                # verify correct MD5 for body.
+                if prefix.casecmp(checksum) != 0
+                  message = "Checksum from fixture file name (#{prefix}) " +
+                            "does not match the request body checksum " +
+                            "(#{checksum}): #{request_file_path.inspect}"
+                  raise ::ArgumentError, message
+                end
+              else
+                # compute checksum from loaded request body.
+                checksum_file_name = checksum + name[prefix.length..-1]
+
+                # rename file pair.
+                to_request_file_path = ::File.join(::File.dirname(request_file_path), checksum_file_name)
+                to_response_file_path = ::File.join(::File.dirname(response_file_path), checksum_file_name)
+                logger.debug("Renaming #{request_file_path.inspect} to #{to_request_file_path.inspect}.")
+                ::File.rename(request_file_path, to_request_file_path)
+                logger.debug("Renaming #{response_file_path.inspect} to #{to_response_file_path.inspect}.")
+                ::File.rename(response_file_path, to_response_file_path)
+              end
+            else
+              message = 'Fixture file name does not match expected pattern: ' +
+                        "#{request_file_path.inspect}"
+              raise ::ArgumentError, message
+            end
+          end
+        end
+      end
+    end
+
   end # Config
-end # RightDevelop::Testing::Servers::MightApi
+end # RightDevelop::Testing::Server::MightApi

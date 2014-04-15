@@ -26,7 +26,7 @@ require 'rack/chunked'
 require 'stringio'
 require 'uri'
 
-module RightDevelop::Testing::Servers::MightApi
+module RightDevelop::Testing::Server::MightApi
   module App
     class Base
 
@@ -39,8 +39,8 @@ module RightDevelop::Testing::Servers::MightApi
       attr_reader :config, :env, :logger, :request, :state_file_path
 
       def initialize(state_file_name)
-        @config = ::RightDevelop::Testing::Servers::MightApi::Config
-        @logger = ::RightDevelop::Testing::Servers::MightApi.logger
+        @config = ::RightDevelop::Testing::Server::MightApi::Config
+        @logger = ::RightDevelop::Testing::Server::MightApi.logger
 
         @state_file_path = state_file_name ? ::File.join(@config.fixtures_dir, state_file_name) : nil
       end

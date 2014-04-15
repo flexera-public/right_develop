@@ -24,16 +24,16 @@ require ::File.expand_path('../base', __FILE__)
 
 require 'right_support'
 
-module RightDevelop::Testing::Servers::MightApi::App
+module RightDevelop::Testing::Server::MightApi::App
 
   # Implements an echo service.
-  class Echo < ::RightDevelop::Testing::Servers::MightApi::App::Base
+  class Echo < ::RightDevelop::Testing::Server::MightApi::App::Base
 
     def initialize
       super(nil)
     end
 
-    # @see RightDevelop::Testing::Servers::MightApi::App::Base#handle_request
+    # @see RightDevelop::Testing::Server::MightApi::App::Base#handle_request
     def handle_request(verb, uri, headers, body)
 
       # check routes.
