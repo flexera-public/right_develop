@@ -29,6 +29,9 @@ module RightDevelop::Testing::Server::MightApi::App
   # Implements an echo service.
   class Echo < ::RightDevelop::Testing::Server::MightApi::App::Base
 
+    # metadata
+    METADATA_CLASS = ::RightDevelop::Testing::Recording::Metadata
+
     def initialize
       super(nil)
     end
@@ -49,7 +52,14 @@ module RightDevelop::Testing::Server::MightApi::App
 
       # echo request back as response.
       response.write "\nruby %sp%s\n\n" % [RUBY_VERSION, RUBY_PATCHLEVEL]
-      response.write "config = #{::RightSupport::Data::HashTools.deep_sorted_json(config.to_hash, true)}\n\n"
+      response.write "Raw configuration = #{::JSON.pretty_generate(config.to_hash)}\n\n"  # hash order is significant in config
+      config.routes.each do |route_path, route_config|
+        response.write "=== Compiled route matchers begin for root = #{route_path.inspect}:\nmatchers = {\n"
+        (route_config[METADATA_CLASS::MATCHERS_KEY] || {}).each do |regex, route_data|
+          response.write "  #{regex.inspect} =>\n    #{route_data.inspect},\n"
+        end
+        response.write "}\n=== Compiled route matchers end.\n\n"
+      end
       response.write "env = #{::RightSupport::Data::HashTools.deep_sorted_json(env, true)}\n\n"
       response.write "ENV = #{::RightSupport::Data::HashTools.deep_sorted_json(::ENV, true)}\n\n"
       response.write "verb = #{verb.inspect}\n\n"

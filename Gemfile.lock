@@ -37,6 +37,7 @@ GEM
     nokogiri (1.5.6)
     nokogiri (1.5.6-x86-mingw32)
     nokogiri (1.5.6-x86-mswin32)
+    rack (1.5.2)
     rake (0.9.6)
     rbx-require-relative (0.0.9)
     rdoc (4.0.0)
@@ -76,6 +77,7 @@ DEPENDENCIES
   json (~> 1.6)
   libxml-ruby (~> 2.7)
   nokogiri (~> 1.5)
+  rack
   rake (>= 0.8.7, < 0.10)
   rdoc (>= 2.4.2)
   right_aws (>= 2.1.0)

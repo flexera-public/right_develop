@@ -26,8 +26,11 @@ require 'right_develop/testing'
 module RightDevelop
   module Testing
     module Client
-      autoload :ChecksumMixin, 'right_develop/testing/clients/checksum_mixin'
-      autoload :Rest,          'right_develop/testing/clients/rest'
+      autoload :Formats, 'right_develop/testing/clients/formats'
+
+      autoload :RecordMetadata, 'right_develop/testing/clients/record_metadata'
+
+      autoload :Rest, 'right_develop/testing/clients/rest'
     end
   end
 end

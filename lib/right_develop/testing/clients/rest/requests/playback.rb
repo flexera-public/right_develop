@@ -40,19 +40,15 @@ module RightDevelop::Testing::Client::Rest::Request
     class FakeNetHttpResponse
       attr_reader :code, :body, :elapsed_seconds, :call_count
 
-      def initialize(file_path)
-        response_hash = ::YAML.load_file(file_path)
+      def initialize(response_hash, response_metadata)
         @elapsed_seconds = Integer(response_hash[:elapsed_seconds] || 0)
-        @code = response_hash[:code].to_s
-        @headers = response_hash[:headers].inject({}) do |h, (k, v)|
+        @code = response_metadata.http_status.to_s
+        @headers = response_metadata.headers.inject({}) do |h, (k, v)|
           h[k] = Array(v)  # expected to be an array
           h
         end
-        @body = response_hash[:body]  # optional
+        @body = response_metadata.body  # optional
         @call_count = Integer(response_hash[:call_count]) || 1
-        unless @code && @headers
-          raise PlaybackError, "Invalid response file: #{file_path.inspect}"
-        end
       end
 
       def [](key)
@@ -118,14 +114,26 @@ module RightDevelop::Testing::Client::Rest::Request
 
     protected
 
+    # @see RightDevelop::Testing::Client::Rest::Request::Base#recording_mode
+    def recording_mode
+      :playback
+    end
+
     def fetch_response(state)
       # response must exist in the current epoch (i.e. can only enter next epoch
       # after a valid response is found).
-      record_metadata = compute_record_metadata
-      file_path = response_file_path(state, record_metadata)
+      request_metadata = request_metadata(state)
+      file_path = response_file_path(state, request_metadata)
       if ::File.file?(file_path)
         logger.debug("Played back response from #{file_path.inspect}.")
-        result = FakeNetHttpResponse.new(file_path)
+        response_hash = ::Mash.new(::YAML.load_file(file_path))
+        response_metadata = response_metadata(
+          state,
+          request_metadata,
+          response_hash[:http_status],
+          response_hash[:headers],
+          response_hash[:body])
+        result = FakeNetHttpResponse.new(response_hash, response_metadata)
       else
         raise PlaybackError, "Unable to locate response: #{file_path.inspect}"
       end
@@ -133,7 +141,7 @@ module RightDevelop::Testing::Client::Rest::Request
       # determine if epoch is done, which it is if every known request has been
       # responded to for the current epoch. there is a steady state at the end
       # of time when all responses are given but there is no next epoch.
-      logger.debug("BEGIN playback state = #{state.inspect}")
+      logger.debug("BEGIN playback state = #{state.inspect}") if logger.debug?
       unless state[:end_of_time]
 
         # list epochs once.
@@ -159,12 +167,15 @@ module RightDevelop::Testing::Client::Rest::Request
         if next_epoch = epochs[1]
           # list all responses in current epoch once.
           unless remaining = state[:remaining_responses]
-            search_path = response_file_path(state, relative_path: '**', query_file_name: '*')
-            remaining = ::Dir[search_path].inject({}) do |h, path|
+            search_path = ::File.join(
+              @fixtures_dir,
+              state[:epoch].to_s,
+              @route_data[:subdir],
+              'responses/**/*.yml')
+            remaining = state[:remaining_responses] = ::Dir[search_path].inject({}) do |h, path|
               h[path] = { call_count: 0 }
               h
             end
-            state[:remaining_responses] = remaining
           end
 
           # may have been reponded before in same epoch; only care if this is
@@ -197,8 +208,8 @@ module RightDevelop::Testing::Client::Rest::Request
                   message = <<EOF
 
 A new epoch = #{state[:epoch]} begins due to
-  method = #{method.to_s.upcase}
-  uri = \"#{record_metadata[:uri]}\"
+  verb = #{request_metadata.verb}
+  uri = \"#{request_metadata.uri}\"
   throttle = #{@throttle}
   call_count = #{@throttle == 0 ? '<ignored>' : "#{response_data[:call_count]} >= #{result.call_count}"}
 EOF
@@ -214,7 +225,7 @@ EOF
           state[:end_of_time] = true
         end
       end
-      logger.debug("END playback state = #{state.inspect}")
+      logger.debug("END playback state = #{state.inspect}") if logger.debug?
       result
     end
 

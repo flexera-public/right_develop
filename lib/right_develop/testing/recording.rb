@@ -21,31 +21,13 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 # ancestor
-require 'right_develop/testing/clients'
-require 'digest/md5'
+require 'right_develop/testing'
 
 module RightDevelop
   module Testing
-    module Client
-      module ChecksumMixin
-
-        # @return [String] token representing the checksum value for empty or nil text
-        def empty_checksum_value
-          'empty'
-        end
-
-        # Computes the MD5 value or empty_checksum_value to make that case more
-        # human-readable.
-        #
-        # @param [String] value for checksum or nil or empty
-        #
-        # @return [String] hexadecimal checksum value or empty_checksum_value
-        def checksum(value)
-          value = value.to_s
-          value.empty? ? empty_checksum_value : ::Digest::MD5.hexdigest(value)
-        end
-
-      end
+    module Recording
+      autoload :Config,   'right_develop/testing/recording/config'
+      autoload :Metadata, 'right_develop/testing/recording/metadata'
     end
   end
 end

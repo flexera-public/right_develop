@@ -121,15 +121,15 @@ And [options] are selected from:
       # sanity checks.
       config = nil
       ::Dir.chdir(root_dir) do
-        config_hash = CONFIG_CLASS.load_config_hash
-        config_hash['mode'] = mode
-        config_hash['log_level'] = options[:debug] ? :debug : :info
-        config_hash['throttle'] = options[:throttle]
-        config = CONFIG_CLASS.setup(config_hash)
+        config = CONFIG_CLASS.from_file(
+          CONFIG_CLASS::DEFAULT_CONFIG_PATH,
+          mode:      mode,
+          log_level: options[:debug] ? :debug : :info,
+          throttle:  options[:throttle])
       end
       fixtures_dir = config.fixtures_dir
       tmp_root_dir = ::Dir.mktmpdir
-      tmp_config_path = ::File.join(tmp_root_dir, CONFIG_CLASS::RELATIVE_CONFIG_PATH)
+      tmp_config_path = ::File.join(tmp_root_dir, CONFIG_CLASS::DEFAULT_CONFIG_PATH)
       case mode
       when :record
         if ::File.directory?(fixtures_dir)

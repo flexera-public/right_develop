@@ -47,6 +47,11 @@ module RightDevelop::Testing::Client::Rest::Request
 
     protected
 
+    # @see RightDevelop::Testing::Client::Rest::Request::Base#recording_mode
+    def recording_mode
+      :record
+    end
+
     def record_response(state, response)
       # never record redirects because a redirect cannot be proxied back to the
       # client (i.e. the client cannot update it's request url when proxied).
@@ -56,10 +61,11 @@ module RightDevelop::Testing::Client::Rest::Request
         return true
       end
 
-      # use raw headers instead of the usual RestClient behavior of converting
-      # arrays to comma-delimited strings.
-      normalized_headers = normalize_headers(response.to_hash)
-      normalized_body = normalize_body(normalized_headers, response.body)
+      # use raw headers for response instead of the usual RestClient behavior of
+      # converting arrays to comma-delimited strings.
+      request_metadata = request_metadata(state)
+      response_metadata = response_metadata(
+        state, request_metadata, http_status, response.to_hash, response.body)
 
       # record elapsed time in (integral) seconds. not intended to be a precise
       # measure of time but rather used to throttle server if client is time-
@@ -67,73 +73,56 @@ module RightDevelop::Testing::Client::Rest::Request
       elapsed_seconds = @response_timestamp - @request_timestamp
       response_hash = {
         elapsed_seconds: elapsed_seconds,
-        code:            Integer(code),
-        headers:         normalized_headers,
-        body:            normalized_body,
+        http_status:     response_metadata.http_status,
+        headers:         response_metadata.headers.to_hash,
+        body:            response_metadata.body,
       }
 
       # detect collision, if any, to determine if we have entered a new epoch.
-      record_metadata = compute_record_metadata
-      data_key = response_data_key(record_metadata)
+      data_key = ::File.join(request_metadata.uri.path, request_metadata.checksum)
       call_count = 0
-      next_checksum_value = response_checksum_value(response_hash)
+      next_checksum = response_metadata.checksum
       if response_data = (state[:response_data] ||= {})[data_key]
-        last_checksum_value = response_data[:checksum_value]
-        if last_checksum_value != next_checksum_value
+        last_checksum = response_data[:checksum]
+        if last_checksum != next_checksum
+          # note that variables never reset due to epoch change but they can be
+          # updated by a subsequent client request.
           state[:epoch] += 100        # leave room to insert custom epochs
           state[:response_data] = {}  # reset checksums for next epoch
-          logger.debug("A new epoch=#{state[:epoch]} begins due to #{method.to_s.upcase} \"#{record_metadata[:uri]}\"")
+          logger.debug("A new epoch=#{state[:epoch]} begins due to #{request_metadata.verb} \"#{request_metadata.uri}\"")
         else
           call_count = response_data[:call_count]
         end
       end
       call_count += 1
       state[:response_data][data_key] = {
-        checksum_value: next_checksum_value,
-        call_count:     call_count,
+        checksum:   next_checksum,
+        call_count: call_count,
       }
       response_hash[:call_count] = call_count
 
       # write request unless already written.
-      file_path = request_file_path(state, record_metadata)
+      file_path = request_file_path(state, request_metadata)
       unless ::File.file?(file_path)
+        # note that variables are not recorded because they must always be
+        # supplied by the client's request.
+        request_hash = {
+          verb:    request_metadata.verb,
+          query:   request_metadata.uri.query,
+          headers: request_metadata.headers.to_hash,
+          body:    request_metadata.body
+        }
         ::FileUtils.mkdir_p(::File.dirname(file_path))
-        ::File.open(file_path, 'w') do |f|
-          request_hash = {
-            headers: record_metadata[:normalized_headers],
-            body:    record_metadata[:normalized_body]
-          }
-          f.puts(::YAML.dump(request_hash))
-        end
+        ::File.open(file_path, 'w') { |f| f.puts(::YAML.dump(request_hash)) }
       end
       logger.debug("Recorded request at #{file_path.inspect}.")
 
       # response always written for incremented call count.
-      file_path = response_file_path(state, record_metadata)
+      file_path = response_file_path(state, request_metadata)
       ::FileUtils.mkdir_p(::File.dirname(file_path))
-      ::File.open(file_path, 'w') do |f|
-        f.puts(::YAML.dump(response_hash))
-      end
+      ::File.open(file_path, 'w') { |f| f.puts(::YAML.dump(response_hash)) }
       logger.debug("Recorded response at #{file_path.inspect}.")
       true
-    end
-
-    # @return [String] key for quick lookup of responses in current epoch
-    def response_data_key(record_metadata)
-      ::File.join(
-        relative_response_dir(record_metadata),
-        record_metadata[:query_file_name])
-    end
-
-    # Computes the checksum for response code and body. Response headers are
-    # ignored because they represent metadata that can vary for similar
-    # responses (DATE, etc.).
-    #
-    # @param [Hash] response_hash to encode
-    #
-    # @return [String] encoded code and body
-    def response_checksum_value(response_hash)
-      "#{response_hash[:code]}-#{checksum(response_hash[:body])}"
     end
 
   end # Base

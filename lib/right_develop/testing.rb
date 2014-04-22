@@ -26,5 +26,6 @@ require 'right_develop'
 module RightDevelop
   module Testing
     autoload :Client, 'right_develop/testing/clients'
+    autoload :Recording, 'right_develop/testing/recording'
   end
 end

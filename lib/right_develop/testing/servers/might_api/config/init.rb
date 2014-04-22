@@ -32,7 +32,15 @@ module RightDevelop::Testing::Server::MightApi
   # note the following .fcntl call returns zero when data is available on $stdin
   config_yaml = ($stdin.tty? || 0 != $stdin.fcntl(::Fcntl::F_GETFL, 0)) ? '' : $stdin.read
   config_hash = config_yaml.empty? ? nil : ::YAML.load(config_yaml)
-  Config.setup(config_hash)
+  if config_hash
+    Config.from_hash(config_hash)
+  else
+    Config.from_file(Config::DEFAULT_CONFIG_PATH)
+  end
+
+  # ensure fixture dir exists as result of configuration for better
+  # synchronization of any state file locking.
+  ::FileUtils.mkdir_p(Config.fixtures_dir)
 
   # ready.
   logger.info("MightApi initialized in #{Config.mode} mode.")
