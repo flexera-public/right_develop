@@ -159,7 +159,7 @@ EOF
         unless route = find_route
           raise MissingRoute, "No route configured for #{uri.path.inspect}"
         end
-        route_data = route.last
+        route_path, route_data = route
         response = nil
         max_redirects = MAX_REDIRECTS
         loop do
@@ -175,6 +175,7 @@ EOF
             request_options = {
               fixtures_dir:    config.fixtures_dir,
               logger:          logger,
+              route_path:      route_path,
               route_data:      route_data,
               state_file_path: state_file_path,
               method:          verb.downcase.to_sym,
@@ -259,7 +260,7 @@ EOF
       def proxy_headers(headers, route_data)
         proxied = nil
         if proxy_data = route_data[:proxy]
-          if header_data = proxy_data[:headers]
+          if header_data = proxy_data[:header]
             to_separator = (header_data[:separator] == :underscore) ? '_' : '-'
             from_separator = (to_separator == '-') ? '_' : '-'
             proxied = headers.inject(::Mash.new) do |h, (k, v)|

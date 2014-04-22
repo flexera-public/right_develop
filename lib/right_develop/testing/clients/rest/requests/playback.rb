@@ -167,11 +167,7 @@ module RightDevelop::Testing::Client::Rest::Request
         if next_epoch = epochs[1]
           # list all responses in current epoch once.
           unless remaining = state[:remaining_responses]
-            search_path = ::File.join(
-              @fixtures_dir,
-              state[:epoch].to_s,
-              @route_data[:subdir],
-              'responses/**/*.yml')
+            search_path = ::File.join(fixtures_route_dir(:response, state), '**/*.yml')
             remaining = state[:remaining_responses] = ::Dir[search_path].inject({}) do |h, path|
               h[path] = { call_count: 0 }
               h

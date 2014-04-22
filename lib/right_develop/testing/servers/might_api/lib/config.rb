@@ -117,45 +117,48 @@ module RightDevelop::Testing::Server::MightApi
       # and that they are MD5-named. if not, then supply the MD5 by renaming
       # both files. this allows a user to write custom request/responses without
       # having to supply the MD5 checksum for the significant request parts.
+      unrecognized_routes = []
       ::Dir[::File.join(fixtures_dir, '*/*')].sort.each do |epoch_api_dir|
         if ::File.directory?(epoch_api_dir)
           # request/response pairs must be identical whether or not using human-
           # readable file names.
-          requests_dir = epoch_api_dir + '/requests/'
-          responses_dir = epoch_api_dir + '/responses/'
-          request_files = ::Dir[requests_dir + '**/*.yml'].sort.map { |path| path[requests_dir.length..-1] }
-          response_files = ::Dir[responses_dir + '**/*.yml'].sort.map { |path| path[responses_dir.length..-1] }
-          if request_files != response_files
-            difference = ((request_files - response_files) | (response_files - request_files)).sort
-            message = 'Mismatched request/response file pairs under ' +
-                      "#{epoch_api_dir.inspect}: #{difference.inspect}"
-            raise ::ArgumentError, message
-          end
+          route_subdir_name = ::File.basename(epoch_api_dir)
+          if route = routes.find { |prefix, data| data[:subdir] == route_subdir_name }
+            route_path, route_data = route
+            requests_dir = epoch_api_dir + '/request/'
+            responses_dir = epoch_api_dir + '/response/'
+            request_files = ::Dir[requests_dir + '**/*.yml'].sort.map { |path| path[requests_dir.length..-1] }
+            response_files = ::Dir[responses_dir + '**/*.yml'].sort.map { |path| path[responses_dir.length..-1] }
+            if request_files != response_files
+              difference = ((request_files - response_files) | (response_files - request_files)).sort
+              message = 'Mismatched request/response file pairs under ' +
+                        "#{epoch_api_dir.inspect}: #{difference.inspect}"
+              raise ::ArgumentError, message
+            end
 
-          # convert filename prefix to MD5 wherever necessary.
-          unrecognized_paths = []
-          request_files.each do |path|
-            # load request/response pair to validate.
-            request_file_path = ::File.join(requests_dir, path)
-            response_file_path = ::File.join(responses_dir, path)
-            request_data = ::Mash.new(::YAML.load_file(request_file_path))
-            response_data = ::Mash.new(::YAML.load_file(response_file_path))
+            # convert filename prefix to MD5 wherever necessary.
+            request_files.each do |path|
+              # load request/response pair to validate.
+              request_file_path = ::File.join(requests_dir, path)
+              response_file_path = ::File.join(responses_dir, path)
+              request_data = ::Mash.new(::YAML.load_file(request_file_path))
+              response_data = ::Mash.new(::YAML.load_file(response_file_path))
 
-            # if confing contains unreachable (i.e. no available route) files
-            # then that is ignorable.
-            query_string = request_data[:query]
-            uri = METADATA_CLASS.normalize_uri(
-              URI::HTTP.build(
-                host: 'none',
-                path: '/' + ::File.dirname(path),
-                query: request_data[:query]).to_s)
-            if route_data = routes.find { |prefix, data| uri.path.start_with?(prefix) }
+              # if confing contains unreachable (i.e. no available route) files
+              # then that is ignorable.
+              query_string = request_data[:query]
+              uri = METADATA_CLASS.normalize_uri(
+                URI::HTTP.build(
+                  host:  'none',
+                  path:  (route_path + ::File.dirname(path)),
+                  query: request_data[:query]).to_s)
+
               # compute checksum from recorded request metadata.
               request_metadata = METADATA_CLASS.new(
                 mode:       :echo,
                 kind:       :request,
                 logger:     logger,
-                route_data: route_data.last,
+                route_data: route_data,
                 uri:        uri,
                 verb:       request_data[:verb],
                 headers:    request_data[:headers],
@@ -186,10 +189,10 @@ module RightDevelop::Testing::Server::MightApi
                 logger.debug("Renaming #{response_file_path.inspect} to #{to_response_file_path.inspect}.")
                 ::File.rename(response_file_path, to_response_file_path)
               end
-            elsif !unrecognized_paths.include?(uri.path)
-              unrecognized_paths << uri.path
-              logger.warn("WARNING: Cannot route a path in fixtures directory: #{uri.path.inspect}")
             end
+          elsif !unrecognized_routes.include?(epoch_api_dir)
+            unrecognized_routes << epoch_api_dir
+            logger.warn("WARNING: Cannot find a route for fixtures directory: #{epoch_api_dir.inspect}")
           end
         end
       end

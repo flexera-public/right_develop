@@ -37,8 +37,8 @@ module RightDevelop::Testing::Client::Rest::Request
     # metadata.
     METADATA_CLASS = ::RightDevelop::Testing::Recording::Metadata
 
-    attr_reader :fixtures_dir, :logger, :route_data, :state_file_path
-    attr_reader :request_timestamp, :response_timestamp
+    attr_reader :fixtures_dir, :logger, :route_path, :route_data
+    attr_reader :state_file_path, :request_timestamp, :response_timestamp
 
     def initialize(args)
       args = args.dup
@@ -47,6 +47,9 @@ module RightDevelop::Testing::Client::Rest::Request
       end
       unless @logger = args.delete(:logger)
         raise ::ArgumentError, 'logger is required'
+      end
+      unless @route_path = args.delete(:route_path)
+        raise ::ArgumentError, 'route_path is required'
       end
       unless @route_data = args.delete(:route_data)
         raise ::ArgumentError, 'route_data is required'
@@ -178,24 +181,36 @@ module RightDevelop::Testing::Client::Rest::Request
         variables:              state[:variables])
     end
 
-    def request_file_path(state, request_metadata)
+    # Directory common to all fixtures of the given kind.
+    def fixtures_route_dir(kind, state)
       ::File.join(
         @fixtures_dir,
         state[:epoch].to_s,
         @route_data[:subdir],
-        'requests',
-        request_metadata.uri.path,
+        kind.to_s)
+    end
+
+    # Expands path to fixture file given kind, state, etc.
+    def fixture_file_path(kind, state, request_metadata)
+      # remove API root from path because we are already under an API-specific
+      # subdirectory and the route base path may be redundant.
+      unless request_metadata.uri.path.start_with?(@route_path)
+        raise ::ArgumentError,
+              "Request URI = #{request_metadata.uri.path.inspect} did not start with #{@route_path.inspect}."
+      end
+      route_relative_path = request_metadata.uri.path[@route_path.length..-1]
+      ::File.join(
+        fixtures_route_dir(kind, state),
+        route_relative_path,
         request_metadata.checksum + '.yml')
     end
 
+    def request_file_path(state, request_metadata)
+      fixture_file_path(:request, state, request_metadata)
+    end
+
     def response_file_path(state, request_metadata)
-      ::File.join(
-        @fixtures_dir,
-        state[:epoch].to_s,
-        @route_data[:subdir],
-        'responses',
-        request_metadata.uri.path,
-        request_metadata.checksum + '.yml')
+      fixture_file_path(:response, state, request_metadata)
     end
 
   end # Base

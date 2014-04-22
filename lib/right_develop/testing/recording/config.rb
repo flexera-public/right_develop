@@ -290,7 +290,7 @@ module RightDevelop::Testing::Recording
           raise ConfigError, "#{position_string(position, 'subdir')} is required: #{route_data.inspect}"
         end
         if proxy_data = route_data[:proxy]
-          if header_data = proxy_data[:headers]
+          if header_data = proxy_data[:header]
             if case_value = header_data[:case]
               case case_value = case_value.to_s.to_sym
               when :lower, :upper, :capitalize

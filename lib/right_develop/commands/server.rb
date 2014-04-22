@@ -170,6 +170,17 @@ And [options] are selected from:
         rescue ::Interrupt
           # server runs in foreground so interrupt is normal
         ensure
+          case mode
+          when :record
+            # remove temporary record state file from root of fixtures directory.
+            ::Dir[::File.join(config.fixtures_dir, '*.yml')].each do |path|
+              begin
+                ::File.unlink(path)
+              rescue ::Exception => e
+                logger.error("Unable to remove #{path.inspect}:\n  #{e.class}: #{e.message}")
+              end
+            end
+          end
           begin
             ::FileUtils.rm_rf(tmp_root_dir)
           rescue ::Exception => e
@@ -179,5 +190,5 @@ And [options] are selected from:
       end
     end
 
-  end
-end
+  end # Server
+end # RightDevelop::Commands
