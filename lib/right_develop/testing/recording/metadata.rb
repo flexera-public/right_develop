@@ -115,9 +115,7 @@ module RightDevelop::Testing::Recording
         erck = @effective_route_config[@kind]
         if effective_variables = erck && erck[VARIABLES_KEY]
           recursive_replace_variables(
-            [@kind, VARIABLES_KEY],
-            @typenames_to_values,
-            @effective_route_config[@kind][VARIABLES_KEY])
+            [@kind, VARIABLES_KEY], @typenames_to_values, effective_variables)
         end
         if logger.debug?
           logger.debug("#{@kind} effective_route_config = #{@effective_route_config[@kind].inspect}")

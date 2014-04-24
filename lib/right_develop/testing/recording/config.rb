@@ -48,6 +48,11 @@ module RightDevelop::Testing::Recording
       :record   => 'Record a session for one or more proxied web services.'
     ).freeze
 
+    # keys allowed under the deep route configuration.
+    ALLOWED_KINDS          = %w(request response)
+    ALLOWED_CONFIG_ACTIONS = %w(significant variables)
+    ALLOWED_VARIABLE_TYPES = %w(body header)
+
     # metadata.
     METADATA_CLASS = ::RightDevelop::Testing::Recording::Metadata
 
@@ -483,12 +488,41 @@ module RightDevelop::Testing::Recording
     # Only header keys are normalized; other fields are case-sensitive and
     # otherwise adhere to a standard specific to the API for field names.
     def normalize_route_stop_configuration(position, subpath, route_stop_config)
+
+      # sanity check.
+      unwanted_keys = route_stop_config.keys.map(&:to_s) - ALLOWED_KINDS
+      unless unwanted_keys.empty?
+        message = 'The route configuration for route configuration at ' +
+                  "#{position_string(position, subpath)} " +
+                  "contained illegal kind specifiers = " +
+                  "#{unwanted_keys.inspect}. Only #{ALLOWED_KINDS} are allowed."
+        raise ConfigError, message
+      end
+
       route_stop_config.inject(::Mash.new) do |rst, (rst_k, rst_v)|
-        # route_stop_config has keys like :request, :response
+
+        # sanity check.
+        unwanted_keys = rst_v.keys.map(&:to_s) - ALLOWED_CONFIG_ACTIONS
+        unless unwanted_keys.empty?
+          message = 'The route configuration for route configuration at ' +
+                    "#{position_string(position, subpath + [rst_k])} " +
+                    "contained illegal action specifiers = " +
+                    "#{unwanted_keys.inspect}. Only #{ALLOWED_CONFIG_ACTIONS} are allowed."
+          raise ConfigError, message
+        end
+
         rst[rst_k] = rst_v.inject(::Mash.new) do |kc, (kc_k, kc_v)|
-          # kind hash has keys like :significant, :variables
-          # qualified hash on right has keys like :header, :body
+          # sanity check.
           kc_v = deep_mash(kc_v)
+          unwanted_keys = kc_v.keys - ALLOWED_VARIABLE_TYPES
+          unless unwanted_keys.empty?
+            message = 'The route configuration for variables at ' +
+                      "#{position_string(position, subpath + [rst_k, kc_k])} " +
+                      "contained illegal variable specifiers = " +
+                      "#{unwanted_keys.inspect}. Only #{ALLOWED_VARIABLE_TYPES} are allowed."
+            raise ConfigError, message
+          end
+
           if headers = kc_v[:header]
             case headers
             when ::Array
