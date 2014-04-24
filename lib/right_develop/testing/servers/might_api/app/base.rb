@@ -203,7 +203,11 @@ EOF
                 h[k.to_s.gsub('_', '-').downcase] = v.join("\n")
                 h
               end
-              ['connection', 'status'].each { |key| response_headers.delete(key) }
+
+              # eliminate headers that interfere with response via proxy.
+              %w(
+                connection status content-encoding
+              ).each { |key| response_headers.delete(key) }
 
               case code = Integer(rest_response.code)
               when 301, 302, 307

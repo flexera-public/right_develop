@@ -395,6 +395,24 @@ module RightDevelop::Testing::Recording
           when nil
             # non-captured hidden credential. same for request or response.
             target[k] = HIDDEN_CREDENTIAL_VALUE
+          when ::Array
+            # array should have a single element which should be a hash with
+            # futher variable declarations for
+            #   "one ore more objects of the same type in an array."
+            # the array is only an indicator that an array is expected here.
+            variables_for_elements = variable.first
+            if variable.size != 1 || !variables_for_elements.kind_of?(::Hash)
+              message = 'Invalid variable specification has an array but does '+
+                        'not have exactly one element that is a hash at ' +
+                        "#{(path + [k]).join('/').inspect}"
+              raise RecordingError, message
+            end
+            if target_value.kind_of?(::Array)
+              target_value.each_with_index do |item, index|
+                recursive_replace_variables(
+                  path + [k, index], item, variables_for_elements)
+              end
+            end
           when ::Hash
             # ignore if target is not a hash; allow a root config to try and
             # replace variables without knowing exact schema for each request.
@@ -495,7 +513,9 @@ module RightDevelop::Testing::Recording
 
       # eliminate headers that interfere with playback or don't make sense to
       # record.
-      %w(connection status host user_agent).each { |key| result.delete(key) }
+      %w(
+        connection status host user_agent content_encoding
+      ).each { |key| result.delete(key) }
 
       # always obfuscate cookie headers as they won't be needed for playback and
       # would be non-trivial to configure for each service.
