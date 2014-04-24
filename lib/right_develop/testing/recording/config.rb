@@ -50,7 +50,7 @@ module RightDevelop::Testing::Recording
 
     # keys allowed under the deep route configuration.
     ALLOWED_KINDS          = %w(request response)
-    ALLOWED_CONFIG_ACTIONS = %w(significant variables)
+    ALLOWED_CONFIG_ACTIONS = %w(significant transform variables)
     ALLOWED_VARIABLE_TYPES = %w(body header)
 
     # metadata.
@@ -531,7 +531,7 @@ module RightDevelop::Testing::Recording
                 a << normalize_header_key(k)
               end
             when ::Hash
-              # variables
+              # transform, variables
               kc_v[:header] = headers.inject(::Mash.new) do |h, (k, v)|
                 h[normalize_header_key(k)] = v
                 h

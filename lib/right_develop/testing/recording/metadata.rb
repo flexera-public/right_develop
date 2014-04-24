@@ -45,6 +45,7 @@ module RightDevelop::Testing::Recording
     # route-relative config keys.
     MATCHERS_KEY    = 'matchers'.freeze
     SIGNIFICANT_KEY = 'significant'.freeze
+    TRANSFORM_KEY   = 'transform'.freeze
     VARIABLES_KEY   = 'variables'.freeze
 
     # finds the value index for a recorded variable, if any.
@@ -115,7 +116,10 @@ module RightDevelop::Testing::Recording
         erck = @effective_route_config[@kind]
         if effective_variables = erck && erck[VARIABLES_KEY]
           recursive_replace_variables(
-            [@kind, VARIABLES_KEY], @typenames_to_values, effective_variables)
+            [@kind, VARIABLES_KEY],
+            @typenames_to_values,
+            effective_variables,
+            erck[TRANSFORM_KEY])
         end
         if logger.debug?
           logger.debug("#{@kind} effective_route_config = #{@effective_route_config[@kind].inspect}")
@@ -384,15 +388,24 @@ module RightDevelop::Testing::Recording
     # @param [Hash] variables from current state
     # @param [Hash] target to receive substituted names
     # @param [Hash] source for variables to substitute
+    # @param [Hash] transform for data structure elements or nil
     #
     # @return [Hash] data with any replacements
-    def recursive_replace_variables(path, target, source)
+    def recursive_replace_variables(path, target, source, transform)
       source.each do |k, variable|
         unless (target_value = target[k]).nil?
+
+          # apply transform, if any, before attempting to replace variables.
+          case current_transform = transform && transform[k]
+          when 'JSON'
+            target_value = ::JSON.parse(target_value)
+          end
+
+          # variable replacement.
           case variable
           when nil
             # non-captured hidden credential. same for request or response.
-            target[k] = HIDDEN_CREDENTIAL_VALUE
+            target_value = HIDDEN_CREDENTIAL_VALUE
           when ::Array
             # array should have a single element which should be a hash with
             # futher variable declarations for
@@ -405,53 +418,85 @@ module RightDevelop::Testing::Recording
                         "#{(path + [k]).join('/').inspect}"
               raise RecordingError, message
             end
+
+            transform_for_elements = nil
+            if current_transform
+              if current_transform.kind_of?(::Array) &&
+                 current_transform.size == 1 &&
+                 current_transform.first.kind_of?(::Hash)
+                transform_for_elements = current_transform.first
+              else
+                message = 'Invalid transform specification does not match ' +
+                          'array variable specification at ' +
+                          (path + [k]).join('/').inspect
+                raise RecordingError, message
+              end
+            end
             if target_value.kind_of?(::Array)
               target_value.each_with_index do |item, index|
                 recursive_replace_variables(
-                  path + [k, index], item, variables_for_elements)
+                  path + [k, index],
+                  item,
+                  variables_for_elements,
+                  transform_for_elements)
               end
             end
           when ::Hash
             # ignore if target is not a hash; allow a root config to try and
             # replace variables without knowing exact schema for each request.
             if target_value.kind_of?(::Hash)
-              recursive_replace_variables(path + [k], target_value, variable)
+              transform_for_subhash = current_transform.kind_of?(::Hash) ? current_transform : nil
+              recursive_replace_variables(
+                path + [k],
+                target_value,
+                variable,
+                transform_for_subhash)
             end
           when ::String
-            case @mode
-            when 'record'
-              # record request and playback change real data to variable name.
-              target[k] = variable_to_cache(variable, target_value)
-            when 'playback'
-              case @kind
-              when 'request'
-                # playback request is parsed only in order to cache the variable
-                # value; variable name will not appear anywhere.
-                target[k] = variable_to_cache(variable, target_value)
-              when 'response'
+            case @kind
+            when 'request'
+              # record request changes real data to variable name after
+              # caching the real value.
+              # playback request is parsed only in order to cache the variable
+              # value; variable name will not appear anywhere in playback.
+              target_value = variable_to_cache(variable, target_value)
+            when 'response'
+              case @mode
+              when 'record'
+                # value must exist in case (from some previous request) for the
+                # response to be able to reference it.
+                target_value = variable_in_cache(path, variable, target_value)
+              when 'playback'
                 # playback response uses cached variable value from some
                 # previous request.
-                target[k] = variable_from_cache(variable, target_value, path)
+                target_value = variable_from_cache(path, variable, target_value)
               else
-                fail "Unexpected kind: #{@kind.inspect}"
+                fail "Unexpected mode: #{@mode.inspect}"
               end
             else
-              fail "Unexpected mode: #{@mode.inspect}"
+              fail "Unexpected kind: #{@kind.inspect}"
             end
           else
             # a nil target_value would mean the data did not have a placeholder
             # for the value to subtitute, which is ignorable.
-            # what is not ignorable, however, is having a non-hash & non-nil here.
+            # what is not ignorable, however, is having an unexpected type here.
             message = 'Unexpected variable entry at ' +
                       "#{(path + [k]).join('/').inspect}"
             raise RecordingError, message
           end
+
+          # reverse transform, if any, before reassignment.
+          case current_transform
+          when 'JSON'
+            target_value = ::JSON.dump(target_value)
+          end
+          target[k] = target_value
         end
       end
       target
     end
 
-    # Inserts a real value into array by variable name.
+    # Inserts (or reuses) a real value into cached array by variable name.
     def variable_to_cache(variable, real_value)
       result = nil
       if values = @variables[variable]
@@ -474,8 +519,25 @@ module RightDevelop::Testing::Recording
       result
     end
 
+    # Requires a real value to already exist in cache by variable name.
+    def variable_in_cache(path, variable, real_value)
+      result = nil
+      values = @variables[variable]
+      case value_index = values && values.index(real_value)
+      when nil
+        message = 'A variable referenced by a response has not yet been ' +
+                  "defined by a request while replacing variable = " +
+                  "#{variable.inspect} at #{path.join('/').inspect}"
+        raise RecordingError, message
+      when 0
+        variable
+      else
+        "#{variable}[#{value_index}]"
+      end
+    end
+
     # Attempts to get cached variable value by index from recorded string.
-    def variable_from_cache(variable, target_value, path)
+    def variable_from_cache(path, variable, target_value)
       result = nil
       if values = @variables[variable]
         if matched = VARIABLE_INDEX_REGEX.match(target_value)
