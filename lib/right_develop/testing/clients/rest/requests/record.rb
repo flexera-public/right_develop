@@ -76,7 +76,7 @@ module RightDevelop::Testing::Client::Rest::Request
 
     # @see RightDevelop::Testing::Client::Rest::Request::Base.handle_timeout
     def handle_timeout
-      @response_timestamp = ::Time.now.to_i
+      super
       response = TimeoutNetHttpResponse.new
       with_state_lock { |state| record_response(state, response) }
       response
@@ -115,10 +115,10 @@ module RightDevelop::Testing::Client::Rest::Request
       }
 
       # detect collision, if any, to determine if we have entered a new epoch.
-      data_key = ::File.join(request_metadata.uri.path, request_metadata.checksum)
+      ork = outstanding_request_key
       call_count = 0
       next_checksum = response_metadata.checksum
-      if response_data = (state[:response_data] ||= {})[data_key]
+      if response_data = (state[:response_data] ||= {})[ork]
         last_checksum = response_data[:checksum]
         if last_checksum != next_checksum
           # note that variables never reset due to epoch change but they can be
@@ -131,7 +131,7 @@ module RightDevelop::Testing::Client::Rest::Request
         end
       end
       call_count += 1
-      state[:response_data][data_key] = {
+      state[:response_data][ork] = {
         checksum:   next_checksum,
         call_count: call_count,
       }

@@ -217,26 +217,29 @@ EOF
             response_body = [net_http_response.body]
             response = [response_code, response_headers, response_body]
           rescue RestClient::Exception => e
-            max_redirects -= 1
-            if max_redirects >= 0
-              case e.http_code
-              when 301, 302, 307
-                if location = e.response.headers[:location]
-                  redirect_uri = ::URI.parse(location)
-                  redirect_uri.path = ''
-                  redirect_uri.query = nil
-                  logger.debug("#{e.message} from #{route_data[:url]} to #{redirect_uri}")
-                  route_data[:url] = redirect_uri.to_s
-                else
-                  logger.debug("#{e.message} was missing expected location header.")
-                  raise
-                end
+            case e.http_code
+            when 301, 302, 307
+              max_redirects -= 1
+              raise MightError.new('Exceeded max redirects') if max_redirects < 0
+              if location = e.response.headers[:location]
+                redirect_uri = ::URI.parse(location)
+                redirect_uri.path = ''
+                redirect_uri.query = nil
+                logger.debug("#{e.message} from #{route_data[:url]} to #{redirect_uri}")
+                route_data[:url] = redirect_uri.to_s
+
+                # move to end of FIFO queue for retry.
+                request_proxy.forget_outstanding_request
               else
+                logger.debug("#{e.message} was missing expected location header.")
                 raise
               end
             else
-              raise MightError.new('Exceeded max redirects')
+              raise
             end
+          ensure
+            # remove from FIFO queue in case of any unhandled error.
+            request_proxy.forget_outstanding_request if request_proxy
           end
         end
         response

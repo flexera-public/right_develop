@@ -24,6 +24,7 @@
 require 'right_develop/testing/clients/rest'
 require 'right_develop/testing/recording/metadata'
 
+require 'digest/md5'
 require 'rack/utils'
 require 'rest_client'
 require 'right_support'
@@ -116,7 +117,7 @@ module RightDevelop::Testing::Client::Rest::Request
     # @return [Object] undefined
     def log_request
       result = super
-      @request_timestamp = ::Time.now.to_i
+      push_outstanding_request
       result
     end
 
@@ -126,15 +127,30 @@ module RightDevelop::Testing::Client::Rest::Request
     #
     # @return [Object] undefined
     def log_response(response)
-      @response_timestamp = ::Time.now.to_i
+      pop_outstanding_request
       super
     end
 
     # Handles a timeout raised by a Net::HTTP call.
     #
-    # @return [Net::HTTPResponse] response
+    # @return [Net::HTTPResponse] response or nil if subclass responsibility
     def handle_timeout
-      raise NotImplementedError, 'Must be overridden'
+      pop_outstanding_request
+      nil
+    end
+
+    # Removes the current request from the FIFO queue of outstanding requests in
+    # case of error, redirect, etc.
+    def forget_outstanding_request
+      ruid = request_uid
+      ork = outstanding_request_key
+      with_state_lock do |state|
+        outstanding = state[:outstanding]
+        if outstanding_requests = outstanding[ork]
+          outstanding_requests.delete(ruid)
+          outstanding.delete(ork) if outstanding_requests.empty?
+        end
+      end
     end
 
     protected
@@ -142,6 +158,16 @@ module RightDevelop::Testing::Client::Rest::Request
     # @return [Symbol] recording mode as one of [:record, :playback]
     def recording_mode
       raise NotImplementedError, 'Must be overridden'
+    end
+
+    # @return [String] unique identifier for this request (for this process)
+    def request_uid
+      @request_uid ||= ::Digest::MD5.hexdigest("#{::Process.pid}, #{self.object_id}")
+    end
+
+    # @return [String] path to current outstanding request, if any
+    def outstanding_request_key
+      ::File.join(request_metadata.uri.path, request_metadata.checksum)
     end
 
     # Holds the state file lock for block.
@@ -159,7 +185,7 @@ module RightDevelop::Testing::Client::Rest::Request
         f.flock(::File::LOCK_EX)
         state_yaml = f.read
         if state_yaml.empty?
-          state = { epoch: 0, variables: {} }
+          state = { epoch: 0, variables: {}, outstanding: {} }
         else
           state = ::YAML.load(state_yaml)
         end
@@ -169,6 +195,50 @@ module RightDevelop::Testing::Client::Rest::Request
         f.puts(::YAML.dump(state))
       end
       result
+    end
+
+    # Keeps a FIFO queue of outstanding requests using request object id in
+    # state to ensure responses are synchronous. This is important for record/
+    # playback of long polling with many threads/processes doing the polling. We
+    # do not want a younger long polling request to steal responses from an
+    # older request because we cannot maintain asynchronous state for playback.
+    #
+    # To make this blocking behavior more reasonable for testing, configure
+    # shorter timeouts for API calls that you know are long polling; the default
+    # read timeout value is 60 seconds. The timeout only effects playback time
+    # if you use throttle > 0.
+    def push_outstanding_request
+      ruid = request_uid
+      ork = outstanding_request_key
+      with_state_lock do |state|
+        outstanding = state[:outstanding]
+        outstanding_requests = outstanding[ork] ||= []
+        outstanding_requests << ruid
+      end
+      @request_timestamp = ::Time.now.to_i
+      true
+    end
+
+    # Blocks until all similar previous requests have been popped from the
+    # queue. This is simple if there is a single producer/consumer of
+    # request/response but more complex as threads are introduced.
+    def pop_outstanding_request
+      @response_timestamp = ::Time.now.to_i
+      ruid = request_uid
+      ork = outstanding_request_key
+      while ruid do
+        with_state_lock do |state|
+          outstanding = state[:outstanding]
+          outstanding_requests = outstanding[ork]
+          if outstanding_requests.first == ruid
+            outstanding_requests.shift
+            outstanding.delete(ork) if outstanding_requests.empty?
+            ruid = nil
+          end
+        end
+        sleep 0.1 if ruid
+      end
+      true
     end
 
     # @return [RightDevelop::Testing::Client::RecordMetdata] metadata for response
