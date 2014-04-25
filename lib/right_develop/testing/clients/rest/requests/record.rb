@@ -34,6 +34,35 @@ module RightDevelop::Testing::Client::Rest::Request
   # we have.
   class Record < ::RightDevelop::Testing::Client::Rest::Request::Base
 
+    # simulated 504 Net::HTTPResponse
+    class TimeoutNetHttpResponse
+      attr_reader :code, :body
+
+      def initialize
+        message = 'Timeout'
+        @code = 504
+        @headers = {
+          'content-type'   => 'text/plain',
+          'content-length' => ::Rack::Utils.bytesize(message).to_s,
+          'connection'     => 'close',
+        }.inject({}) do |h, (k, v)|
+          h[k] = Array(v)  # expected to be an array
+          h
+        end
+        @body = message
+      end
+
+      def [](key)
+        if header = @headers[key.downcase]
+          header.join(', ')
+        else
+          nil
+        end
+      end
+
+      def to_hash; @headers; end
+    end
+
     # Overrides log_response to capture both request and response.
     #
     # @param [RestClient::Response] to capture
@@ -43,6 +72,14 @@ module RightDevelop::Testing::Client::Rest::Request
       result = super
       with_state_lock { |state| record_response(state, response) }
       result
+    end
+
+    # @see RightDevelop::Testing::Client::Rest::Request::Base.handle_timeout
+    def handle_timeout
+      @response_timestamp = ::Time.now.to_i
+      response = TimeoutNetHttpResponse.new
+      with_state_lock { |state| record_response(state, response) }
+      response
     end
 
     protected
@@ -63,9 +100,8 @@ module RightDevelop::Testing::Client::Rest::Request
 
       # use raw headers for response instead of the usual RestClient behavior of
       # converting arrays to comma-delimited strings.
-      request_metadata = request_metadata(state)
       response_metadata = response_metadata(
-        state, request_metadata, http_status, response.to_hash, response.body)
+        state, http_status, response.to_hash, response.body)
 
       # record elapsed time in (integral) seconds. not intended to be a precise
       # measure of time but rather used to throttle server if client is time-
@@ -102,7 +138,7 @@ module RightDevelop::Testing::Client::Rest::Request
       response_hash[:call_count] = call_count
 
       # write request unless already written.
-      file_path = request_file_path(state, request_metadata)
+      file_path = request_file_path(state)
       unless ::File.file?(file_path)
         # note that variables are not recorded because they must always be
         # supplied by the client's request.
@@ -118,7 +154,7 @@ module RightDevelop::Testing::Client::Rest::Request
       logger.debug("Recorded request at #{file_path.inspect}.")
 
       # response always written for incremented call count.
-      file_path = response_file_path(state, request_metadata)
+      file_path = response_file_path(state)
       ::FileUtils.mkdir_p(::File.dirname(file_path))
       ::File.open(file_path, 'w') { |f| f.puts(::YAML.dump(response_hash)) }
       logger.debug("Recorded response at #{file_path.inspect}.")

@@ -50,7 +50,8 @@ module RightDevelop::Testing::Recording
 
     # keys allowed under the deep route configuration.
     ALLOWED_KINDS          = %w(request response)
-    ALLOWED_CONFIG_ACTIONS = %w(significant transform variables)
+    ALLOWED_CONFIG_ACTIONS = %w(significant timeouts transform variables)
+    ALLOWED_TIMEOUTS       = %w(open_timeout read_timeout)
     ALLOWED_VARIABLE_TYPES = %w(body header)
 
     # metadata.
@@ -512,34 +513,51 @@ module RightDevelop::Testing::Recording
         end
 
         rst[rst_k] = rst_v.inject(::Mash.new) do |kc, (kc_k, kc_v)|
-          # sanity check.
-          kc_v = deep_mash(kc_v)
-          unwanted_keys = kc_v.keys - ALLOWED_VARIABLE_TYPES
-          unless unwanted_keys.empty?
-            message = 'The route configuration for variables at ' +
-                      "#{position_string(position, subpath + [rst_k, kc_k])} " +
-                      "contained illegal variable specifiers = " +
-                      "#{unwanted_keys.inspect}. Only #{ALLOWED_VARIABLE_TYPES} are allowed."
-            raise ConfigError, message
-          end
-
-          if headers = kc_v[:header]
-            case headers
-            when ::Array
-              # significant
-              kc_v[:header] = headers.inject([]) do |a, k|
-                a << normalize_header_key(k)
-              end
-            when ::Hash
-              # transform, variables
-              kc_v[:header] = headers.inject(::Mash.new) do |h, (k, v)|
-                h[normalize_header_key(k)] = v
-                h
-              end
-            else
-              message = "Expected an array at #{position_string(position, subpath + [rst_k, kc_k, :header])}; " +
-                        "use the #{STOP_TRAVERSAL_KEY.inspect} key to stop traversal."
+          case kc_k
+          when METADATA_CLASS::TIMEOUTS_KEY
+            # sanity check.
+            kc_v = kc_v.inject(::Mash.new) do |h, (k, v)|
+              h[k] = Integer(v)
+              h
+            end
+            unwanted_keys = kc_v.keys - ALLOWED_TIMEOUTS
+            unless unwanted_keys.empty?
+              message = 'The route configuration for timeouts at ' +
+                        "#{position_string(position, subpath + [rst_k, kc_k])} " +
+                        "contained illegal timeout specifiers = " +
+                        "#{unwanted_keys.inspect}. Only #{ALLOWED_TIMEOUTS} are allowed."
               raise ConfigError, message
+            end
+          else
+            # sanity check.
+            kc_v = deep_mash(kc_v)
+            unwanted_keys = kc_v.keys - ALLOWED_VARIABLE_TYPES
+            unless unwanted_keys.empty?
+              message = 'The route configuration for variables at ' +
+                        "#{position_string(position, subpath + [rst_k, kc_k])} " +
+                        "contained illegal variable specifiers = " +
+                        "#{unwanted_keys.inspect}. Only #{ALLOWED_VARIABLE_TYPES} are allowed."
+              raise ConfigError, message
+            end
+
+            if headers = kc_v[:header]
+              case headers
+              when ::Array
+                # significant
+                kc_v[:header] = headers.inject([]) do |a, k|
+                  a << normalize_header_key(k)
+                end
+              when ::Hash
+                # transform, variables
+                kc_v[:header] = headers.inject(::Mash.new) do |h, (k, v)|
+                  h[normalize_header_key(k)] = v
+                  h
+                end
+              else
+                message = "Expected an array at #{position_string(position, subpath + [rst_k, kc_k, :header])}; " +
+                          "use the #{STOP_TRAVERSAL_KEY.inspect} key to stop traversal."
+                raise ConfigError, message
+              end
             end
           end
           kc[kc_k] = kc_v

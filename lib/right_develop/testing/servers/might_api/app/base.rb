@@ -162,7 +162,8 @@ EOF
         route_path, route_data = route
         response = nil
         max_redirects = MAX_REDIRECTS
-        loop do
+        while response.nil? do
+          request_proxy = nil
           begin
             proxied_url = ::File.join(route_data[:url], uri.path)
             unless uri.query.to_s.empty?
@@ -188,41 +189,33 @@ EOF
 
             request_proxy.execute do |rest_response, rest_request, net_http_response, &block|
 
-              # rack has a convention of newline-delimited header multi-values.
-              #
-              # HACK: change underscore to dash to defeat
-              # RestClient::AbstractResponse line 27 (on client side) from failing
-              # to parse cookies array; it incorrectly calls .inject on the
-              # stringized form instead of using the raw array form or parsing the
-              # cookies into a hash, but only if the raw name is 'set_cookie'
-              # ('set-cookie' is okay).
-              #
-              # even wierder, on line 78 it assumes the raw name is 'set-cookie'
-              # and that works out for us here.
-              response_headers = net_http_response.to_hash.inject({}) do |h, (k, v)|
-                h[k.to_s.gsub('_', '-').downcase] = v.join("\n")
-                h
-              end
+              # headers.
+              response_headers = normalize_rack_response_headers(net_http_response.to_hash)
 
               # eliminate headers that interfere with response via proxy.
               %w(
                 connection status content-encoding
               ).each { |key| response_headers.delete(key) }
 
-              case code = Integer(rest_response.code)
+              case response_code = Integer(rest_response.code)
               when 301, 302, 307
-                raise RestClient::Exceptions::EXCEPTIONS_MAP[code].new(rest_response, code)
+                raise RestClient::Exceptions::EXCEPTIONS_MAP[code].new(rest_response, response_code)
               else
                 # special handling for chunked body.
                 if response_headers['transfer-encoding'] == 'chunked'
-                  reponse_body = ::Rack::Chunked::Body.new([rest_response.body])
+                  response_body = ::Rack::Chunked::Body.new([rest_response.body])
                 else
-                  reponse_body = [rest_response.body]
+                  response_body = [rest_response.body]
                 end
-                response = [code, response_headers, reponse_body]
+                response = [response_code, response_headers, response_body]
               end
             end
-            break
+          rescue RestClient::RequestTimeout
+            net_http_response = request_proxy.handle_timeout
+            response_code = Integer(net_http_response.code)
+            response_headers = normalize_rack_response_headers(net_http_response.to_hash)
+            response_body = [net_http_response.body]
+            response = [response_code, response_headers, response_body]
           rescue RestClient::Exception => e
             max_redirects -= 1
             if max_redirects >= 0
@@ -246,7 +239,6 @@ EOF
             end
           end
         end
-        raise MightError.new('Unexpected missing response') unless response
         response
       end
 
@@ -288,6 +280,27 @@ EOF
           end
         end
         proxied || ::Mash.new(headers)
+      end
+
+      # rack has a convention of newline-delimited header multi-values.
+      #
+      # HACK: changes underscore to dash to defeat RestClient::AbstractResponse
+      # line 27 (on client side) from failing to parse cookies array; it
+      # incorrectly calls .inject on the stringized form instead of using the
+      # raw array form or parsing the cookies into a hash, but only if the raw
+      # name is 'set_cookie' ('set-cookie' is okay).
+      #
+      # even wierder, on line 78 it assumes the raw name is 'set-cookie' and
+      # that works out for us here.
+      #
+      # @param [Hash] headers to normalize
+      #
+      # @return [Hash] normalized headers
+      def normalize_rack_response_headers(headers)
+        headers.inject({}) do |h, (k, v)|
+          h[k.to_s.gsub('_', '-').downcase] = v.join("\n")
+          h
+        end
       end
 
       # @return [Array] rack-style response for 500

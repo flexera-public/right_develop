@@ -45,6 +45,7 @@ module RightDevelop::Testing::Recording
     # route-relative config keys.
     MATCHERS_KEY    = 'matchers'.freeze
     SIGNIFICANT_KEY = 'significant'.freeze
+    TIMEOUTS_KEY    = 'timeouts'.freeze
     TRANSFORM_KEY   = 'transform'.freeze
     VARIABLES_KEY   = 'variables'.freeze
 
@@ -136,8 +137,14 @@ module RightDevelop::Testing::Recording
       @body = normalize_body(@headers, @typenames_to_values[:body] || @body)
     end
 
+    # @return [String] computed checksum for normalized 'significant' data
     def checksum
       @checksum ||= compute_checksum
+    end
+
+    # @return [Hash] timeouts from effective configuration or empty
+    def timeouts
+      (@effective_route_config[@kind] || {})[TIMEOUTS_KEY] || {}
     end
 
     # Establishes a normal header key form for agreement between configuration

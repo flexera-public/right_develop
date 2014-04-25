@@ -39,6 +39,7 @@ module RightDevelop::Testing::Client::Rest::Request
 
     attr_reader :fixtures_dir, :logger, :route_path, :route_data
     attr_reader :state_file_path, :request_timestamp, :response_timestamp
+    attr_reader :request_metadata
 
     def initialize(args)
       args = args.dup
@@ -59,6 +60,44 @@ module RightDevelop::Testing::Client::Rest::Request
       end
       unless @state_file_path = args.delete(:state_file_path)
         raise ::ArgumentError, 'state_file_path is required'
+      end
+
+      # resolve request metadata before initializing base class in order to set
+      # any timeout values.
+      request_verb = args[:method] or raise ::ArgumentError, "must pass :method"
+      request_verb = request_verb.to_s.upcase
+      request_headers = (args[:headers] || {}).dup
+      request_url = args[:url] or raise ::ArgumentError, "must pass :url"
+      request_url = process_url_params(request_url, request_headers)
+      if request_body = args[:payload]
+        # currently only supporting string payload or nil.
+        unless request_body.kind_of?(::String)
+          raise ::ArgumentError, 'args[:payload] must be a string'
+        end
+      end
+
+      rm = nil
+      with_state_lock do |state|
+        rm = METADATA_CLASS.new(
+          mode:       recording_mode,
+          kind:       :request,
+          logger:     @logger,
+          route_data: @route_data,
+          uri:        METADATA_CLASS.normalize_uri(request_url),
+          verb:       request_verb,
+          headers:    request_headers,
+          body:       request_body,
+          variables:  state[:variables])
+      end
+      @request_metadata = rm
+      unless rm.timeouts.empty?
+        args = args.dup
+        if rm.timeouts[:open_timeout]
+          args[:open_timeout] = Integer(rm.timeouts[:open_timeout])
+        end
+        if rm.timeouts[:read_timeout]
+          args[:timeout] = Integer(rm.timeouts[:read_timeout])
+        end
       end
 
       super(args)
@@ -89,6 +128,13 @@ module RightDevelop::Testing::Client::Rest::Request
     def log_response(response)
       @response_timestamp = ::Time.now.to_i
       super
+    end
+
+    # Handles a timeout raised by a Net::HTTP call.
+    #
+    # @return [Net::HTTPResponse] response
+    def handle_timeout
+      raise NotImplementedError, 'Must be overridden'
     end
 
     protected
@@ -125,48 +171,8 @@ module RightDevelop::Testing::Client::Rest::Request
       result
     end
 
-    # @return [String] verb for current request
-    def request_verb
-      # Q: does it seem weird that RestClient::Request overrides the core
-      #    Object#method function?
-      # A: it is very weird; try getting any .method(name) metadata from one of
-      #    these objects.
-      method.to_s.upcase
-    end
-
-    # @return [String] body from request payload object
-    def request_body
-      # payload is an I/O object but we can quickly get body from .string if it
-      # is a StringIO object. assume it always is a string unless streaming a
-      # large file, in which case we don't support it currently.
-      stream = @payload.instance_variable_get(:@stream)
-      if stream && stream.respond_to?(:string)
-        body = stream.string
-      else
-        # assume payload is too large to buffer or else it would be StringIO.
-        # we could compute the MD5 by streaming if we really wanted to, but...
-        raise ::NotImplementedError,
-              'Non-string payload streams are not currently supported.'
-      end
-      body
-    end
-
-    # @return [RightDevelop::Testing::Client::RecordMetdata] metadata for request
-    def request_metadata(state)
-      METADATA_CLASS.new(
-        mode:       recording_mode,
-        kind:       :request,
-        logger:     logger,
-        route_data: @route_data,
-        uri:        METADATA_CLASS.normalize_uri(@url),
-        verb:       request_verb,
-        headers:    headers,
-        body:       request_body,
-        variables:  state[:variables])
-    end
-
     # @return [RightDevelop::Testing::Client::RecordMetdata] metadata for response
-    def response_metadata(state, request_metadata, response_code, response_headers, response_body)
+    def response_metadata(state, response_code, response_headers, response_body)
       METADATA_CLASS.new(
         mode:                   recording_mode,
         kind:                   :response,
@@ -191,7 +197,7 @@ module RightDevelop::Testing::Client::Rest::Request
     end
 
     # Expands path to fixture file given kind, state, etc.
-    def fixture_file_path(kind, state, request_metadata)
+    def fixture_file_path(kind, state)
       # remove API root from path because we are already under an API-specific
       # subdirectory and the route base path may be redundant.
       unless request_metadata.uri.path.start_with?(@route_path)
@@ -205,12 +211,12 @@ module RightDevelop::Testing::Client::Rest::Request
         request_metadata.checksum + '.yml')
     end
 
-    def request_file_path(state, request_metadata)
-      fixture_file_path(:request, state, request_metadata)
+    def request_file_path(state)
+      fixture_file_path(:request, state)
     end
 
-    def response_file_path(state, request_metadata)
-      fixture_file_path(:response, state, request_metadata)
+    def response_file_path(state)
+      fixture_file_path(:response, state)
     end
 
   end # Base

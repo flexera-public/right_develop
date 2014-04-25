@@ -112,6 +112,11 @@ module RightDevelop::Testing::Client::Rest::Request
       end
     end
 
+    # @see RightDevelop::Testing::Client::Rest::Request::Base.handle_timeout
+    def handle_timeout
+      raise ::NotImplementedError, 'Timeout is unexpected for stubbed API call.'
+    end
+
     protected
 
     # @see RightDevelop::Testing::Client::Rest::Request::Base#recording_mode
@@ -122,14 +127,12 @@ module RightDevelop::Testing::Client::Rest::Request
     def fetch_response(state)
       # response must exist in the current epoch (i.e. can only enter next epoch
       # after a valid response is found).
-      request_metadata = request_metadata(state)
-      file_path = response_file_path(state, request_metadata)
+      file_path = response_file_path(state)
       if ::File.file?(file_path)
         logger.debug("Played back response from #{file_path.inspect}.")
         response_hash = ::Mash.new(::YAML.load_file(file_path))
         response_metadata = response_metadata(
           state,
-          request_metadata,
           response_hash[:http_status],
           response_hash[:headers],
           response_hash[:body])
