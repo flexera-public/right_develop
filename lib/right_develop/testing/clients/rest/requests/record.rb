@@ -125,7 +125,7 @@ module RightDevelop::Testing::Client::Rest::Request
           # updated by a subsequent client request.
           state[:epoch] += 100        # leave room to insert custom epochs
           state[:response_data] = {}  # reset checksums for next epoch
-          logger.debug("A new epoch=#{state[:epoch]} begins due to #{request_metadata.verb} \"#{request_metadata.uri}\"")
+          logger.debug("A new epoch = #{state[:epoch]} begins due to #{request_metadata.verb} \"#{request_metadata.uri}\"")
         else
           call_count = response_data[:call_count]
         end

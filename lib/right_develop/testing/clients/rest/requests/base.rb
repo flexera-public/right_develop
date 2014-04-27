@@ -147,7 +147,9 @@ module RightDevelop::Testing::Client::Rest::Request
       with_state_lock do |state|
         outstanding = state[:outstanding]
         if outstanding_requests = outstanding[ork]
-          outstanding_requests.delete(ruid)
+          if outstanding_requests.delete(ruid)
+            logger.debug("Forgot outstanding request uid=#{ruid.inspect} at #{ork.inspect}")
+          end
           outstanding.delete(ork) if outstanding_requests.empty?
         end
       end
@@ -214,6 +216,7 @@ module RightDevelop::Testing::Client::Rest::Request
         outstanding = state[:outstanding]
         outstanding_requests = outstanding[ork] ||= []
         outstanding_requests << ruid
+        logger.debug("Pushed outstanding request uid=#{ruid.inspect} at #{ork.inspect}.")
       end
       @request_timestamp = ::Time.now.to_i
       true
@@ -233,6 +236,7 @@ module RightDevelop::Testing::Client::Rest::Request
           if outstanding_requests.first == ruid
             outstanding_requests.shift
             outstanding.delete(ork) if outstanding_requests.empty?
+            logger.debug("Popped outstanding request uid=#{ruid.inspect} at #{ork.inspect}.")
             ruid = nil
           end
         end

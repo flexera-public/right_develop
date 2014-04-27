@@ -52,6 +52,36 @@ module RightDevelop::Testing::Recording
     # finds the value index for a recorded variable, if any.
     VARIABLE_INDEX_REGEX = /\[(\d+)\]$/
 
+    # throw/catch signals.
+    HALT = :halt_recording_metadata_generator
+
+    # retry-able failures.
+    class RetryableFailure; end
+
+    class MissingVariableFailure < RetryableFailure
+      attr_reader :path, :variable, :variable_array_index, :variable_array_size
+
+      def initialize(options)
+        @path = options[:path] or raise ::ArgumentError, 'options[:path] is required'
+        @variable = options[:variable] or raise ::ArgumentError, 'options[:variable] is required'
+        @variable_array_index = options[:variable_array_index] || 0
+        @variable_array_size = options[:variable_array_size] || 0
+      end
+
+      def message
+        if (0 == variable_array_size)
+          result = 'A variable was never defined by request '
+        else
+          result =
+            'A variable index is past the range of values defined by request ' <<
+            "(#{variable_array_index} >= #{variable_array_size}) "
+        end
+        result <<
+          "while replacing variable = #{variable.inspect} at " <<
+          path.join('/').inspect
+      end
+    end
+
     # exceptions.
     class RecordingError < StandardError; end
 
@@ -470,8 +500,8 @@ module RightDevelop::Testing::Recording
             when 'response'
               case @mode
               when 'record'
-                # value must exist in case (from some previous request) for the
-                # response to be able to reference it.
+                # value must exist (from some previous request) for the response
+                # to be able to reference it.
                 target_value = variable_in_cache(path, variable, target_value)
               when 'playback'
                 # playback response uses cached variable value from some
@@ -546,25 +576,37 @@ module RightDevelop::Testing::Recording
     # Attempts to get cached variable value by index from recorded string.
     def variable_from_cache(path, variable, target_value)
       result = nil
-      if values = @variables[variable]
+      if variable_array = @variables[variable]
         if matched = VARIABLE_INDEX_REGEX.match(target_value)
-          value_index = Integer(matched[1])
+          variable_array_index = Integer(matched[1])
         else
-          value_index = 0
+          variable_array_index = 0
         end
-        if value_index >= values.size
-          message = 'The recorded variable index is past the ' +
-                    'range of values known to have been sent by ' +
-                    "request (#{value_index} >= #{values.size}) " +
-                    "while replacing variable = #{variable.inspect} " +
-                    "at #{path.join('/').inspect}"
-          raise RecordingError, message
+        if variable_array_index >= variable_array.size
+          # see below.
+          throw(
+            HALT,
+            MissingVariableFailure.new(
+              path:                 path,
+              variable:             variable,
+              variable_array_index: variable_array_index,
+              variable_array_size:  variable_array.size))
         end
-        result = values[value_index]
+        result = variable_array[variable_array_index]
       else
-        message = "Undefined variable = #{variable.inspect} at " +
-                  "#{path.join('/').inspect}"
-        raise RecordingError, message
+        # this might be caused by a race condition where the request that
+        # expects the variable to be set is made on a thread that runs faster
+        # than the thread making the API call that defines the variable. if so
+        # then the race should resolve itself after a few retries. if the
+        # variable is never defined then that can be handled later.
+        # unfortunately, all of the metadata has to be recreated after the state
+        # has changed and there is no way to determine this condition exists
+        # without performing that work.
+        throw(
+          HALT,
+          MissingVariableFailure.new(
+            path:                 path,
+            variable:             variable))
       end
       result
     end

@@ -85,6 +85,9 @@ module RightDevelop::Testing::Client::Rest::Request
       throw(HALT_TRANSMIT, HALT_TRANSMIT)
     end
 
+    RETRY_DELAY = 0.5
+    MAX_RETRIES = 100  # = 50 seconds; a socket usually times out in 60-120 seconds
+
     # Overrides transmit to catch halt thrown by log_request.
     #
     # @param [URI[ uri of some kind
@@ -96,7 +99,38 @@ module RightDevelop::Testing::Client::Rest::Request
       caught = catch(HALT_TRANSMIT) { super }
       if caught == HALT_TRANSMIT
         response = nil
-        with_state_lock { |state| response = fetch_response(state) }
+        try_counter = 0
+        while response.nil?
+          with_state_lock do |state|
+            response = catch(METADATA_CLASS::HALT) do
+              fetch_response(state)
+            end
+          end
+          case response
+          when METADATA_CLASS::RetryableFailure
+            try_counter += 1
+            if try_counter >= MAX_RETRIES
+              message =
+                "Released thread id=#{::Thread.current.object_id} after " <<
+                "#{try_counter} attempts to satisfy a retryable condition:\n" <<
+                response.message
+              raise PlaybackError, message
+            end
+            if 1 == try_counter
+              message = "Blocking thread id=#{::Thread.current.object_id} " <<
+                        'until a retryable condition is satisfied...'
+              logger.debug(message)
+            end
+            response = nil
+            sleep RETRY_DELAY
+          else
+            if try_counter > 0
+              message = "Released thread id=#{::Thread.current.object_id} " <<
+                        'after a retryable condition was satisfied.'
+              logger.debug(message)
+            end
+          end
+        end
 
         # delay, if throttled, to simulate server response time.
         if @throttle > 0 && response.elapsed_seconds > 0
@@ -129,7 +163,6 @@ module RightDevelop::Testing::Client::Rest::Request
       # after a valid response is found).
       file_path = response_file_path(state)
       if ::File.file?(file_path)
-        logger.debug("Played back response from #{file_path.inspect}.")
         response_hash = ::Mash.new(::YAML.load_file(file_path))
         response_metadata = response_metadata(
           state,
@@ -140,6 +173,7 @@ module RightDevelop::Testing::Client::Rest::Request
       else
         raise PlaybackError, "Unable to locate response: #{file_path.inspect}"
       end
+      logger.debug("Played back response from #{file_path.inspect}.")
 
       # determine if epoch is done, which it is if every known request has been
       # responded to for the current epoch. there is a steady state at the end
