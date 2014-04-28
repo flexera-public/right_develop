@@ -199,7 +199,7 @@ EOF
 
               case response_code = Integer(rest_response.code)
               when 301, 302, 307
-                raise RestClient::Exceptions::EXCEPTIONS_MAP[code].new(rest_response, response_code)
+                raise RestClient::Exceptions::EXCEPTIONS_MAP[response_code].new(rest_response, response_code)
               else
                 # special handling for chunked body.
                 if response_headers['transfer-encoding'] == 'chunked'
