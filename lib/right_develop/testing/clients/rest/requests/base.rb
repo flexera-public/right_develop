@@ -28,6 +28,7 @@ require 'digest/md5'
 require 'rack/utils'
 require 'rest_client'
 require 'right_support'
+require 'thread'
 require 'yaml'
 
 module RightDevelop::Testing::Client::Rest::Request
@@ -37,6 +38,9 @@ module RightDevelop::Testing::Client::Rest::Request
 
     # metadata.
     METADATA_CLASS = ::RightDevelop::Testing::Recording::Metadata
+
+    # semaphore
+    MUTEX = ::Mutex.new
 
     attr_reader :fixtures_dir, :logger, :route_path, :route_data
     attr_reader :state_file_path, :request_timestamp, :response_timestamp
@@ -181,20 +185,22 @@ module RightDevelop::Testing::Client::Rest::Request
     # @return [Object] block result
     def with_state_lock
       result = nil
-      state_dir = ::File.dirname(state_file_path)
-      ::FileUtils.mkdir_p(state_dir) unless ::File.directory?(state_dir)
-      ::File.open(state_file_path, ::File::RDWR | File::CREAT, 0644) do |f|
-        f.flock(::File::LOCK_EX)
-        state_yaml = f.read
-        if state_yaml.empty?
-          state = { epoch: 0, variables: {}, outstanding: {} }
-        else
-          state = ::YAML.load(state_yaml)
+      MUTEX.synchronize do  # mutex for thread sync
+        state_dir = ::File.dirname(state_file_path)
+        ::FileUtils.mkdir_p(state_dir) unless ::File.directory?(state_dir)
+        ::File.open(state_file_path, ::File::RDWR | File::CREAT, 0644) do |f|
+          f.flock(::File::LOCK_EX)  # file lock for process sync
+          state_yaml = f.read
+          if state_yaml.empty?
+            state = { epoch: 0, variables: {}, outstanding: {} }
+          else
+            state = ::YAML.load(state_yaml)
+          end
+          result = yield(state)
+          f.seek(0)
+          f.truncate(0)
+          f.puts(::YAML.dump(state))
         end
-        result = yield(state)
-        f.seek(0)
-        f.truncate(0)
-        f.puts(::YAML.dump(state))
       end
       result
     end
@@ -262,16 +268,16 @@ module RightDevelop::Testing::Client::Rest::Request
     end
 
     # Directory common to all fixtures of the given kind.
-    def fixtures_route_dir(kind, state)
+    def fixtures_route_dir(kind, epoch)
       ::File.join(
         @fixtures_dir,
-        state[:epoch].to_s,
+        epoch.to_s,
         @route_data[:subdir],
         kind.to_s)
     end
 
     # Expands path to fixture file given kind, state, etc.
-    def fixture_file_path(kind, state)
+    def fixture_file_path(kind, epoch)
       # remove API root from path because we are already under an API-specific
       # subdirectory and the route base path may be redundant.
       unless request_metadata.uri.path.start_with?(@route_path)
@@ -280,17 +286,17 @@ module RightDevelop::Testing::Client::Rest::Request
       end
       route_relative_path = request_metadata.uri.path[@route_path.length..-1]
       ::File.join(
-        fixtures_route_dir(kind, state),
+        fixtures_route_dir(kind, epoch),
         route_relative_path,
         request_metadata.checksum + '.yml')
     end
 
-    def request_file_path(state)
-      fixture_file_path(:request, state)
+    def request_file_path(epoch)
+      fixture_file_path(:request, epoch)
     end
 
-    def response_file_path(state)
-      fixture_file_path(:response, state)
+    def response_file_path(epoch)
+      fixture_file_path(:response, epoch)
     end
 
   end # Base

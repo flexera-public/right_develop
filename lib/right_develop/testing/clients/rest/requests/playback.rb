@@ -160,9 +160,22 @@ module RightDevelop::Testing::Client::Rest::Request
 
     def fetch_response(state)
       # response must exist in the current epoch (i.e. can only enter next epoch
-      # after a valid response is found).
-      file_path = response_file_path(state)
-      if ::File.file?(file_path)
+      # after a valid response is found) or in a past epoch. the latter was
+      # allowed due to multithreaded requests causing the epoch to advance
+      # (in a non-throttled playback) before all requests for a past epoch have
+      # been made. the current epoch is always preferred over past.
+      logger.debug("BEGIN playback state = #{state.inspect}") if logger.debug?
+      file_path = nil
+      past_epochs = state[:past_epochs] ||= []
+      try_epochs = [state[:epoch]] + past_epochs
+      tried_paths = []
+      try_epochs.each do |epoch|
+        file_path = response_file_path(epoch)
+        break if ::File.file?(file_path)
+        tried_paths << file_path
+        file_path = nil
+      end
+      if file_path
         response_hash = ::Mash.new(::YAML.load_file(file_path))
         response_metadata = response_metadata(
           state,
@@ -171,14 +184,14 @@ module RightDevelop::Testing::Client::Rest::Request
           response_hash[:body])
         result = FakeNetHttpResponse.new(response_hash, response_metadata)
       else
-        raise PlaybackError, "Unable to locate response: #{file_path.inspect}"
+        raise PlaybackError,
+              "Unable to locate response file(s): \"#{tried_paths.join("\", \"")}\""
       end
       logger.debug("Played back response from #{file_path.inspect}.")
 
       # determine if epoch is done, which it is if every known request has been
       # responded to for the current epoch. there is a steady state at the end
       # of time when all responses are given but there is no next epoch.
-      logger.debug("BEGIN playback state = #{state.inspect}") if logger.debug?
       unless state[:end_of_time]
 
         # list epochs once.
@@ -204,7 +217,7 @@ module RightDevelop::Testing::Client::Rest::Request
         if next_epoch = epochs[1]
           # list all responses in current epoch once.
           unless remaining = state[:remaining_responses]
-            search_path = ::File.join(fixtures_route_dir(:response, state), '**/*.yml')
+            search_path = ::File.join(fixtures_route_dir(:response, current_epoch), '**/*.yml')
             remaining = state[:remaining_responses] = ::Dir[search_path].inject({}) do |h, path|
               h[path] = { call_count: 0 }
               h
@@ -234,7 +247,7 @@ module RightDevelop::Testing::Client::Rest::Request
               remaining.delete(file_path)
               if remaining.empty?
                 # time marches on.
-                epochs.shift
+                past_epochs.unshift(epochs.shift)
                 state[:epoch] = next_epoch
                 state.delete(:remaining_responses)  # reset responses for next epoch
                 if logger.debug?
@@ -252,7 +265,7 @@ EOF
             end
           end
         else
-          # the future is now.
+          # the future is now; no need to add final epoch to past epochs.
           state.delete(:remaining_responses)
           state.delete(:epochs)
           state[:end_of_time] = true

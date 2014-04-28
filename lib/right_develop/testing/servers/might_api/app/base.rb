@@ -36,7 +36,7 @@ module RightDevelop::Testing::Server::MightApi
       class MightError < StandardError; end
       class MissingRoute < MightError; end
 
-      attr_reader :config, :env, :logger, :request, :state_file_path
+      attr_reader :config, :logger, :state_file_path
 
       def initialize(state_file_name)
         @config = ::RightDevelop::Testing::Server::MightApi::Config
@@ -46,11 +46,10 @@ module RightDevelop::Testing::Server::MightApi
       end
 
       def call(env)
-        @env = env
-        @env['rack.logger'] ||= @logger
+        env['rack.logger'] ||= logger
 
         # read body from stream.
-        @request = ::Rack::Request.new(env)
+        request = ::Rack::Request.new(env)
         body = request.body.read
 
         # proxy any headers from env starting with HTTP_
@@ -71,43 +70,39 @@ module RightDevelop::Testing::Server::MightApi
         end
 
         # log
-        verb = @request.request_method
-        uri = ::URI.parse(@request.url)
-        if @logger.debug?
-          @logger.debug(<<EOF
+        verb = request.request_method
+        uri = ::URI.parse(request.url)
+        logger.info(<<EOF
 request verb = #{verb.inspect}
 request uri = #{uri}
 request headers = #{headers.inspect}
 request body = #{body.inspect}
 EOF
 )
-        end
 
         # handler
         result = handle_request(verb, uri, headers, body)
 
         # log
-        if @logger.debug?
-          debug_io = StringIO.new
-          debug_io.puts(<<EOF
+        logger_io = StringIO.new
+        logger_io.puts(<<EOF
 response code = #{result[0].inspect}
 response headers = #{result[1].inspect}
 response body:
 EOF
-          )
-          result[2].each { |body| debug_io.puts(body) }
-          @logger.debug(debug_io.string)
-        end
+        )
+        result[2].each { |body| logger_io.puts(body) }
+        logger.info(logger_io.string)
         result
       rescue MissingRoute => e
         message = "#{e.class} #{e.message}"
-        logger.debug(message)
+        logger.error(message)
         if config.routes.empty?
-          logger.debug("No routes configured.")
+          logger.error("No routes configured.")
         else
-          logger.debug("The following routes are configured:")
+          logger.error("The following routes are configured:")
           config.routes.keys.each do |prefix|
-            logger.debug("  #{prefix}...")
+            logger.error("  #{prefix}...")
           end
         end
 
@@ -118,15 +113,19 @@ EOF
       rescue ::RightDevelop::Testing::Client::Rest::Request::Playback::PlaybackError => e
         # response has not been recorded.
         message = e.message
-        logger.debug(message)
+        trace = [e.class.name] + (e.backtrace || [])
+        logger.error(message)
+        logger.debug(trace.join("\n"))
         internal_server_error(message)
       rescue ::Exception => e
         message = "Unhandled exception: #{e.class} #{e.message}"
-        debug_message = ([message] + (e.backtrace || [])).join("\n")
-        if @logger
-          logger.error(debug_message)
+        trace = e.backtrace || []
+        if logger
+          logger.error(message)
+          logger.debug(trace.join("\n"))
         else
-          env['rack.errors'].puts(debug_message)
+          env['rack.errors'].puts(message)
+          env['rack.errors'].puts(trace.join("\n"))
         end
         internal_server_error(message)
       end
@@ -156,7 +155,7 @@ EOF
       def proxy(request_class, verb, uri, headers, body, throttle = nil)
 
         # check routes.
-        unless route = find_route
+        unless route = find_route(uri)
           raise MissingRoute, "No route configured for #{uri.path.inspect}"
         end
         route_path, route_data = route
@@ -245,9 +244,17 @@ EOF
         response
       end
 
+      # @param [URI] uri path to find
+      #
       # @return [Array] pair of [prefix, data] or nil
-      def find_route
-        config.routes.find { |prefix, data| request.path.start_with?(prefix) }
+      def find_route(uri)
+        find_path = uri.path
+        logger.debug "Route URI path to match = #{find_path.inspect}"
+        config.routes.find do |prefix, data|
+          matched = find_path.start_with?(prefix)
+          logger.debug "Tried = #{prefix.inspect}, matched = #{matched}"
+          matched
+        end
       end
 
       # Sets the header style using configuration of the proxied service.

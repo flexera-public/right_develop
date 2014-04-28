@@ -58,7 +58,11 @@ module RightDevelop::Testing::Server::MightApi
 
   class DateTimeLoggerFormatter < ::Logger::Formatter
     def call(severity, time, progname, msg)
-      sprintf("%s (%s): %s\n", ::Time.now, ::Thread.current.object_id, msg2str(msg))
+      sprintf("%s (%s) %s: %s\n",
+              ::Time.now,
+              ::Thread.current.object_id,
+              severity,
+              msg2str(msg))
     end
   end
 end

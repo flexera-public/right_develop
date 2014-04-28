@@ -138,7 +138,7 @@ module RightDevelop::Testing::Client::Rest::Request
       response_hash[:call_count] = call_count
 
       # write request unless already written.
-      file_path = request_file_path(state)
+      file_path = request_file_path(state[:epoch])
       unless ::File.file?(file_path)
         # note that variables are not recorded because they must always be
         # supplied by the client's request.
@@ -154,7 +154,7 @@ module RightDevelop::Testing::Client::Rest::Request
       logger.debug("Recorded request at #{file_path.inspect}.")
 
       # response always written for incremented call count.
-      file_path = response_file_path(state)
+      file_path = response_file_path(state[:epoch])
       ::FileUtils.mkdir_p(::File.dirname(file_path))
       ::File.open(file_path, 'w') { |f| f.puts(::YAML.dump(response_hash)) }
       logger.debug("Recorded response at #{file_path.inspect}.")
