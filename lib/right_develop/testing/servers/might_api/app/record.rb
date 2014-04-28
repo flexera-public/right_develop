@@ -32,7 +32,7 @@ module RightDevelop::Testing::Server::MightApi::App
     end
 
     # @see RightDevelop::Testing::Server::MightApi::App::Base#handle_request
-    def handle_request(verb, uri, headers, body)
+    def handle_request(env, verb, uri, headers, body)
       proxy(
         ::RightDevelop::Testing::Client::Rest::Request::Record,
         verb,

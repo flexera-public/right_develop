@@ -37,11 +37,11 @@ module RightDevelop::Testing::Server::MightApi::App
     end
 
     # @see RightDevelop::Testing::Server::MightApi::App::Base#handle_request
-    def handle_request(verb, uri, headers, body)
+    def handle_request(env, verb, uri, headers, body)
 
       # check routes.
       response = ::Rack::Response.new
-      if route = find_route
+      if route = find_route(uri)
         response.write "URL matched #{route.last[:name].inspect}\n"
       else
         response.write "Failed to match any route. The following routes are valid:\n"

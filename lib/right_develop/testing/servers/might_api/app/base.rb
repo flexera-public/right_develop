@@ -81,7 +81,7 @@ EOF
 )
 
         # handler
-        result = handle_request(verb, uri, headers, body)
+        result = handle_request(env, verb, uri, headers, body)
 
         # log
         logger_io = StringIO.new
@@ -132,13 +132,14 @@ EOF
 
       # Handler.
       #
+      # @param [Hash] env from rack
       # @param [String] verb as one of ['GET', 'POST', etc.]
       # @param [URI] uri parsed from full url
       # @param [Hash] headers for proxy call with any non-proxy data omitted
       # @param [String] body streamed from payload or empty
       #
       # @return [TrueClass] always true
-      def handle_request(verb, uri, headers, body)
+      def handle_request(env, verb, uri, headers, body)
         raise ::NotImplementedError, 'Must be overridden'
       end
 

@@ -46,11 +46,11 @@ module RightDevelop::Commands
 
       options = Trollop.options do
         banner <<-EOS
-The 'server' command starts a server in the foreground to assist in testing. The
-behavior of the server depends on the type specified.
+The 'server' command starts a server in the foreground to assist in testing.
+The behavior of the server depends on the type specified.
 
 Usage:
-       right_develop git <task> [options]
+  right_develop git <task> [options]
 
 Where <task> is one of:
 #{task_list}
