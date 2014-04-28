@@ -76,3 +76,44 @@ Feature: RSpec 2.x support
     And I rake 'ci:spec'
     Then the command should succeed
     And the file 'measurement/rspec/awesome.xml' should exist
+
+  Scenario: add command-line options
+    Given an RSpec spec named 'tagged_spec.rb' with content:
+    """
+    describe String, :string => true do
+      it 'is cool' do
+        'cool'.should == 'cool'
+      end
+    end
+    describe Integer do
+      it 'is zero' do
+        1.should == 0
+      end
+    end
+    """
+    And the Rakefile contains:
+    """
+    RightDevelop::CI::RakeTask.new do |task|
+      task.rspec_opts = ['-t', 'string']
+    end
+    """
+    When I install the bundle
+    And I rake 'ci:spec'
+    Then the command should succeed
+
+  Scenario: with an overriden described_class
+    Given an RSpec spec named 'described_class_spec.rb' with content:
+    """
+    describe String do
+      metadata[:example_group][:described_class] = Integer
+
+      it 'is not an integer' do
+        "1".should == "1"
+      end
+    end
+    """
+    When I install the bundle
+    And I rake 'ci:spec'
+    Then the command should succeed
+    And the file 'measurement/rspec/rspec.xml' should not mention the class Integer
+    And the file 'measurement/rspec/rspec.xml' should mention the class String
