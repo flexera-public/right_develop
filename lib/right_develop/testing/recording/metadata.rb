@@ -304,9 +304,9 @@ module RightDevelop::Testing::Recording
       case body
       when nil
         return body
-      when Hash
+      when ::Hash, ::Array
         body_hash = body
-      when String
+      when ::String
         body_hash = parse_body(normalized_headers, body)
         return body unless body_hash
       else
@@ -326,7 +326,7 @@ module RightDevelop::Testing::Recording
     # Updates content-length header for normalized body, if necessary.
     def normalize_content_length(normalized_headers, normalized_body)
       if normalized_headers['content_length']
-        normalized_headers['content_length'] = normalized_body.length
+        normalized_headers['content_length'] = ::Rack::Utils.bytesize(normalized_body)
       end
       true
     end
