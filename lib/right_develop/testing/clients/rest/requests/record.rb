@@ -144,7 +144,7 @@ module RightDevelop::Testing::Client::Rest::Request
         # supplied by the client's request.
         request_hash = {
           verb:    request_metadata.verb,
-          query:   request_metadata.uri.query,
+          query:   request_metadata.query,
           headers: request_metadata.headers.to_hash,
           body:    request_metadata.body
         }

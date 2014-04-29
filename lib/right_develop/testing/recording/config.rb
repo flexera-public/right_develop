@@ -52,7 +52,7 @@ module RightDevelop::Testing::Recording
     ALLOWED_KINDS          = %w(request response)
     ALLOWED_CONFIG_ACTIONS = %w(significant timeouts transform variables)
     ALLOWED_TIMEOUTS       = %w(open_timeout read_timeout)
-    ALLOWED_VARIABLE_TYPES = %w(body header)
+    ALLOWED_VARIABLE_TYPES = %w(body header query)
 
     # metadata.
     METADATA_CLASS = ::RightDevelop::Testing::Recording::Metadata

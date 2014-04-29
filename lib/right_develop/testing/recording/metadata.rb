@@ -167,6 +167,16 @@ module RightDevelop::Testing::Recording
       @body = normalize_body(@headers, @typenames_to_values[:body] || @body)
     end
 
+    # @return [String] normalized query string
+    def query
+      q = @typenames_to_values[:query]
+      if q && !q.empty?
+        build_query_string(q)
+      else
+        nil
+      end
+    end
+
     # @return [String] computed checksum for normalized 'significant' data
     def checksum
       @checksum ||= compute_checksum
@@ -245,6 +255,13 @@ module RightDevelop::Testing::Recording
       ::Rack::Utils.parse_nested_query(query_string)
     end
 
+    # @param [Hash] hash for query string
+    #
+    # @return [String] query string
+    def build_query_string(hash)
+      ::Rack::Utils.build_nested_query(hash)
+    end
+
     # Content-Type header can have other information (such as encoding) so look
     # specifically for the 'application/blah' information.
     #
@@ -314,7 +331,7 @@ module RightDevelop::Testing::Recording
       end
       case ct = compute_content_type(normalized_headers)
       when 'application/x-www-form-urlencoded'
-        result = ::Rack::Utils.build_nested_query(body_hash)
+        result = build_query_string(body_hash)
         normalize_content_length(normalized_headers, result)
       else
         result = ::JSON.dump(body_hash)
