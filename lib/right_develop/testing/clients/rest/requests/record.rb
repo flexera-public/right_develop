@@ -100,7 +100,7 @@ module RightDevelop::Testing::Client::Rest::Request
 
       # use raw headers for response instead of the usual RestClient behavior of
       # converting arrays to comma-delimited strings.
-      response_metadata = response_metadata(
+      @response_metadata = create_response_metadata(
         state, http_status, response.to_hash, response.body)
 
       # record elapsed time in (integral) seconds. not intended to be a precise

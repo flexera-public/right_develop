@@ -69,31 +69,10 @@ module RightDevelop::Testing::Server::MightApi
           headers[key] = env[key] unless env[key].to_s.empty?
         end
 
-        # log
+        # handler
         verb = request.request_method
         uri = ::URI.parse(request.url)
-        logger.info(<<EOF
-request verb = #{verb.inspect}
-request uri = #{uri}
-request headers = #{headers.inspect}
-request body = #{body.inspect}
-EOF
-)
-
-        # handler
-        result = handle_request(env, verb, uri, headers, body)
-
-        # log
-        logger_io = StringIO.new
-        logger_io.puts(<<EOF
-response code = #{result[0].inspect}
-response headers = #{result[1].inspect}
-response body:
-EOF
-        )
-        result[2].each { |body| logger_io.puts(body) }
-        logger.info(logger_io.string)
-        result
+        handle_request(env, verb, uri, headers, body)
       rescue MissingRoute => e
         message = "#{e.class} #{e.message}"
         logger.error(message)
@@ -171,8 +150,7 @@ EOF
             end
             proxied_headers = proxy_headers(headers, route_data)
 
-            logger.debug("proxied_url = #{proxied_url.inspect}")
-            logger.debug("proxied_headers = #{proxied_headers.inspect}")
+            logger.info("proxied_url = #{proxied_url.inspect}")
             request_options = {
               fixtures_dir:    config.fixtures_dir,
               logger:          logger,
@@ -186,6 +164,10 @@ EOF
             }
             request_options[:throttle] = throttle if throttle
             request_proxy = request_class.new(request_options)
+
+            # log normalized data for obfuscation.
+            logger.debug("normalized request headers = #{request_proxy.request_metadata.headers.inspect}")
+            logger.debug("normalized request body:\n" << request_proxy.request_metadata.body)
 
             request_proxy.execute do |rest_response, rest_request, net_http_response, &block|
 
@@ -210,6 +192,10 @@ EOF
                 response = [response_code, response_headers, response_body]
               end
             end
+
+            # log normalized data for obfuscation.
+            logger.debug("normalized response headers = #{request_proxy.response_metadata.headers.inspect}")
+            logger.debug("normalized response body:\n" << request_proxy.response_metadata.body.to_s)
           rescue RestClient::RequestTimeout
             net_http_response = request_proxy.handle_timeout
             response_code = Integer(net_http_response.code)

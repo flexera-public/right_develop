@@ -44,7 +44,7 @@ module RightDevelop::Testing::Client::Rest::Request
 
     attr_reader :fixtures_dir, :logger, :route_path, :route_data
     attr_reader :state_file_path, :request_timestamp, :response_timestamp
-    attr_reader :request_metadata
+    attr_reader :request_metadata, :response_metadata
 
     def initialize(args)
       args = args.dup
@@ -104,6 +104,7 @@ module RightDevelop::Testing::Client::Rest::Request
           args[:timeout] = Integer(rm.timeouts[:read_timeout])
         end
       end
+      @response_metadata = nil
 
       super(args)
 
@@ -252,7 +253,7 @@ module RightDevelop::Testing::Client::Rest::Request
     end
 
     # @return [RightDevelop::Testing::Client::RecordMetdata] metadata for response
-    def response_metadata(state, response_code, response_headers, response_body)
+    def create_response_metadata(state, response_code, response_headers, response_body)
       METADATA_CLASS.new(
         mode:                   recording_mode,
         kind:                   :response,

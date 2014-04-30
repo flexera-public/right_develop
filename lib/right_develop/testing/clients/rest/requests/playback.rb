@@ -177,7 +177,7 @@ module RightDevelop::Testing::Client::Rest::Request
       end
       if file_path
         response_hash = ::Mash.new(::YAML.load_file(file_path))
-        response_metadata = response_metadata(
+        @response_metadata = create_response_metadata(
           state,
           response_hash[:http_status],
           response_hash[:headers],
