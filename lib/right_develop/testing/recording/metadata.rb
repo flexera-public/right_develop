@@ -160,9 +160,6 @@ module RightDevelop::Testing::Recording
 
       # recreate headers and body from data using variable substitutions and
       # obfuscations.
-      #
-      # FIX: don't think it's needed but not currently supporting variables in
-      # query string (i.e. @uri.query).
       @headers = @typenames_to_values[:header]
       @body = normalize_body(@headers, @typenames_to_values[:body] || @body)
     end
@@ -451,8 +448,13 @@ module RightDevelop::Testing::Recording
 
           # apply transform, if any, before attempting to replace variables.
           case current_transform = transform && transform[k]
-          when 'JSON'
-            target_value = ::JSON.parse(target_value)
+          when ::String
+            case current_transform
+            when 'JSON'
+              target_value = ::JSON.parse(target_value)
+            else
+              raise RecordingError, "Unknown transform: #{current_transform}"
+            end
           end
 
           # variable replacement.
