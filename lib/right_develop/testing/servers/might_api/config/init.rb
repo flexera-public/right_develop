@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2009-2013 RightScale Inc
+# Copyright (c) 2014 RightScale Inc
 #
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -20,18 +20,28 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-require 'right_support'
+# fixup RACK_ENV
+require 'right_develop'
 
-# Autoload everything possible
-module RightDevelop
-  autoload :S3,       'right_develop/s3'
-  autoload :CI,       'right_develop/ci'
-  autoload :Commands, 'right_develop/commands'
-  autoload :Git,      'right_develop/git'
-  autoload :Parsers,  'right_develop/parsers'
-  autoload :Testing,  'right_develop/testing'
-  autoload :Utility,  'right_develop/utility'
+require ::File.expand_path('../../lib/config', __FILE__)
+require ::File.expand_path('../../lib/logger', __FILE__)
+
+module RightDevelop::Testing::Server::MightApi
+
+  # attempt to read stdin for configuration or else expect relative file path.
+  # note the following .fcntl call returns zero when data is available on $stdin
+  config_yaml = ($stdin.tty? || 0 != $stdin.fcntl(::Fcntl::F_GETFL, 0)) ? '' : $stdin.read
+  config_hash = config_yaml.empty? ? nil : ::YAML.load(config_yaml)
+  if config_hash
+    Config.from_hash(config_hash)
+  else
+    Config.from_file(Config::DEFAULT_CONFIG_PATH)
+  end
+
+  # ensure fixture dir exists as result of configuration for better
+  # synchronization of any state file locking.
+  ::FileUtils.mkdir_p(Config.fixtures_dir)
+
+  # ready.
+  logger.info("MightApi initialized in #{Config.mode} mode.")
 end
-
-# Automatically include RightSupport networking extensions
-require 'right_develop/net'

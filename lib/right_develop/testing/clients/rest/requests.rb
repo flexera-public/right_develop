@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2009-2013 RightScale Inc
+# Copyright (c) 2014 RightScale Inc
 #
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -19,19 +19,20 @@
 # LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+               
+# ancestor
+require 'right_develop/testing/clients/rest'
 
-require 'right_support'
-
-# Autoload everything possible
 module RightDevelop
-  autoload :S3,       'right_develop/s3'
-  autoload :CI,       'right_develop/ci'
-  autoload :Commands, 'right_develop/commands'
-  autoload :Git,      'right_develop/git'
-  autoload :Parsers,  'right_develop/parsers'
-  autoload :Testing,  'right_develop/testing'
-  autoload :Utility,  'right_develop/utility'
+  module Testing
+    module Client
+      module Rest
+        module Request
+          autoload :Base,     'right_develop/testing/clients/rest/requests/base'
+          autoload :Playback, 'right_develop/testing/clients/rest/requests/playback'
+          autoload :Record,   'right_develop/testing/clients/rest/requests/record'
+        end
+      end
+    end
+  end
 end
-
-# Automatically include RightSupport networking extensions
-require 'right_develop/net'

@@ -21,6 +21,10 @@ gem "right_git", "~> 0.1.0"
 # Gems used by S3
 gem "right_aws", ">= 2.1.0"
 
+# testing server and client
+gem 'extlib'
+gem 'rack'
+
 # Gems used during RightDevelop development that should be called out in the gemspec
 group :development do
   gem "jeweler", "~> 1.8.3"

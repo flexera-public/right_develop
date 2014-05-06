@@ -1,5 +1,9 @@
 #!/usr/bin/env ruby
 
+unless Gem.respond_to?(:latest_spec_for)
+  fail 'right_develop command line tools require rubygems v1.8+'
+end
+
 require "trollop"
 
 require "right_develop"

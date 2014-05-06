@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2009-2013 RightScale Inc
+# Copyright (c) 2014 RightScale Inc
 #
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -20,18 +20,27 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-require 'right_support'
+require ::File.expand_path('../base', __FILE__)
 
-# Autoload everything possible
-module RightDevelop
-  autoload :S3,       'right_develop/s3'
-  autoload :CI,       'right_develop/ci'
-  autoload :Commands, 'right_develop/commands'
-  autoload :Git,      'right_develop/git'
-  autoload :Parsers,  'right_develop/parsers'
-  autoload :Testing,  'right_develop/testing'
-  autoload :Utility,  'right_develop/utility'
+module RightDevelop::Testing::Server::MightApi::App
+  class Playback < ::RightDevelop::Testing::Server::MightApi::App::Base
+
+    STATE_FILE_NAME = 'playback_state.yml'
+
+    def initialize
+      super(STATE_FILE_NAME)
+    end
+
+    # @see RightDevelop::Testing::Server::MightApi::App::Base#handle_request
+    def handle_request(env, verb, uri, headers, body)
+      proxy(
+        ::RightDevelop::Testing::Client::Rest::Request::Playback,
+        verb,
+        uri,
+        headers,
+        body,
+        config.throttle)
+    end
+
+  end
 end
-
-# Automatically include RightSupport networking extensions
-require 'right_develop/net'
