@@ -50,7 +50,7 @@ The 'server' command starts a server in the foreground to assist in testing.
 The behavior of the server depends on the type specified.
 
 Usage:
-  right_develop git <task> [options]
+  right_develop server <task> [options]
 
 Where <task> is one of:
 #{task_list}
