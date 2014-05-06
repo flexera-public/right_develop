@@ -217,11 +217,25 @@ module RightDevelop::Testing::Client::Rest::Request
         if next_epoch = epochs[1]
           # list all responses in current epoch once.
           unless remaining = state[:remaining_responses]
-            search_path = ::File.join(fixtures_route_dir(:response, current_epoch), '**/*.yml')
+            # use all configured route subdirectories when building remaining
+            # responses hash.
+            #
+            # note that any unknown route fixtures would cause playback to spin
+            # on the same epoch forever. we could specifically select known
+            # route directories but it is just easier to find all here.
+            search_path = ::File.join(
+              @fixtures_dir,
+              current_epoch.to_s,
+              '*/response/**/*.yml')
             remaining = state[:remaining_responses] = ::Dir[search_path].inject({}) do |h, path|
               h[path] = { call_count: 0 }
               h
             end
+            if remaining.empty?
+              raise PlaybackError,
+                    "Unable to determine remaining responses from #{search_path.inspect}"
+            end
+            logger.debug("Pending responses for epoch = #{current_epoch}: #{remaining.inspect}")
           end
 
           # may have been reponded before in same epoch; only care if this is

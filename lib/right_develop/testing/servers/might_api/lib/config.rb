@@ -117,7 +117,6 @@ module RightDevelop::Testing::Server::MightApi
       # and that they are MD5-named. if not, then supply the MD5 by renaming
       # both files. this allows a user to write custom request/responses without
       # having to supply the MD5 checksum for the significant request parts.
-      unrecognized_routes = []
       ::Dir[::File.join(fixtures_dir, '*/*')].sort.each do |epoch_api_dir|
         if ::File.directory?(epoch_api_dir)
           # request/response pairs must be identical whether or not using human-
@@ -190,9 +189,12 @@ module RightDevelop::Testing::Server::MightApi
                 ::File.rename(response_file_path, to_response_file_path)
               end
             end
-          elsif !unrecognized_routes.include?(epoch_api_dir)
+          else
+            # unknown route fixture directories will cause playback engine to
+            # spin forever.
             unrecognized_routes << epoch_api_dir
-            logger.warn("WARNING: Cannot find a route for fixtures directory: #{epoch_api_dir.inspect}")
+            message = "Cannot find a route for fixtures directory: #{epoch_api_dir.inspect}"
+            raise ::ArgumentError, message
           end
         end
       end
