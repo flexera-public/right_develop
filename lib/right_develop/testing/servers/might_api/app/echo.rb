@@ -60,11 +60,11 @@ module RightDevelop::Testing::Server::MightApi::App
         end
         response.write "}\n=== Compiled route matchers end.\n\n"
       end
-      response.write "env = #{::RightSupport::Data::HashTools.deep_sorted_json(env, true)}\n\n"
-      response.write "ENV = #{::RightSupport::Data::HashTools.deep_sorted_json(::ENV, true)}\n\n"
+      response.write "env = #{METADATA_CLASS.deep_sorted_json(env, true)}\n\n"
+      response.write "ENV = #{METADATA_CLASS.deep_sorted_json(::ENV, true)}\n\n"
       response.write "verb = #{verb.inspect}\n\n"
       response.write "uri = #{uri}\n\n"
-      response.write "headers = #{::RightSupport::Data::HashTools.deep_sorted_json(headers, true)}\n\n"
+      response.write "headers = #{METADATA_CLASS.deep_sorted_json(headers, true)}\n\n"
       response.write "body = #{body.inspect}\n\n"
       response.finish
     end

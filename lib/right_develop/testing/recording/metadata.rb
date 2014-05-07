@@ -217,6 +217,47 @@ module RightDevelop::Testing::Recording
       uri
     end
 
+    # Sorts data for a consistent appearance in JSON.
+    #
+    # HACK: replacement for ::RightSupport::Data::HashTools.deep_sorted_json
+    # method that can underflow the @state.depth field as -1 probably due to
+    # some (1.9.3+?) logic that resets the depth to zero when JSON data gets too
+    # deep or else @state.depth doesn't mean what it used to mean in Ruby 1.8.
+    # need to fix the utility...
+    #
+    # @param [Hash|Array] data to JSONize
+    #
+    # @return [String] sorted JSON
+    def self.deep_sorted_json(data, pretty = false)
+      data = deep_sorted_data(data)
+      pretty ? ::JSON.pretty_generate(data) : ::JSON.dump(data)
+    end
+
+    # Duplicates and sorts hash keys for a consistent appearance (in JSON).
+    # Traverses arrays to sort hash elements. Note this only works for Ruby 1.9+
+    # due to hashes now preserving insertion order.
+    #
+    # @param [Hash|Array] data to deep-sort
+    #
+    # @return [String] sorted data
+    def self.deep_sorted_data(data)
+      case data
+      when ::Hash
+        data = data.map { |k, v| [k.to_s, v] }.sort.inject({}) do |h, (k, v)|
+          h[k] = deep_sorted_data(v)
+          h
+        end
+      when Array
+        data.map { |e| deep_sorted_data(e) }
+      else
+        if data.respond_to?(:to_hash)
+          deep_sorted_data(data.to_hash)
+        else
+          data
+        end
+      end
+    end
+
     protected
 
     # @see RightDevelop::Testing::Client::RecordMetadata.normalize_header_key
@@ -708,7 +749,7 @@ module RightDevelop::Testing::Recording
       end
 
       # use deep-sorted JSON to prevent random ordering changing the checksum.
-      checksum_data = ::RightSupport::Data::HashTools.deep_sorted_json(significant_data)
+      checksum_data = self.class.deep_sorted_json(significant_data)
       if logger.debug? && @mode != 'echo'
         logger.debug("#{@kind} checksum_data = #{checksum_data.inspect}")
       end
