@@ -150,7 +150,6 @@ module RightDevelop::Testing::Server::MightApi
             end
             proxied_headers = proxy_headers(headers, route_data)
 
-            logger.info("proxied_url = #{proxied_url.inspect}")
             request_options = {
               fixtures_dir:    config.fixtures_dir,
               logger:          logger,

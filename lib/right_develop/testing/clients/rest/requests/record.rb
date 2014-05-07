@@ -63,6 +63,16 @@ module RightDevelop::Testing::Client::Rest::Request
       def to_hash; @headers; end
     end
 
+    # Overrides log_request for basic logging.
+    #
+    # @param [RestClient::Response] to capture
+    #
+    # @return [Object] undefined
+    def log_request
+      logger.debug("proxied_url = #{@url.inspect}")
+      super
+    end
+
     # Overrides log_response to capture both request and response.
     #
     # @param [RestClient::Response] to capture
