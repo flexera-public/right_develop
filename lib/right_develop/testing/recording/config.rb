@@ -61,7 +61,7 @@ module RightDevelop::Testing::Recording
     FIXTURE_FILE_NAME_REGEX = /^([0-9A-Fa-f]{32}).yml$/
 
     # typename to value expression for significant/requests/responses configurations.
-    TYPE_NAME_VALUE_REGEX = /^(body|header|query|verb)(?:\:([^=]+))?=(.*)$/
+    TYPE_NAME_VALUE_REGEX = /^(body|header|query|verb)(?:[:#]([^=]+))?=(.*)$/
 
     # exceptions.
     class ConfigError < StandardError; end
