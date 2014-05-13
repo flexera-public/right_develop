@@ -154,7 +154,7 @@ module RightDevelop::Testing::Server::MightApi
 
               # compute checksum from recorded request metadata.
               request_metadata = METADATA_CLASS.new(
-                mode:       :echo,
+                mode:       :validate,
                 kind:       :request,
                 logger:     logger,
                 route_data: route_data,

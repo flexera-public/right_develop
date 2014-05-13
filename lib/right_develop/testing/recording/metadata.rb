@@ -37,7 +37,7 @@ module RightDevelop::Testing::Recording
     VERBS = %w(DELETE GET HEAD PATCH POST PUT).freeze
 
     # valid modes, determines how variables are substituted, etc.
-    MODES = %w(echo record playback)
+    MODES = %w(echo record playback validate)
 
     # valid kinds, also keys under matchers.
     KINDS = %w(request response)
@@ -87,6 +87,7 @@ module RightDevelop::Testing::Recording
 
     attr_reader :uri, :verb, :http_status, :headers, :body
     attr_reader :mode, :logger, :effective_route_config, :variables
+    attr_reader :typenames_to_values
 
     # Computes the metadata used to identify where the request/response should
     # be stored-to/retrieved-from. Recording the full request is not strictly
@@ -141,7 +142,7 @@ module RightDevelop::Testing::Recording
       # apply the configuration by substituting for variables in the request and
       # by obfuscating wherever a variable name is nil.
       case @mode
-      when 'echo'
+      when 'validate'
         # do nothing; used to validate the fixtures before playback, etc.
       else
         erck = @effective_route_config[@kind]
@@ -750,7 +751,7 @@ module RightDevelop::Testing::Recording
 
       # use deep-sorted JSON to prevent random ordering changing the checksum.
       checksum_data = self.class.deep_sorted_json(significant_data)
-      if logger.debug? && @mode != 'echo'
+      if logger.debug? && @mode != 'validate'
         logger.debug("#{@kind} checksum_data = #{checksum_data.inspect}")
       end
       ::Digest::MD5.hexdigest(checksum_data)

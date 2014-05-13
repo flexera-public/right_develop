@@ -39,19 +39,51 @@ module RightDevelop::Testing::Server::MightApi::App
     # @see RightDevelop::Testing::Server::MightApi::App::Base#handle_request
     def handle_request(env, verb, uri, headers, body)
 
-      # check routes.
+      # echo request back as response.
       response = ::Rack::Response.new
+      response.write "verb = #{verb.inspect}\n\n"
+      response.write "uri = #{uri}\n\n"
+      response.write "headers = #{METADATA_CLASS.deep_sorted_json(headers, true)}\n\n"
+      response.write "body = #{body.inspect}\n\n"
+
+      # check routes.
       if route = find_route(uri)
-        response.write "URL matched #{route.last[:name].inspect}\n"
+        route_path, route_data = route
+        response.write "URL matched #{route_data[:name].inspect}\n\n"
+
+        # compute effective metadata for request.
+        begin
+          proxied_url = ::File.join(route_data[:url], uri.path)
+          unless uri.query.to_s.empty?
+            proxied_url << '?' << uri.query
+          end
+          request_metadata = METADATA_CLASS.new(
+            mode:       :echo,
+            kind:       :request,
+            logger:     logger,
+            route_data: route_data,
+            uri:        METADATA_CLASS.normalize_uri(proxied_url),
+            verb:       verb,
+            headers:    headers,
+            body:       body,
+            variables:  {})
+
+          # echo any interesting metadata.
+          response.write "substituted request variables = #{METADATA_CLASS.deep_sorted_json(request_metadata.variables, true)}\n\n"
+          response.write "effective route configuration = #{METADATA_CLASS.deep_sorted_json(request_metadata.effective_route_config, true)}\n\n"
+          response.write "request checksum = #{request_metadata.checksum}\n\n"
+        rescue Exception => e
+          response.write "Failure to compute request metadata:\n#{e.class}: #{e.message}\n#{(e.backtrace || []).join("\n")}\n\n"
+        end
       else
-        response.write "Failed to match any route. The following routes are valid:\n"
+        response.write "Failed to match any route. The following routes are valid:\n\n"
         config.routes.keys.each do |prefix|
           response.write "Prefix = #{prefix.inspect}\n\n"
         end
       end
 
-      # echo request back as response.
-      response.write "\nruby %sp%s\n\n" % [RUBY_VERSION, RUBY_PATCHLEVEL]
+      # process details.
+      response.write "ruby %sp%s\n\n" % [RUBY_VERSION, RUBY_PATCHLEVEL]
       response.write "Raw configuration = #{::JSON.pretty_generate(config.to_hash)}\n\n"  # hash order is significant in config
       config.routes.each do |route_path, route_config|
         response.write "=== Compiled route matchers begin for root = #{route_path.inspect}:\nmatchers = {\n"
@@ -62,10 +94,6 @@ module RightDevelop::Testing::Server::MightApi::App
       end
       response.write "env = #{METADATA_CLASS.deep_sorted_json(env, true)}\n\n"
       response.write "ENV = #{METADATA_CLASS.deep_sorted_json(::ENV, true)}\n\n"
-      response.write "verb = #{verb.inspect}\n\n"
-      response.write "uri = #{uri}\n\n"
-      response.write "headers = #{METADATA_CLASS.deep_sorted_json(headers, true)}\n\n"
-      response.write "body = #{body.inspect}\n\n"
       response.finish
     end
 
