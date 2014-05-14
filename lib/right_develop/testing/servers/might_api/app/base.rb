@@ -175,7 +175,7 @@ module RightDevelop::Testing::Server::MightApi
 
               # eliminate headers that interfere with response via proxy.
               %w(
-                connection status content-encoding
+                status content-encoding
               ).each { |key| response_headers.delete(key) }
 
               case response_code = Integer(rest_response.code)
@@ -293,10 +293,20 @@ module RightDevelop::Testing::Server::MightApi
       #
       # @return [Hash] normalized headers
       def normalize_rack_response_headers(headers)
-        headers.inject({}) do |h, (k, v)|
+        result = headers.inject({}) do |h, (k, v)|
           h[k.to_s.gsub('_', '-').downcase] = v.join("\n")
           h
         end
+
+        # a proxy server must always instruct the client close the connection by
+        # specification because a live socket cannot be proxied from client to
+        # the real server. this also works around a lame warning in ruby 1.9.3
+        # webbrick code (fixed in 2.1.0+) saying:
+        #   Could not determine content-length of response body.
+        #   Set content-length of the response or set Response#chunked = true
+        # in the case of 204 empty response, which is incorrect.
+        result['connection'] = 'close'
+        result
       end
 
       # @return [Array] rack-style response for 500
