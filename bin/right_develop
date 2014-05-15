@@ -20,7 +20,7 @@ end
 # just yet.
 command_list = commands.keys.map { |c| "       * #{c}" }.join("\n")
 p = Trollop::Parser.new do
-  version "right_develop #{gemspec.version} (c) 2013- RightScale, Inc."
+  version "right_develop #{gemspec.version} (c) 2013-2014 RightScale, Inc."
   banner <<-EOS
 A command-line interface to various tools offered by the right_develop gem.
 
