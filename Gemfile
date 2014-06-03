@@ -44,7 +44,9 @@ group :test do
 
   # Enable debugging of the specs and cukes
   gem "ruby-debug", ">= 0.10", :platforms => :ruby_18
-  gem "debugger", ">= 1.6.6", :platforms => [:ruby_19, :ruby_20, :ruby_21]
+  gem "debugger", ">= 1.6.6", :platforms => [:ruby_19, :ruby_20]
+  gem 'pry', :platforms => [:ruby_21]
+  gem 'pry-byebug', :platforms => [:ruby_21]
 
   gem "nokogiri", "~> 1.5"
 end
