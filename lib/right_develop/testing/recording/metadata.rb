@@ -333,9 +333,22 @@ module RightDevelop::Testing::Recording
         when nil
           # do nothing
         when 'application/x-www-form-urlencoded'
-          return parse_query_string(body)
+          begin
+            return parse_query_string(body)
+          rescue ::TypeError => e
+            # see remark below. example of bad form data: "a=b&a[]=b"
+            logger.warn("Failed to parse form data from #{body.inspect}: #{e.class} #{e.message}")
+          end
         when 'application/json'
-          return ::JSON.load(body)
+          begin
+            return ::JSON.load(body)
+          rescue ::JSON::ParserError => e
+            # note that we never want to fail to proxy back a response because
+            # the server doesn't know what JSON is; log a warning and continue.
+            # this actually happens with Right API 1.5 health-check saying
+            # response is 'application/json' but returning "ok"
+            logger.warn("Failed to parse JSON data from #{body.inspect}: #{e.class} #{e.message}")
+          end
         else
           # try-parse for other application/* content types to avoid having to
           # specify anything more here. modern formats are JSONish and we
