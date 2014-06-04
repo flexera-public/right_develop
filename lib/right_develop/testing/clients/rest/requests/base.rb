@@ -281,11 +281,13 @@ module RightDevelop::Testing::Client::Rest::Request
     def fixture_file_path(kind, epoch)
       # remove API root from path because we are already under an API-specific
       # subdirectory and the route base path may be redundant.
-      unless request_metadata.uri.path.start_with?(@route_path)
+      uri_path = request_metadata.uri.path
+      uri_path += '/' unless uri_path.end_with?('/')
+      unless uri_path.start_with?(@route_path)
         raise ::ArgumentError,
               "Request URI = #{request_metadata.uri.path.inspect} did not start with #{@route_path.inspect}."
       end
-      route_relative_path = request_metadata.uri.path[@route_path.length..-1]
+      route_relative_path = uri_path[@route_path.length..-1]
       ::File.join(
         fixtures_route_dir(kind, epoch),
         route_relative_path,

@@ -234,7 +234,9 @@ module RightDevelop::Testing::Server::MightApi
       #
       # @return [Array] pair of [prefix, data] or nil
       def find_route(uri)
+        # ensure path is slash-terminated only for matching purposes.
         find_path = uri.path
+        find_path += '/' unless find_path.end_with?('/')
         logger.debug "Route URI path to match = #{find_path.inspect}"
         config.routes.find do |prefix, data|
           matched = find_path.start_with?(prefix)
