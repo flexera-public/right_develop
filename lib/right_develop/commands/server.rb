@@ -64,7 +64,7 @@ And [options] are selected from:
         opt :force, 'Force overwrite of any existing recording',
             :default => false
         opt :throttle, 'Playback delay as a percentage of recorded response time',
-            :default => 0
+            :default => 1
         opt :debug, 'Enable verbose debug output',
             :default => false
       end

@@ -75,7 +75,7 @@ module RightDevelop::Testing::Recording
         'fixtures_dir' => ::File.expand_path(FIXTURES_DIR_NAME, current_dir),
         'log_level'    => :info,
         'log_dir'      => ::File.expand_path(LOG_DIR_NAME, current_dir),
-        'throttle'     => 0,
+        'throttle'     => 1,
       )
       unless config_hash.kind_of?(::Hash)
         raise ConfigError, 'config_hash must be a hash'

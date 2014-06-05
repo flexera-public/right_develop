@@ -32,6 +32,15 @@ module RightDevelop::Testing::Server::MightApi
 
       MAX_REDIRECTS = 10  # 500 after so many redirects
 
+      # Rack (and Skeletor) apps and some known AWS apps only accept dash and
+      # not underscore so ensure the default settings reflect the 80-20 rule.
+      DEFAULT_PROXY_SETTINGS = ::Mash.new(
+        header: ::Mash.new(
+          case:      :capitalize,
+          separator: :dash
+        ).freeze
+      ).freeze
+
       # exceptions
       class MightError < StandardError; end
       class MissingRoute < MightError; end
@@ -253,7 +262,7 @@ module RightDevelop::Testing::Server::MightApi
       # @return [Mash] proxied headers
       def proxy_headers(headers, route_data)
         proxied = nil
-        if proxy_data = route_data[:proxy]
+        if proxy_data = route_data[:proxy] || DEFAULT_PROXY_SETTINGS
           if header_data = proxy_data[:header]
             to_separator = (header_data[:separator] == :underscore) ? '_' : '-'
             from_separator = (to_separator == '-') ? '_' : '-'
