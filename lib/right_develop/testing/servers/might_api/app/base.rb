@@ -47,14 +47,36 @@ module RightDevelop::Testing::Server::MightApi
 
       attr_reader :config, :logger, :state_file_path
 
-      def initialize(state_file_name)
-        @config = ::RightDevelop::Testing::Server::MightApi::Config
-        @logger = ::RightDevelop::Testing::Server::MightApi.logger
+      # @param [Hash] options for initializer
+      # @option options [String] :config for sevice
+      #   (default = MightAPI Config singleton)
+      # @option options [String] :logger for sevice
+      #   (default = MightAPI logger singleton)
+      # @option options [String] :state_file_name relative to fixtures
+      #   directory or nil for no perisisted state.
+      def initialize(options = {})
+        @config = options[:config] || ::RightDevelop::Testing::Server::MightApi::Config
+        @logger = options[:logger] || ::RightDevelop::Testing::Server::MightApi.logger
 
-        @state_file_path = state_file_name ? ::File.join(@config.fixtures_dir, state_file_name) : nil
+        @state_file_path = options[:state_file_name] ?
+          ::File.join(@config.fixtures_dir, options[:state_file_name]) :
+          nil
       end
 
       def call(env)
+        # HACK: chain trap interrupt on first call to app because the trap chain
+        # does not exist, in rack terms, until just before app is run.
+        # unforunately due to poor design of rack, this object gets no
+        # calls from rack other than calls to handle requests (i.e. a call to
+        # do run/shutdown would be nice).
+        #
+        # the downside here is that if the server never receives any request
+        # then the trap chain is never setup so temporary files cannot be
+        # cleaned-up on shutdown, etc. admin mode has a workaround whereby it is
+        # able to clean-up any temporary files immediately after reading its
+        # config and whenever the administered configuration changes.
+        entrapment unless Base.trapped?
+
         env['rack.logger'] ||= logger
 
         # read body from stream.
@@ -78,10 +100,16 @@ module RightDevelop::Testing::Server::MightApi
           headers[key] = env[key] unless env[key].to_s.empty?
         end
 
-        # handler
-        verb = request.request_method
+        # prepare and call handler
+        #
+        # note that verb supposed to already be .to_s.upcase but we want to
+        # ensure that we agree on that.
+        verb = request.request_method.to_s.upcase
         uri = ::URI.parse(request.url)
-        handle_request(env, verb, uri, headers, body)
+        logger.info("#{verb} #{uri}")
+        result = handle_request(env, verb, uri, headers, body)
+        logger.info(result.first.to_s)
+        result
       rescue MissingRoute => e
         message = "#{e.class} #{e.message}"
         logger.error(message)
@@ -130,6 +158,22 @@ module RightDevelop::Testing::Server::MightApi
       def handle_request(env, verb, uri, headers, body)
         raise ::NotImplementedError, 'Must be overridden'
       end
+
+      # Removes state and/or fixtures for current mode (overridable).
+      def cleanup
+        # the state file, if any, is always temporary.
+        if @state_file_path && ::File.file?(@state_file_path)
+          ::File.unlink(@state_file_path)
+        end
+
+        # remove any directories listed as temporary by config.
+        (config.cleanup_dirs || []).each do |dir|
+          ::FileUtils.rm_rf(dir) if ::File.directory?(dir)
+        end
+        true
+      end
+
+      protected
 
       # Makes a proxied API request using the given request class.
       #
@@ -337,6 +381,64 @@ EOF
           },
           [formal]
         ]
+      end
+
+      # @return [Trueclass|FalseClass] true if trap chain has been setup
+      def self.trapped?; !!@trapped; end
+
+      # @param [Trueclass|FalseClass] value of trapped
+      # @return [Trueclass|FalseClass] true if trap chain has been setup
+      def self.trapped=(value); @trapped = value; end
+
+      # sets-up the trap chain, overriding the trap handler that rack setup just
+      # before running the server. the rack trap is called after our own trap
+      # handler is invoked.
+      def entrapment
+        # setup trap chain once.
+        Base.trapped = true
+        app = self
+
+        # 'get' previous trap by replacing any existing trap with 'IGNORE'
+        previous_trap = trap(:INT, 'IGNORE')
+
+        # substitute our trap and chain it to previous by explicitly invoking
+        # the previous trap. ruby makes this somewhat difficult and rack then
+        # makes it even harder.
+        trap(:INT) do
+          begin
+            # loggers may have closed file handles in a trap so disconnect any
+            # loggers from multiplexer before continuing. even when they do not
+            # raise exceptions they still appear to log nothing at this point
+            # (not sure about syslog, definitely not file or console).
+            if app.logger.respond_to?(:targets)
+              # HACK: it is bad that Multiplexer#targets exposes its internal
+              # array in a manner that allows us to clear it. it would be better
+              # if to have a Multiplexer#reset method we could call instead.
+              # to ensure that cleaning continues to work, check the result
+              # afterward. note that we tried iterating targets and calling the
+              # Multiplexer#remove method but that had no effect.
+              app.logger.targets.clear
+              fail 'Unexpected targets' unless app.logger.targets.empty?
+              app.logger.warn('cannot log traps')  # no exception raised
+            end
+
+            # cleanup fixtures, if requested.
+            app.cleanup
+            if previous_trap && previous_trap.respond_to?(:call)
+              previous_trap.call
+            else
+              exit
+            end
+          rescue ::Exception => e
+            # loggers are unreliable so write any rescued error home.
+            msg = ([e.class, e.message] + (e.backtrace || [])).join("\n")
+            dir = ::ENV['HOME'] || ::Dir.pwd
+            path = ::File.join(dir, 'might_api_rescued_error.txt')
+            ::File.open(path, 'w') { |f| f.puts msg }
+            exit 1
+          end
+        end
+        true
       end
 
     end

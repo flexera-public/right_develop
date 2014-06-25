@@ -37,12 +37,14 @@ module RightDevelop::Testing::Recording
     # default relative directories.
     FIXTURES_DIR_NAME = 'fixtures'.freeze
     LOG_DIR_NAME      = 'log'.freeze
+    PID_DIR_NAME      = 'pid'.freeze
 
     # the empty key is used as a stop traversal signal because any literal
     # value would be ambiguous.
     STOP_TRAVERSAL_KEY = ''.freeze
 
     VALID_MODES = ::Mash.new(
+      :admin    => 'Administrative for changing mode, fixtures, etc. while running.',
       :echo     => 'Echoes request back as response and validates route.',
       :playback => 'Playback a session for one or more stubbed web services.',
       :record   => 'Record a session for one or more proxied web services.'
@@ -70,11 +72,10 @@ module RightDevelop::Testing::Recording
       # defaults.
       current_dir = ::Dir.pwd
       defaults = ::Mash.new(
-        'mode'         => :playback,
-        'routes'       => {},
         'fixtures_dir' => ::File.expand_path(FIXTURES_DIR_NAME, current_dir),
         'log_level'    => :info,
         'log_dir'      => ::File.expand_path(LOG_DIR_NAME, current_dir),
+        'pid_dir'      => ::File.expand_path(PID_DIR_NAME, current_dir),
         'throttle'     => 1,
       )
       unless config_hash.kind_of?(::Hash)
@@ -88,13 +89,15 @@ module RightDevelop::Testing::Recording
         # another deep merge of any additional options.
         ::RightSupport::Data::HashTools.deep_merge!(config_hash, options)
       end
-
       @config_hash = ::Mash.new
       mode(config_hash['mode'])
+      admin(config_hash['admin'])
       routes(config_hash['routes'])
       log_dir(config_hash['log_dir'])
+      pid_dir(config_hash['pid_dir'])
       log_level(config_hash['log_level'])
       fixtures_dir(config_hash['fixtures_dir'])
+      cleanup_dirs(config_hash['cleanup_dirs'])
       throttle(config_hash['throttle'])
     end
 
@@ -110,24 +113,68 @@ module RightDevelop::Testing::Recording
       @config_hash['fixtures_dir']
     end
 
+    # @return [TrueClass|FalseClass] true if cleaning-up fixtures directory on
+    #   interrupt or configuration change.
+    def cleanup_dirs(value = nil)
+      @config_hash['cleanup_dirs'] = Array(value) if value
+      @config_hash['cleanup_dirs']
+    end
+
     def mode(value = nil)
       if value
         value = value.to_s
-        if value.empty?
-          raise ConfigError, "#{MODE_ENV_VAR} must be set"
-        elsif VALID_MODES.has_key?(value)
+        if VALID_MODES.has_key?(value)
           @config_hash['mode'] = value.to_sym
         else
-          raise ConfigError, "mode must be one of #{VALID_MODES.keys.sort.inspect}: #{value.inspect}"
+          raise ConfigError,
+                "mode must be one of #{VALID_MODES.keys.sort.inspect}: #{value.inspect}"
         end
       end
       @config_hash['mode']
+    end
+
+    # @return [Hash] admin route configuration
+    def admin(value = nil)
+      if value
+        if mode == :admin
+          case value
+          when ::Hash
+            admin_routes = (value['routes'] || {}).inject({}) do |r, (k, v)|
+              case v
+              when ::String, ::Symbol
+                r[normalize_route_prefix(k)] = v.to_s.to_sym
+              else
+                raise ConfigError, "Invalid admin route target: #{v.inspect}"
+              end
+              r
+            end
+            if admin_routes.empty?
+              raise ConfigError, "Invalid admin routes: #{value['routes'].inspect}"
+            else
+              @config_hash['admin'] = deep_mash(routes: admin_routes)
+            end
+          else
+            raise ConfigError,
+                  "Unexpected type for admin configuration: #{value.class}"
+          end
+        else
+          raise ConfigError,
+                "Unexpected admin settings configured for non-admin mode: #{mode}"
+        end
+      end
+      @config_hash['admin'] || {}
     end
 
     def routes(value = nil)
       if value
         case value
         when Hash
+          # admin mode requires any playback/record config to be sent as a
+          # PUT/POST request to the configured admin route.
+          if mode == :admin
+            raise ConfigError, 'Preconfigured routes are not allowed in admin mode.'
+          end
+
           # normalize routes for efficient usage but keep them separate from
           # user's config so that .to_hash returns something understandable and
           # JSONizable/YAMLable.
@@ -140,7 +187,7 @@ module RightDevelop::Testing::Recording
           raise ConfigError, 'routes must be a hash'
         end
       end
-      @normalized_routes
+      @normalized_routes || {}
     end
 
     def log_level(value = nil)
@@ -163,6 +210,11 @@ module RightDevelop::Testing::Recording
     def log_dir(value = nil)
       @config_hash['log_dir'] = value if value
       @config_hash['log_dir']
+    end
+
+    def pid_dir(value = nil)
+      @config_hash['pid_dir'] = value if value
+      @config_hash['pid_dir']
     end
 
     def throttle(value = nil)
