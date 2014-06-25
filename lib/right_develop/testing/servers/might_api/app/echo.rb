@@ -20,8 +20,6 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-require ::File.expand_path('../base', __FILE__)
-
 require 'right_support'
 
 module RightDevelop::Testing::Server::MightApi::App
@@ -32,8 +30,10 @@ module RightDevelop::Testing::Server::MightApi::App
     # metadata
     METADATA_CLASS = ::RightDevelop::Testing::Recording::Metadata
 
-    def initialize
-      super(nil)
+    # @see RightDevelop::Testing::Server::MightApi::App::Base#initialize
+    def initialize(options = {})
+      super
+      fail "Unexpected mode: #{config.mode}" unless config.mode == :echo
     end
 
     # @see RightDevelop::Testing::Server::MightApi::App::Base#handle_request

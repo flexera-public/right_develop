@@ -22,9 +22,35 @@
 
 # fixup RACK_ENV
 require 'right_develop'
+require 'rack'
+require 'rack/commonlogger'
 
 require ::File.expand_path('../../lib/config', __FILE__)
 require ::File.expand_path('../../lib/logger', __FILE__)
+require ::File.expand_path('../../app/base', __FILE__)
+require ::File.expand_path('../../app/admin', __FILE__)
+require ::File.expand_path('../../app/echo', __FILE__)
+require ::File.expand_path('../../app/playback', __FILE__)
+require ::File.expand_path('../../app/record', __FILE__)
+
+# HACK: monkey-patch Rack::CommonLogger#log to be silent in favor of our own
+# brand of request/response logging.
+#
+# note that it is nearly impossible to remove the CommonLogger middleware from
+# the stack.
+module Rack
+  class CommonLogger
+
+    private
+
+    # override log() but not the call(env) method as that method has the strange
+    # side-effect of changing the [headers, body] to be instances of
+    # Rack::Utils::HeaderHash and Rack::BodyProxy
+    def log(env, status, header, began_at)
+      nil  # log nothing
+    end
+  end
+end
 
 module RightDevelop::Testing::Server::MightApi
 
@@ -40,7 +66,14 @@ module RightDevelop::Testing::Server::MightApi
 
   # ensure fixture dir exists as result of configuration for better
   # synchronization of any state file locking.
-  ::FileUtils.mkdir_p(Config.fixtures_dir)
+  case Config.mode
+  when :admin, :echo
+    # do nothing
+  when :playback, :record
+    ::FileUtils.mkdir_p(Config.fixtures_dir)
+  else
+    fail 'Unexpected mode'
+  end
 
   # ready.
   logger.info("MightApi initialized in #{Config.mode} mode.")

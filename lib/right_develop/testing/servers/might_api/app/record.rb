@@ -20,15 +20,16 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-require ::File.expand_path('../base', __FILE__)
-
 module RightDevelop::Testing::Server::MightApi::App
   class Record < ::RightDevelop::Testing::Server::MightApi::App::Base
 
     STATE_FILE_NAME = 'record_state.yml'
 
-    def initialize
-      super(STATE_FILE_NAME)
+    # @see RightDevelop::Testing::Server::MightApi::App::Base#initialize
+    def initialize(options = {})
+      options = { state_file_name: STATE_FILE_NAME }.merge(options)
+      super(options)
+      fail "Unexpected mode: #{config.mode}" unless config.mode == :record
     end
 
     # @see RightDevelop::Testing::Server::MightApi::App::Base#handle_request
