@@ -47,18 +47,21 @@ module RightDevelop
       # Bundler::ORIGINAL_ENV.
       # example: "bundle exec rake build:all DEBUG=true ..."
       def setup_clean_env
-        # a little revisionist history music...
-        ::ENV.each do |key, value|
-          if key.start_with?('GEM_') || key.start_with?('BUNDLER_')
-            ::Bundler::ORIGINAL_ENV[key] = nil
-          elsif Bundler::ORIGINAL_ENV[key].nil?
-            ::Bundler::ORIGINAL_ENV[key] = value
+        # user may be running gem binary directly without bundler.
+        if defined?(::Bundler)
+          # a little revisionist history music...
+          ::ENV.each do |key, value|
+            if key.start_with?('GEM_') || key.start_with?('BUNDLER_')
+              ::Bundler::ORIGINAL_ENV[key] = nil
+            elsif Bundler::ORIGINAL_ENV[key].nil?
+              ::Bundler::ORIGINAL_ENV[key] = value
+            end
           end
-        end
-        ::Bundler.with_clean_env do
-          # now the ENV is clean and not missing any right-hand args so replace
-          # the ORIGINAL_ENV.
-          ::Bundler::ORIGINAL_ENV.replace(ENV)
+          ::Bundler.with_clean_env do
+            # now the ENV is clean and not missing any right-hand args so replace
+            # the ORIGINAL_ENV.
+            ::Bundler::ORIGINAL_ENV.replace(ENV)
+          end
         end
         true
       end
@@ -118,7 +121,23 @@ module RightDevelop
         executioner = super(executioner, options)
 
         # clean all bundler env vars, if requested.
-        if options[:clean_bundler_env] && defined?(::Bundler)
+        if options[:clean_bundler_env]
+          executioner = wrap_executioner_with_clean_env(executioner)
+        end
+        executioner
+      end
+
+      # Encapsulates executioner with bundler-defeating logic, but only if
+      # bundler has been loaded by current process.
+      #
+      # @param [Proc] executioner to conditionally wrap
+      #
+      # @return [Proc] wrapped or original executioner
+      def wrap_executioner_with_clean_env(executioner)
+        # only if bundler is loaded.
+        if defined?(::Bundler)
+          # double-lambda, single call freezes the inner call made to previous
+          # definition of executioner.
           executioner = lambda do |e|
             lambda { ::Bundler.with_clean_env { e.call } }
           end.call(executioner)

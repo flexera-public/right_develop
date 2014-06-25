@@ -52,8 +52,7 @@ module RightDevelop::Commands
 
       options = Trollop.options do
         banner <<-EOS
-The 'server' command starts a server in the foreground to assist in testing.
-The behavior of the server depends on the type specified.
+The 'server' command starts a server in the foreground (by default) to assist in testing. The behavior of the server depends on the type specified.
 
 Usage:
   right_develop server <mode> [options]
@@ -194,7 +193,7 @@ And [options] are selected from:
               "found under #{config.pid_dir.inspect}"
         ::Trollop.die(msg)
       else
-        ::Bundler.with_clean_env do
+        executioner = lambda do
           # use open3 to spawn service process.
           cmd = "#{cmd} 1>/dev/null 2>&1"
           stdin, stdout_and_stderr, wait_thread = ::Open3.popen2e(cmd)
@@ -209,6 +208,11 @@ And [options] are selected from:
           # intentionally not closing I/O objects or waiting on thread so that
           # service continues to run while parent goes away.
         end
+
+        # clean all bundler env vars before executing child process (but only
+        # if bundler is loaded).
+        executioner = shell.wrap_executioner_with_clean_env(executioner)
+        executioner.call
       end
       true
     end
