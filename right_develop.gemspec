@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{right_develop}
-  s.version = "2.3.0"
+  s.version = "2.4.0"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Tony Spataro"]
-  s.date = %q{2014-06-24}
+  s.date = %q{2014-07-17}
   s.default_executable = %q{right_develop}
   s.description = %q{A toolkit of development tools created by RightScale.}
   s.email = %q{support@rightscale.com}
@@ -27,6 +27,9 @@ Gem::Specification.new do |s|
     "bin/right_develop",
     "lib/right_develop.rb",
     "lib/right_develop/ci.rb",
+    "lib/right_develop/ci/formatters/rspec_v1.rb",
+    "lib/right_develop/ci/formatters/rspec_v2.rb",
+    "lib/right_develop/ci/formatters/rspec_v3.rb",
     "lib/right_develop/ci/java_cucumber_formatter.rb",
     "lib/right_develop/ci/java_spec_formatter.rb",
     "lib/right_develop/ci/rake_task.rb",
@@ -86,7 +89,7 @@ Gem::Specification.new do |s|
       s.add_runtime_dependency(%q<rake>, [">= 0.8.7", "< 0.10"])
       s.add_runtime_dependency(%q<right_support>, ["~> 2.0"])
       s.add_runtime_dependency(%q<builder>, ["~> 3.0"])
-      s.add_runtime_dependency(%q<rspec>, [">= 1.3", "< 3.0"])
+      s.add_runtime_dependency(%q<rspec>, [">= 1.3", "< 4.0"])
       s.add_runtime_dependency(%q<cucumber>, ["~> 1.0", "< 1.3.3"])
       s.add_runtime_dependency(%q<trollop>, [">= 1.0", "< 3.0"])
       s.add_runtime_dependency(%q<right_git>, ["~> 0.1.0"])
@@ -99,7 +102,7 @@ Gem::Specification.new do |s|
       s.add_dependency(%q<rake>, [">= 0.8.7", "< 0.10"])
       s.add_dependency(%q<right_support>, ["~> 2.0"])
       s.add_dependency(%q<builder>, ["~> 3.0"])
-      s.add_dependency(%q<rspec>, [">= 1.3", "< 3.0"])
+      s.add_dependency(%q<rspec>, [">= 1.3", "< 4.0"])
       s.add_dependency(%q<cucumber>, ["~> 1.0", "< 1.3.3"])
       s.add_dependency(%q<trollop>, [">= 1.0", "< 3.0"])
       s.add_dependency(%q<right_git>, ["~> 0.1.0"])
@@ -113,7 +116,7 @@ Gem::Specification.new do |s|
     s.add_dependency(%q<rake>, [">= 0.8.7", "< 0.10"])
     s.add_dependency(%q<right_support>, ["~> 2.0"])
     s.add_dependency(%q<builder>, ["~> 3.0"])
-    s.add_dependency(%q<rspec>, [">= 1.3", "< 3.0"])
+    s.add_dependency(%q<rspec>, [">= 1.3", "< 4.0"])
     s.add_dependency(%q<cucumber>, ["~> 1.0", "< 1.3.3"])
     s.add_dependency(%q<trollop>, [">= 1.0", "< 3.0"])
     s.add_dependency(%q<right_git>, ["~> 0.1.0"])

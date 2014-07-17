@@ -122,9 +122,13 @@ module RightDevelop::CI
           FileUtils.mkdir_p(File.join(@output_path, 'cucumber'))
         end
 
-        if defined?(::RSpec::Core::RakeTask)
+        spec = Gem.loaded_specs['rspec']
+        ver  = spec && spec.version.to_s
+
+        case ver
+        when /^[23]/
           default_opts = ['-r', 'right_develop/ci',
-                          '-f', JavaSpecFormatter.name,
+                          '-f', 'RightDevelop::CI::RSpecFormatter',
                           '-o', File.join(@output_path, 'rspec', @rspec_output)]
 
           # RSpec 2
@@ -135,9 +139,9 @@ module RightDevelop::CI
               t.pattern = self.rspec_pattern
             end
           end
-        elsif defined?(::Spec::Rake::SpecTask)
+        when /^1/
           default_opts = ['-r', 'right_develop/ci',
-                          '-f', JavaSpecFormatter.name + ":" + File.join(@output_path, 'rspec', @rspec_output)]
+                          '-f', 'RightDevelop::CI::RSpecFormatter' + ":" + File.join(@output_path, 'rspec', @rspec_output)]
 
           # RSpec 1
           Spec::Rake::SpecTask.new(@rspec_name => :prep) do |t|
@@ -147,8 +151,10 @@ module RightDevelop::CI
               t.spec_files = FileList[self.rspec_pattern]
             end
           end
+        when nil
+          raise LoadError, "Cannot define CI rake task: RSpec gem is unavailable"
         else
-          raise LoadError, "Cannot define CI rake task: unsupported RSpec version"
+          raise LoadError, "Cannot define CI rake task: unsupported RSpec version #{ver}"
         end
 
         Cucumber::Rake::Task.new(@cucumber_name, @cucumber_desc) do |t|

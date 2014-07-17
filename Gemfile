@@ -11,7 +11,7 @@ source 'https://rubygems.org'
 gem "rake", [">= 0.8.7", "< 0.10"]
 gem "right_support", "~> 2.0"
 gem "builder", "~> 3.0"
-gem "rspec", [">= 1.3", "< 3.0"]
+gem "rspec", [">= 1.3", "< 4.0"]
 gem "cucumber", ["~> 1.0", "< 1.3.3"] # Cuke >= 1.3.3 depends on RubyGems > 2.0 without specifyin that in its gemspec
 
 # Gems used by the command-line Git tools
