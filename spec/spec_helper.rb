@@ -22,12 +22,6 @@
 require 'rubygems'
 require 'bundler/setup'
 
-if RUBY_VERSION =~ /^1\.8/
-  require 'ruby-debug'
-else
-  require 'debugger'
-end
-
 lib_dir = File.expand_path('../../lib', __FILE__)
 $: << lib_dir unless $:.include?(lib_dir)
 
