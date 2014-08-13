@@ -48,11 +48,10 @@ module RightDevelop::CI
     require 'right_develop/ci/formatters/rspec_v1'
     RSpecFormatter = RightDevelop::CI::Formatters::RSpecV1
   when nil
-    raise LoadError,
-      "Cannot define RightDevelop::CI::JavaSpecFormatter: RSpec gem is unavailable"
+    RSpecFormatter = Object
   else
     raise LoadError,
-      "Cannot define RightDevelop::CI::JavaSpecFormatter: unsupported RSpec version #{ver}"
+      "Cannot define RightDevelop::CI::RSpecFormatter: unsupported RSpec version #{ver}"
   end
 
   # @deprecated do not refer to this class name; use RSpecFormater instead

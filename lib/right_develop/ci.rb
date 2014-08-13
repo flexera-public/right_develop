@@ -31,7 +31,7 @@ module RightDevelop
 
     # Cucumber does not support a -r hook, but it does let you specify class names. Autoload
     # to the rescue!
-    autoload :JavaCucumber, 'right_develop/ci/java_cucumber_formatter'
+    autoload :JavaCucumberFormatter, 'right_develop/ci/java_cucumber_formatter'
   end
 end
 
