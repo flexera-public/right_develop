@@ -28,19 +28,16 @@ group :development do
   gem 'rake', '>= 0.8.7'
   gem 'jeweler', '~> 2.0'
   gem 'rdoc', '>= 2.4.2'
+
+  # debuggers
+  gem 'debugger', '>= 1.6.6', :platforms => [:ruby_19, :ruby_20]
+  gem 'pry', :platforms => [:ruby_21]
+  gem 'pry-byebug', :platforms => [:ruby_21]
 end
 
 # Gems that are only used locally by this repo to run tests and should NOT be
 # called out in the gemspec.
 group :test do
   gem 'rspec', '~> 2.0'
-
-  # json is built into Ruby >= 2.0 and should not be installed there.
   gem 'libxml-ruby', '~> 2.7', :platforms => [:mri]
-  gem 'json', '~> 1.6', :platforms => [:mri_18, :mri_19]
-
-  # Enable debugging of the specs and cukes
-  gem 'debugger', '>= 1.6.6', :platforms => [:ruby_19, :ruby_20]
-  gem 'pry', :platforms => [:ruby_21]
-  gem 'pry-byebug', :platforms => [:ruby_21]
 end

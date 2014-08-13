@@ -114,7 +114,6 @@ DEPENDENCIES
   debugger (>= 1.6.6)
   extlib
   jeweler (~> 2.0)
-  json (~> 1.6)
   libxml-ruby (~> 2.7)
   pry
   pry-byebug

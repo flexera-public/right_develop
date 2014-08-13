@@ -11,7 +11,7 @@ Gem::Specification.new do |s|
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.require_paths = ["lib"]
   s.authors = ["Tony Spataro"]
-  s.date = "2014-08-01"
+  s.date = "2014-08-13"
   s.description = "A toolkit of development tools created by RightScale."
   s.email = "support@rightscale.com"
   s.executables = ["right_develop"]
@@ -92,6 +92,9 @@ Gem::Specification.new do |s|
       s.add_development_dependency(%q<rake>, [">= 0.8.7"])
       s.add_development_dependency(%q<jeweler>, ["~> 2.0"])
       s.add_development_dependency(%q<rdoc>, [">= 2.4.2"])
+      s.add_development_dependency(%q<debugger>, [">= 1.6.6"])
+      s.add_development_dependency(%q<pry>, [">= 0"])
+      s.add_development_dependency(%q<pry-byebug>, [">= 0"])
     else
       s.add_dependency(%q<right_support>, [">= 2.8.10"])
       s.add_dependency(%q<cucumber>, ["< 1.3.3", "~> 1.0"])
@@ -103,6 +106,9 @@ Gem::Specification.new do |s|
       s.add_dependency(%q<rake>, [">= 0.8.7"])
       s.add_dependency(%q<jeweler>, ["~> 2.0"])
       s.add_dependency(%q<rdoc>, [">= 2.4.2"])
+      s.add_dependency(%q<debugger>, [">= 1.6.6"])
+      s.add_dependency(%q<pry>, [">= 0"])
+      s.add_dependency(%q<pry-byebug>, [">= 0"])
     end
   else
     s.add_dependency(%q<right_support>, [">= 2.8.10"])
@@ -115,6 +121,9 @@ Gem::Specification.new do |s|
     s.add_dependency(%q<rake>, [">= 0.8.7"])
     s.add_dependency(%q<jeweler>, ["~> 2.0"])
     s.add_dependency(%q<rdoc>, [">= 2.4.2"])
+    s.add_dependency(%q<debugger>, [">= 1.6.6"])
+    s.add_dependency(%q<pry>, [">= 0"])
+    s.add_dependency(%q<pry-byebug>, [">= 0"])
   end
 end
 
