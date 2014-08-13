@@ -85,6 +85,7 @@ Given /^a trivial (failing|pending)? ?RSpec spec$/ do |failing_pending|
       file.puts
       file.puts "it 'supports some awesome new feature' do"
       file.puts "  pending"
+      file.puts "  1.should == 2"
       file.puts "end"
       file.puts ""
       file.puts "it 'has some useful behavior'"

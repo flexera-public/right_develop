@@ -37,8 +37,13 @@ require 'right_develop/ci'
   end
 end
 
-require 'cucumber'
-require 'cucumber/rake/task'
+['cucumber', 'cucumber/rake/task'].each do |f|
+  begin
+    require f
+  rescue LoadError
+    # no-op, we will raise later
+  end
+end
 
 module RightDevelop::CI
   # A Rake task definition that creates a CI namespace with appropriate
@@ -122,9 +127,13 @@ module RightDevelop::CI
           FileUtils.mkdir_p(File.join(@output_path, 'cucumber'))
         end
 
-        if defined?(::RSpec::Core::RakeTask)
+        spec = Gem.loaded_specs['rspec']
+        ver  = spec && spec.version.to_s
+
+        case ver
+        when /^[23]/
           default_opts = ['-r', 'right_develop/ci',
-                          '-f', JavaSpecFormatter.name,
+                          '-f', 'RightDevelop::CI::RSpecFormatter',
                           '-o', File.join(@output_path, 'rspec', @rspec_output)]
 
           # RSpec 2
@@ -135,9 +144,9 @@ module RightDevelop::CI
               t.pattern = self.rspec_pattern
             end
           end
-        elsif defined?(::Spec::Rake::SpecTask)
+        when /^1/
           default_opts = ['-r', 'right_develop/ci',
-                          '-f', JavaSpecFormatter.name + ":" + File.join(@output_path, 'rspec', @rspec_output)]
+                          '-f', 'RightDevelop::CI::RSpecFormatter' + ":" + File.join(@output_path, 'rspec', @rspec_output)]
 
           # RSpec 1
           Spec::Rake::SpecTask.new(@rspec_name => :prep) do |t|
@@ -147,16 +156,28 @@ module RightDevelop::CI
               t.spec_files = FileList[self.rspec_pattern]
             end
           end
+        when nil
+          warn "Cannot define right_develop ci:spec task: RSpec gem is unavailable"
         else
-          raise LoadError, "Cannot define CI rake task: unsupported RSpec version"
+          raise LoadError, "Cannot define RightDevelop ci:spec task: unsupported RSpec version #{ver}"
         end
 
-        Cucumber::Rake::Task.new(@cucumber_name, @cucumber_desc) do |t|
-          t.cucumber_opts = ['--no-color',
-                             '--format', JavaCucumberFormatter.name,
-                             '--out', File.join(@output_path, 'cucumber')]
+        spec = Gem.loaded_specs['cucumber']
+        ver  = spec && spec.version.to_s
+
+        case ver
+        when /^1/
+          Cucumber::Rake::Task.new(@cucumber_name, @cucumber_desc) do |t|
+            t.cucumber_opts = ['--no-color',
+                               '--format', JavaCucumberFormatter.name,
+                               '--out', File.join(@output_path, 'cucumber')]
+          end
+          task :cucumber => [:prep]
+        when nil
+          warn "Cannot define right_develop ci:cucumber task: Cucumber gem is unavailable" 
+        else
+          raise LoadError, "Cannot define RightDevelop ci:cucumber task: unsupported Cucumber version #{ver}"
         end
-        task :cucumber => [:prep]
       end
     end
   end

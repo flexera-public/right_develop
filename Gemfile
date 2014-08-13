@@ -8,13 +8,13 @@ source 'https://rubygems.org'
 
 # Gems used by the CI harness
 gem 'right_support', '>= 2.8.10'
-gem 'cucumber', ['~> 1.0', '< 1.3.3'] # Cuke >= 1.3.3 depends on RubyGems > 2.0 without specifyin that in its gemspec
+gem "builder", "~> 3.0"
 
 # Gems used by the command-line Git tools
 gem 'trollop', ['>= 1.0', '< 3.0']
 gem 'right_git', '>= 1.0',
-                  git: 'git@github.com:rightscale/right_git.git',
-                  branch: 'sapphire_14_15_acu176592_relax_gem_constraints'
+                  :git => 'git@github.com:rightscale/right_git.git',
+                  :branch => 'sapphire_14_15_acu176592_relax_gem_constraints'
 
 # Gems used by S3
 gem 'right_aws', '>= 2.1.0'
@@ -39,5 +39,6 @@ end
 # called out in the gemspec.
 group :test do
   gem 'rspec', '~> 2.0'
+  gem 'cucumber', ['~> 1.0', '< 1.3.3'] # Cuke >= 1.3.3 depends on RubyGems > 2.0 without specifyin that in its gemspec
   gem 'libxml-ruby', '~> 2.7', :platforms => [:mri]
 end
