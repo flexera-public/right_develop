@@ -18,17 +18,6 @@ module RightDevelop::CI::Formatters
       @test_results << example
     end
 
-    def failure_details_for(example)
-      exception = example.exception
-      exception.nil? ? "" : "#{exception.message}\n#{format_backtrace(exception.backtrace, example).join("\n")}"
-    end
-
-    def classname_for(example)
-      klass = example.example_group.top_level_description || example.example_group.described_class
-      klass = RightDevelop::CI::Util.pseudo_java_class_name(klass.to_s)
-      "rspec.#{klass}"
-    end
-
     def dump_summary(duration, example_count, failure_count, pending_count)
       builder = Builder::XmlMarkup.new :indent => 2
       builder.instruct! :xml, :version => "1.0", :encoding => "UTF-8"
@@ -58,6 +47,19 @@ module RightDevelop::CI::Formatters
         end
       end
       output.puts builder.target!
+    end
+
+    protected
+
+    def failure_details_for(example)
+      exception = example.exception
+      exception.nil? ? "" : "#{exception.message}\n#{format_backtrace(exception.backtrace, example).join("\n")}"
+    end
+
+    def classname_for(example)
+      klass = example.example_group.top_level_description || example.example_group.described_class
+      klass = RightDevelop::CI::Util.pseudo_java_class_name(klass.to_s)
+      "rspec.#{klass}"
     end
 
     def purify(untrusted)
