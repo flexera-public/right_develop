@@ -1,9 +1,9 @@
 GIT
   remote: git@github.com:rightscale/right_git.git
-  revision: 8c508473f0a0d7d57509b843d5d6a97502df2379
-  branch: sapphire_14_15_acu176592_relax_gem_constraints
+  revision: b390e5d99128310e2b6e7dedf087b7eed5aa84f6
+  branch: sapphire_14_16_acu176597_ci_unit_testing
   specs:
-    right_git (1.0.0)
+    right_git (1.0.1)
       right_support (>= 2.8.10)
 
 GEM
@@ -85,13 +85,13 @@ GEM
       byebug (~> 2.7)
       pry (~> 0.9.12)
     rack (1.5.2)
-    rake (0.9.6)
+    rake (10.3.2)
     rdoc (4.0.0)
       json (~> 1.4)
     right_aws (3.0.4)
       right_http_connection (>= 1.2.5)
     right_http_connection (1.3.0)
-    right_support (2.8.20)
+    right_support (2.8.28)
     rspec (2.14.1)
       rspec-core (~> 2.14.0)
       rspec-expectations (~> 2.14.0)

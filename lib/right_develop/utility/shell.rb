@@ -95,6 +95,7 @@ module RightDevelop
       # @option options :clear_env_vars [Hash] environment variables to clear during execution (default = none cleared but see :clean_bundler_env)
       # @option options :clean_bundler_env [TrueClass|FalseClass] true to clear all bundler environment variables during execution (default), false to inherit bundler env from parent
       # @option options :sudo [TrueClass|FalseClass] if true, will wrap command in sudo if needed, false to run as current user (default)
+      # @option options :timeout [Numeric] to kill spawned process when time (in seconds) expires
       #
       # @return [Integer] exitstatus of the command
       #
