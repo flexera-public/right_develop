@@ -12,3 +12,6 @@ log/*
 tmp/*
 pkg/*
 measurement/*
+.swn
+.swo
+.swp

@@ -12,9 +12,7 @@ gem "builder", "~> 3.0"
 
 # Gems used by the command-line Git tools
 gem 'trollop', ['>= 1.0', '< 3.0']
-gem 'right_git', '>= 1.0',
-                  :git => 'git@github.com:rightscale/right_git.git',
-                  :branch => 'sapphire_14_15_acu176592_relax_gem_constraints'
+gem 'right_git', '>= 1.0'
 
 # Gems used by S3
 gem 'right_aws', '>= 2.1.0'
