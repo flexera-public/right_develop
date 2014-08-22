@@ -14,7 +14,7 @@ gem "builder", "~> 3.0"
 gem 'trollop', ['>= 1.0', '< 3.0']
 gem 'right_git', '>= 1.0',
                   :git => 'git@github.com:rightscale/right_git.git',
-                  :branch => 'sapphire_14_16_acu176597_ci_unit_testing'
+                  :branch => 'master'
 
 # Gems used by S3
 gem 'right_aws', '>= 2.1.0'

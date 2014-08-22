@@ -1,7 +1,7 @@
 GIT
   remote: git@github.com:rightscale/right_git.git
-  revision: b390e5d99128310e2b6e7dedf087b7eed5aa84f6
-  branch: sapphire_14_16_acu176597_ci_unit_testing
+  revision: 520afcf9b2c62df7cf95d6f822cd63f1b95fa4fa
+  branch: master
   specs:
     right_git (1.0.1)
       right_support (>= 2.8.10)
