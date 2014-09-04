@@ -34,7 +34,9 @@ module RightDevelop::Testing::Client::Rest::Request
     HALT_TRANSMIT = :halt_transmit
 
     # exceptions
-    class PlaybackError < StandardError; end
+    PLAYBACK_ERROR = ::RightDevelop::Testing::Recording::Metadata::PlaybackError
+
+    class PeerResetConnectionError < PLAYBACK_ERROR; end
 
     # fake Net::HTTPResponse
     class FakeNetHttpResponse
@@ -114,7 +116,7 @@ module RightDevelop::Testing::Client::Rest::Request
                 "Released thread id=#{::Thread.current.object_id} after " <<
                 "#{try_counter} attempts to satisfy a retryable condition:\n" <<
                 response.message
-              raise PlaybackError, message
+              raise PLAYBACK_ERROR, message
             end
             if 1 == try_counter
               message = "Blocking thread id=#{::Thread.current.object_id} " <<
@@ -141,7 +143,7 @@ module RightDevelop::Testing::Client::Rest::Request
         log_response(response)
         process_result(response, &block)
       else
-        raise PlaybackError,
+        raise PLAYBACK_ERROR,
               'Unexpected RestClient::Request#transmit returned without calling RestClient::Request#log_request'
       end
     end
@@ -177,6 +179,9 @@ module RightDevelop::Testing::Client::Rest::Request
       end
       if file_path
         response_hash = ::Mash.new(::YAML.load_file(file_path))
+        if response_hash[:peer_reset_connection]
+          raise PeerResetConnectionError, 'Connection reset by peer'
+        end
         @response_metadata = create_response_metadata(
           state,
           response_hash[:http_status],
@@ -184,7 +189,7 @@ module RightDevelop::Testing::Client::Rest::Request
           response_hash[:body])
         result = FakeNetHttpResponse.new(response_hash, response_metadata)
       else
-        raise PlaybackError,
+        raise PLAYBACK_ERROR,
               "Unable to locate response file(s): \"#{tried_paths.join("\", \"")}\""
       end
       logger.debug("Played back response from #{file_path.inspect}.")
@@ -209,7 +214,7 @@ module RightDevelop::Testing::Client::Rest::Request
         # current epoch must be listed.
         current_epoch = state[:epoch]
         unless current_epoch == epochs.first
-          raise PlaybackError,
+          raise PLAYBACK_ERROR,
                 "Unable to locate current epoch directory: #{::File.join(fixtures_dir, current_epoch.to_s).inspect}"
         end
 
@@ -232,7 +237,7 @@ module RightDevelop::Testing::Client::Rest::Request
               h
             end
             if remaining.empty?
-              raise PlaybackError,
+              raise PLAYBACK_ERROR,
                     "Unable to determine remaining responses from #{search_path.inspect}"
             end
             logger.debug("Pending responses for epoch = #{current_epoch}: #{remaining.inspect}")
