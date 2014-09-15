@@ -84,6 +84,7 @@ module RightDevelop::Testing::Recording
 
     # exceptions.
     class RecordingError < StandardError; end
+    class PlaybackError < StandardError; end
 
     attr_reader :uri, :verb, :http_status, :headers, :body
     attr_reader :mode, :logger, :effective_route_config, :variables
@@ -520,7 +521,7 @@ module RightDevelop::Testing::Recording
           when ::Array
             # array should have a single element which should be a hash with
             # futher variable declarations for
-            #   "one ore more objects of the same type in an array."
+            #   "zero or more objects of the same type in an array."
             # the array is only an indicator that an array is expected here.
             variables_for_elements = variable.first
             if variable.size != 1 || !variables_for_elements.kind_of?(::Hash)
@@ -609,8 +610,17 @@ module RightDevelop::Testing::Recording
 
     # Inserts (or reuses) a real value into cached array by variable name.
     def variable_to_cache(variable, real_value)
+      # special case for variables surrounded by parentheses; treat as a ruby
+      # macro to be executed on playback.
       result = nil
-      if values = @variables[variable]
+      if variable.start_with?('<%=')
+        unless variable.end_with?('%>')
+          message = 'Illegal macro-for-variable was missing end-of-macro: ' +
+                    variable.inspect
+          raise RecordingError, message
+        end
+        result = variable  # use macro as substituted value
+      elsif values = @variables[variable]
         # quick out for same as initial value; don't show array index.
         if values.first == real_value
           result = variable
@@ -632,25 +642,52 @@ module RightDevelop::Testing::Recording
 
     # Requires a real value to already exist in cache by variable name.
     def variable_in_cache(path, variable, real_value)
+      # special case for variables surrounded by parentheses; treat as a ruby
+      # macro to be executed on playback.
       result = nil
-      values = @variables[variable]
-      case value_index = values && values.index(real_value)
-      when nil
-        message = 'A variable referenced by a response has not yet been ' +
-                  "defined by a request while replacing variable = " +
-                  "#{variable.inspect} at #{path.join('/').inspect}"
-        raise RecordingError, message
-      when 0
-        variable
+      if variable.start_with?('<%=')
+        unless variable.end_with?('%>')
+          message = 'Illegal macro-for-variable was missing end-of-macro: ' +
+                    variable.inspect
+          raise RecordingError, message
+        end
+        result = variable  # use macro as substituted value
       else
-        "#{variable}[#{value_index}]"
+        values = @variables[variable]
+        case value_index = values && values.index(real_value)
+        when nil
+          message = 'A variable referenced by a response has not yet been ' +
+                    'defined by a request while replacing variable = ' +
+                    "#{variable.inspect} at #{path.join('/').inspect}"
+          raise RecordingError, message
+        when 0
+          result = variable
+        else
+          result = "#{variable}[#{value_index}]"
+        end
       end
+      result
     end
 
     # Attempts to get cached variable value by index from recorded string.
     def variable_from_cache(path, variable, target_value)
+      # special case for variables surrounded by parentheses; treat as a ruby
+      # macro to be executed on playback.
       result = nil
-      if variable_array = @variables[variable]
+      if variable.start_with?('<%=')
+        unless variable.end_with?('%>')
+          message = 'Illegal macro-for-variable was missing end-of-macro: ' +
+                    variable.inspect
+          raise PlaybackError, message
+        end
+        begin
+          result = ::Object.class_eval(variable[3..-3].strip)
+        rescue ::Exception => e
+          message = "Failed to evaluate macro-for-variable:\n#{variable}\n" +
+                    e.message
+          raise PlaybackError, message
+        end
+      elsif variable_array = @variables[variable]
         if matched = VARIABLE_INDEX_REGEX.match(target_value)
           variable_array_index = Integer(matched[1])
         else

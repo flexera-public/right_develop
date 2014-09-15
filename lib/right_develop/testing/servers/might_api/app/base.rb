@@ -126,8 +126,20 @@ module RightDevelop::Testing::Server::MightApi
         # have come from a proxied request/response whereas 500 is never an
         # expected response.
         internal_server_error(message)
-      rescue ::RightDevelop::Testing::Client::Rest::Request::Playback::PlaybackError => e
-        # response has not been recorded.
+      rescue ::RightDevelop::Testing::Client::Rest::Request::Playback::PeerResetConnectionError => e
+        # FIX: have only implemented socket close for webrick; not sure if this
+        # is needed for other rack implementations.
+        if socket = ::Thread.current[:WEBrickSocket]
+          # closing the socket causes 'peer reset connection' on client side and
+          # also prevents any response coming back on connection.
+          socket.close
+        end
+        message = e.message
+        trace = [e.class.name] + (e.backtrace || [])
+        logger.info(message)
+        internal_server_error(message)
+      rescue ::RightDevelop::Testing::Recording::Metadata::PlaybackError => e
+        # response has not been recorded, etc.
         message = e.message
         trace = [e.class.name] + (e.backtrace || [])
         logger.error(message)
