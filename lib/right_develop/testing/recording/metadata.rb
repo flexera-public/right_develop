@@ -613,9 +613,9 @@ module RightDevelop::Testing::Recording
       # special case for variables surrounded by parentheses; treat as a ruby
       # macro to be executed on playback.
       result = nil
-      if variable.start_with?('(')
-        unless variable.end_with?(')')
-          message = 'Illegal macro-for-variable was missing end parenthesis: ' +
+      if variable.start_with?('<%=')
+        unless variable.end_with?('%>')
+          message = 'Illegal macro-for-variable was missing end-of-macro: ' +
                     variable.inspect
           raise RecordingError, message
         end
@@ -645,9 +645,9 @@ module RightDevelop::Testing::Recording
       # special case for variables surrounded by parentheses; treat as a ruby
       # macro to be executed on playback.
       result = nil
-      if variable.start_with?('(')
-        unless variable.end_with?(')')
-          message = 'Illegal macro-for-variable was missing end parenthesis: ' +
+      if variable.start_with?('<%=')
+        unless variable.end_with?('%>')
+          message = 'Illegal macro-for-variable was missing end-of-macro: ' +
                     variable.inspect
           raise RecordingError, message
         end
@@ -674,14 +674,14 @@ module RightDevelop::Testing::Recording
       # special case for variables surrounded by parentheses; treat as a ruby
       # macro to be executed on playback.
       result = nil
-      if variable.start_with?('(')
-        unless variable.end_with?(')')
-          message = 'Illegal macro-for-variable was missing end parenthesis: ' +
+      if variable.start_with?('<%=')
+        unless variable.end_with?('%>')
+          message = 'Illegal macro-for-variable was missing end-of-macro: ' +
                     variable.inspect
           raise PlaybackError, message
         end
         begin
-          result = ::Object.class_eval(variable)
+          result = ::Object.class_eval(variable[3..-3].strip)
         rescue ::Exception => e
           message = "Failed to evaluate macro-for-variable:\n#{variable}\n" +
                     e.message
