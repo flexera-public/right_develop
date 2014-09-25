@@ -288,19 +288,7 @@ module RightDevelop::Testing::Recording
     #
     # @return [Object] depends on input type
     def self.deep_mash(any)
-      case any
-      when Array
-        # traverse arrays
-        any.map { |i| deep_mash(i) }
-      when Hash
-        # mash the hash
-        any.inject(RightSupport::Data::Mash.new) do |m, (k, v)|
-          m[k] = deep_mash(v)
-          m
-        end
-      else
-        any  # whatever
-      end
+      RightSupport::Data::HashTools.deep_mash(any)
     end
 
     protected
