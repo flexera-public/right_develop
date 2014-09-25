@@ -43,7 +43,7 @@ module RightDevelop::Testing::Recording
     # value would be ambiguous.
     STOP_TRAVERSAL_KEY = ''.freeze
 
-    VALID_MODES = ::Mash.new(
+    VALID_MODES = RightSupport::Data::Mash.new(
       :admin    => 'Administrative for changing mode, fixtures, etc. while running.',
       :echo     => 'Echoes request back as response and validates route.',
       :playback => 'Playback a session for one or more stubbed web services.',
@@ -71,7 +71,7 @@ module RightDevelop::Testing::Recording
     def initialize(config_hash, options = nil)
       # defaults.
       current_dir = ::Dir.pwd
-      defaults = ::Mash.new(
+      defaults = RightSupport::Data::Mash.new(
         'fixtures_dir' => ::File.expand_path(FIXTURES_DIR_NAME, current_dir),
         'log_level'    => :info,
         'log_dir'      => ::File.expand_path(LOG_DIR_NAME, current_dir),
@@ -89,7 +89,7 @@ module RightDevelop::Testing::Recording
         # another deep merge of any additional options.
         ::RightSupport::Data::HashTools.deep_merge!(config_hash, options)
       end
-      @config_hash = ::Mash.new
+      @config_hash = RightSupport::Data::Mash.new
       mode(config_hash['mode'])
       admin(config_hash['admin'])
       routes(config_hash['routes'])
@@ -178,7 +178,7 @@ module RightDevelop::Testing::Recording
           # normalize routes for efficient usage but keep them separate from
           # user's config so that .to_hash returns something understandable and
           # JSONizable/YAMLable.
-          @normalized_routes = value.inject(::Mash.new) do |r, (k, v)|
+          @normalized_routes = value.inject(RightSupport::Data::Mash.new) do |r, (k, v)|
             r[normalize_route_prefix(k)] = normalize_route_data(k, v)
             r
           end
@@ -252,11 +252,11 @@ module RightDevelop::Testing::Recording
         if subdir = route_data[:subdir]
           route_subdir = ::File.expand_path(::File.join(path, '..', subdir))
           ::Dir[::File.join(route_subdir, "**/*#{extension}")].each do |route_config_path|
-            route_config_data = ::Mash.new(::YAML.load_file(route_config_path))
+            route_config_data = RightSupport::Data::Mash.new(::YAML.load_file(route_config_path))
             filename = ::File.basename(route_config_path)[0..-(extension.length + 1)]
             hash_path = ::File.dirname(route_config_path)[(route_subdir.length + 1)..-1].split('/')
             unless current_route_data = ::RightSupport::Data::HashTools.deep_get(route_data, hash_path)
-              current_route_data = ::Mash.new
+              current_route_data = RightSupport::Data::Mash.new
               ::RightSupport::Data::HashTools.deep_set!(route_data, hash_path, current_route_data)
             end
 
@@ -294,7 +294,7 @@ module RightDevelop::Testing::Recording
         any.map { |i| deep_mash(i) }
       when Hash
         # mash the hash
-        any.inject(::Mash.new) do |m, (k, v)|
+        any.inject(RightSupport::Data::Mash.new) do |m, (k, v)|
           m[k] = deep_mash(v)
           m
         end
@@ -449,7 +449,7 @@ module RightDevelop::Testing::Recording
           # FIX: don't think there is a need for wildcard qualifiers beyond URI
           # path (i.e. wildcard matchers) so they are not currently supported.
           qualifiers_to_data = regex_to_data[regex] ||= {}
-          current_qualifiers = ::Mash.new
+          current_qualifiers = RightSupport::Data::Mash.new
           if k == STOP_TRAVERSAL_KEY
             # no qualifiers; stopped after URI path
             qualifiers_to_data[current_qualifiers] = normalize_route_stop_configuration(position, uri_path + [k], v)
@@ -475,8 +475,8 @@ module RightDevelop::Testing::Recording
       end
 
       # could be multiple qualifiers in a CGI-style string.
-      current_qualifiers = ::Mash.new(current_qualifiers)
-      more_qualifiers = ::Mash.new
+      current_qualifiers = RightSupport::Data::Mash.new(current_qualifiers)
+      more_qualifiers = RightSupport::Data::Mash.new
       ::CGI.unescape(subpath.last).split('&').each do |q|
         if matched = TYPE_NAME_VALUE_REGEX.match(q)
           case qualifier_type = matched[1]
@@ -507,13 +507,13 @@ module RightDevelop::Testing::Recording
             # not case-sensitive so convert the header keys to snake_case to
             # match normalized headers from request.
             if qualifier_type == 'header'
-              qualifier = qualifier.inject(::Mash.new) do |h, (k, v)|
+              qualifier = qualifier.inject(RightSupport::Data::Mash.new) do |h, (k, v)|
                 h[normalize_header_key(k)] = v
                 h
               end
             end
             ::RightSupport::Data::HashTools.deep_merge!(
-              more_qualifiers[qualifier_type] ||= ::Mash.new,
+              more_qualifiers[qualifier_type] ||= RightSupport::Data::Mash.new,
               qualifier)
           end
         else
@@ -552,7 +552,7 @@ module RightDevelop::Testing::Recording
         raise ConfigError, message
       end
 
-      route_stop_config.inject(::Mash.new) do |rst, (rst_k, rst_v)|
+      route_stop_config.inject(RightSupport::Data::Mash.new) do |rst, (rst_k, rst_v)|
 
         # sanity check.
         unwanted_keys = rst_v.keys.map(&:to_s) - ALLOWED_CONFIG_ACTIONS
@@ -564,11 +564,11 @@ module RightDevelop::Testing::Recording
           raise ConfigError, message
         end
 
-        rst[rst_k] = rst_v.inject(::Mash.new) do |kc, (kc_k, kc_v)|
+        rst[rst_k] = rst_v.inject(RightSupport::Data::Mash.new) do |kc, (kc_k, kc_v)|
           case kc_k
           when METADATA_CLASS::TIMEOUTS_KEY
             # sanity check.
-            kc_v = kc_v.inject(::Mash.new) do |h, (k, v)|
+            kc_v = kc_v.inject(RightSupport::Data::Mash.new) do |h, (k, v)|
               h[k] = Integer(v)
               h
             end
@@ -601,7 +601,7 @@ module RightDevelop::Testing::Recording
                 end
               when ::Hash
                 # transform, variables
-                kc_v[:header] = headers.inject(::Mash.new) do |h, (k, v)|
+                kc_v[:header] = headers.inject(RightSupport::Data::Mash.new) do |h, (k, v)|
                   h[normalize_header_key(k)] = v
                   h
                 end

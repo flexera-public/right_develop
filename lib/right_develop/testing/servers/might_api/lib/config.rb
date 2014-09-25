@@ -140,8 +140,8 @@ module RightDevelop::Testing::Server::MightApi
               # load request/response pair to validate.
               request_file_path = ::File.join(requests_dir, path)
               response_file_path = ::File.join(responses_dir, path)
-              request_data = ::Mash.new(::YAML.load_file(request_file_path))
-              response_data = ::Mash.new(::YAML.load_file(response_file_path))
+              request_data = RightSupport::Data::Mash.new(::YAML.load_file(request_file_path))
+              response_data = RightSupport::Data::Mash.new(::YAML.load_file(response_file_path))
 
               # if confing contains unreachable (i.e. no available route) files
               # then that is ignorable.

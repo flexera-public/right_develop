@@ -178,7 +178,7 @@ module RightDevelop::Testing::Client::Rest::Request
         file_path = nil
       end
       if file_path
-        response_hash = ::Mash.new(::YAML.load_file(file_path))
+        response_hash = RightSupport::Data::Mash.new(::YAML.load_file(file_path))
         if response_hash[:peer_reset_connection]
           raise PeerResetConnectionError, 'Connection reset by peer'
         end
