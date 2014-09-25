@@ -7,18 +7,19 @@ source 'https://rubygems.org'
 # Runtime dependencies of RightDevelop
 
 # Gems used by the CI harness
-gem 'right_support', '>= 2.8.10'
+gem 'right_support', ['>= 2.8.31', '< 3.0.0'] 
+
+# Gems used by reusable spec helpers
 gem "builder", "~> 3.0"
 
 # Gems used by the command-line Git tools
 gem 'trollop', ['>= 1.0', '< 3.0']
 gem 'right_git', '>= 1.0'
 
-# Gems used by S3
+# Gems used by S3 tools
 gem 'right_aws', '>= 2.1.0'
 
 # testing server and client
-gem 'extlib'
 gem 'rack'
 
 # Gems used during RightDevelop development that should be called out in the gemspec

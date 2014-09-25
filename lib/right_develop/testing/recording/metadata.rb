@@ -276,7 +276,7 @@ module RightDevelop::Testing::Recording
     #
     # @return [Mash] types to names to values
     def compute_typenames_to_values
-      ::Mash.new(
+      RightSupport::Data::Mash.new(
         verb:   @verb,
         query:  parse_query_string(@uri.query.to_s),
         header: @headers,
@@ -409,7 +409,7 @@ module RightDevelop::Testing::Recording
     #
     # @return [Hash] effective route configuration
     def compute_effective_route_config
-      result = ::Mash.new
+      result = RightSupport::Data::Mash.new
       if configuration_data = @route_data[MATCHERS_KEY]
         # the top-level keys are expected to be regular expressions used to
         # match only the URI path.
@@ -768,7 +768,7 @@ module RightDevelop::Testing::Recording
         {}
 
       # verb and (response-only) http_status are always significant.
-      significant_data = ::Mash.new(verb: @verb)
+      significant_data = RightSupport::Data::Mash.new(verb: @verb)
       significant_data[:http_status] = @http_status if @http_status
 
       # headers
@@ -819,7 +819,7 @@ module RightDevelop::Testing::Recording
     def copy_if_significant(type, significant, significant_data)
       if significant_type = significant[type]
         significant_data[type] = recursive_selective_hash_copy(
-          ::Mash.new, @typenames_to_values[type], significant_type)
+          RightSupport::Data::Mash.new, @typenames_to_values[type], significant_type)
         true
       else
         false

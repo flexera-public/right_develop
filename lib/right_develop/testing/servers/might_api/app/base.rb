@@ -34,8 +34,8 @@ module RightDevelop::Testing::Server::MightApi
 
       # Rack (and Skeletor) apps and some known AWS apps only accept dash and
       # not underscore so ensure the default settings reflect the 80-20 rule.
-      DEFAULT_PROXY_SETTINGS = ::Mash.new(
-        header: ::Mash.new(
+      DEFAULT_PROXY_SETTINGS = RightSupport::Data::Mash.new(
+        header: RightSupport::Data::Mash.new(
           case:      :capitalize,
           separator: :dash
         ).freeze
@@ -322,7 +322,7 @@ module RightDevelop::Testing::Server::MightApi
           if header_data = proxy_data[:header]
             to_separator = (header_data[:separator] == :underscore) ? '_' : '-'
             from_separator = (to_separator == '-') ? '_' : '-'
-            proxied = headers.inject(::Mash.new) do |h, (k, v)|
+            proxied = headers.inject(RightSupport::Data::Mash.new) do |h, (k, v)|
               k = k.to_s
               case header_data[:case]
               when nil
@@ -342,7 +342,7 @@ module RightDevelop::Testing::Server::MightApi
             end
           end
         end
-        proxied || ::Mash.new(headers)
+        proxied || RightSupport::Data::Mash.new(headers)
       end
 
       # rack has a convention of newline-delimited header multi-values.
