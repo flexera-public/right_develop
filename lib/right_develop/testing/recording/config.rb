@@ -22,7 +22,6 @@
 
 # ancestor
 require 'right_develop/testing/recording'
-require 'extlib'
 require 'json'
 require 'logger'
 require 'rack/utils'

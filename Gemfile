@@ -7,9 +7,7 @@ source 'https://rubygems.org'
 # Runtime dependencies of RightDevelop
 
 # Gems used by the CI harness
-gem 'right_support', ['>= 2.8.31', '< 3.0.0'], 
-  :git => 'git@github.com:rightscale/right_support.git',
-  :branch => 'sapphire_14_16_jiraSS-597_add_deep_clone2_and_deep_mash'
+gem 'right_support', ['>= 2.8.31', '< 3.0.0'] 
 
 # Gems used by reusable spec helpers
 gem "builder", "~> 3.0"
