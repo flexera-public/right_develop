@@ -22,6 +22,7 @@
 
 # ancestor
 require 'right_develop/testing/recording'
+require 'right_support'
 require 'json'
 require 'logger'
 require 'rack/utils'
@@ -283,11 +284,11 @@ module RightDevelop::Testing::Recording
     # if any part of the hash is already a mash then it is not cloned by
     # invoking Mash.new()
     #
-    # FIX: put this in HashTools ?
+    # now delegates to RightSupport::Data::HashTools
     #
     # @return [Object] depends on input type
     def self.deep_mash(any)
-      RightSupport::Data::HashTools.deep_mash(any)
+      ::RightSupport::Data::HashTools.deep_mash(any)
     end
 
     protected
@@ -299,7 +300,7 @@ module RightDevelop::Testing::Recording
 
     # @see Config.deep_mash
     def deep_mash(any)
-      self.class.deep_mash(any)
+      ::RightSupport::Data::HashTools.deep_mash(any)
     end
 
     def normalize_route_prefix(prefix)

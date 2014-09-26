@@ -1,6 +1,5 @@
 source 'https://rubygems.org'
 
-gem 'extlib'
 gem 'rack'
 gem 'rest-client'
-gem 'right_support'
+gem 'right_support', '>= 2.8.31'
