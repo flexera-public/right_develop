@@ -15,6 +15,12 @@ module RightDevelop::CI::Formatters
       @test_failures = {}
       @progress = Spec::Runner::Formatter::ProgressBarFormatter.new(options, STDOUT)
       @summary = Spec::Runner::Formatter::BaseTextFormatter.new(options, STDOUT)
+
+      if ENV.key?('RIGHT_DEVELOP_FAIL_FAST')
+        Spec::Runner.configuration.prepend_before(:each) do
+          pending if (ENV['RIGHT_DEVELOP_FAIL_FAST'].to_i == 0)
+        end
+      end
     end
 
     def example_group_started(example)
@@ -50,6 +56,11 @@ module RightDevelop::CI::Formatters
 
       puts
       @summary.dump_failure(counter, failure)
+
+      # Decrease fail-fast counter by 1
+      if ENV.key?('RIGHT_DEVELOP_FAIL_FAST')
+        ENV['RIGHT_DEVELOP_FAIL_FAST'] = String(ENV['RIGHT_DEVELOP_FAIL_FAST'].to_i - 1)
+      end
     end
 
     def example_pending(example, message, deprecated_pending_location=nil)

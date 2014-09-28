@@ -40,6 +40,28 @@ Feature: RSpec 3.x support
     When I rake 'ci:spec'
     Then the output should have ANSI color
 
+  Scenario: fail fast (using --fail-fast option)
+    Given the Rakefile contains:
+    """
+    RightDevelop::CI::RakeTask.new do |task|
+      task.fail_fast = true
+    end
+    """
+    And an RSpec spec named 'fail_fast_spec.rb' with content:
+    """
+    describe Object do
+      it('succeeds 1') { true }
+      it('succeeds 2') { true }
+      it('fails 1') { raise 'ooga' }
+      it('succeeds 3') { true }
+      it('succeeds 4') { true }
+    end
+    """
+    When I rake 'ci:spec'
+    Then the file 'measurement/rspec/rspec.xml' should mention 1 failing test cases
+    And the output should contain '3 examples'
+    And the output should contain '1 failure'
+
   Scenario: override input file pattern
     Given an RSpec spec named 'passing_spec.rb' with content:
     """

@@ -51,6 +51,11 @@ module RightDevelop::CI
   class RakeTask < ::Rake::TaskLib
     include ::Rake::DSL if defined?(::Rake::DSL)
 
+    # Whether the Rake task should try to configure tests to fail fast. (Behavior varies
+    # between rspec and cucumber, and also between versions of rspec.)
+    # @return [Boolean]
+    attr_accessor :fail_fast
+
     # The namespace in which to define the continuous integration tasks.
     #
     # Default :ci
@@ -108,6 +113,7 @@ module RightDevelop::CI
     attr_accessor :cucumber_desc
 
     def initialize(*args)
+      @fail_fast ||= false
       @ci_namespace = args.shift || :ci
 
       yield self if block_given?
@@ -137,7 +143,9 @@ module RightDevelop::CI
                           '-c', # colo(u)r
                           '-o', File.join(@output_path, 'rspec', @rspec_output)]
 
-          # RSpec 2
+          default_opts << '--fail-fast' if fail_fast
+
+          # RSpec 2/3
           desc @rspec_desc
           RSpec::Core::RakeTask.new(@rspec_name => :prep) do |t|
             t.rspec_opts = default_opts + @rspec_opts
@@ -149,6 +157,9 @@ module RightDevelop::CI
           default_opts = ['-r', 'right_develop/ci',
                           '-c', # colo(u)r
                           '-f', 'RightDevelop::CI::RSpecFormatter' + ":" + File.join(@output_path, 'rspec', @rspec_output)]
+
+          # Hackishly inject fail-fast behavior to our formatter living in the RSpec 1.x subprocess
+          ENV['RIGHT_DEVELOP_FAIL_FAST'] = '1' if fail_fast
 
           # RSpec 1
           Spec::Rake::SpecTask.new(@rspec_name => :prep) do |t|
