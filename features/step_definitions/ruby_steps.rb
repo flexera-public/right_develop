@@ -143,7 +143,7 @@ Given /^a trivial (failing )?Cucumber feature$/ do |failing|
 end
 
 When /^I install the bundle$/ do
-  ruby_app_shell('bundle install --local || bundle install')
+  ruby_app_shell('bundle check || bundle install --local || bundle install')
 end
 
 When /^I rake '(.*)'$/ do |task|
