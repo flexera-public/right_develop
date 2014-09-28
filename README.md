@@ -1,12 +1,14 @@
+# Introduction
+
 RightDevelop is a library of reusable, unit- and functional-tested Ruby code that RightScale has found broadly useful.
 
 Maintained by the RightScale Engineering Team
 
 [![Build Status](https://travis-ci.org/rightscale/right_develop.svg?branch=master)](https://travis-ci.org/rightscale/right_develop)
 
-== What Does It Do?
+# What Does It Do?
 
-=== Continuous Integration
+## Continuous Integration
 
 Jenkins groks JUnit XML test results very well, and has lots of hidden features associated with them. Tests are tests,
 so we've written an RSpec formatter that Jenkins will feel right at home with!
@@ -16,7 +18,7 @@ To use our CI harness, just add the following to your Rakefile (or into lib/task
   require 'right_develop'
   RightDevelop::CI::RakeTask.new
 
-==== Integrating CI with Rails
+### Integrating CI with Rails
 
 For stateful apps, it is generally necessary to run some sort of database setup step prior to running tests.
 Rails accomplishes this with the reusable "db:test:prepare" task which is declared as a dependency to the "spec"
@@ -37,7 +39,7 @@ use the following dependency:
   task 'ci:prep' => ['db:test:purge', 'db:test:load', 'db:schema:load']
 
 
-==== Customizing your CI Harness
+### Customizing your CI Harness
 
 You can override various aspects of the CI harness' behavior by passing a block to the constructor which
 tweaks various instance variables of the resulting Rake task:
@@ -52,7 +54,7 @@ tweaks various instance variables of the resulting Rake task:
     task.rspec_output  = "happy_specs.xml"                # write to ci_results/rspec/happy_specs.xml
   end
 
-==== Keeping the CI Harness Out of Production
+### Keeping the CI Harness Out of Production
 
 We recommend that you don't install RightDevelop -- or other test-only gems such as rspec -- when you deploy
 your code to production. This improves the startup time and performance of your app, and prevents instability
