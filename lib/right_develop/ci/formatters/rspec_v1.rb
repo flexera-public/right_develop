@@ -1,28 +1,41 @@
+require 'spec/runner/formatter/progress_bar_formatter'
+require 'spec/runner/formatter/nested_text_formatter'
+
 module RightDevelop::CI::Formatters
   # JUnit XML output formatter for RSpec 1.x
   class RSpecV1 < Spec::Runner::Formatter::BaseTextFormatter
-    def initialize(*args)
-      super(*args)
+    def initialize(options, output)
+      super
       @current_example_group = nil
       @test_times = {}
       @test_groups = {}
       @test_results = {}
       @test_failures = {}
+      @progress = Spec::Runner::Formatter::ProgressBarFormatter.new(options, STDOUT)
+      @summary = Spec::Runner::Formatter::BaseTextFormatter.new(options, STDOUT)
     end
 
     def example_group_started(example)
       @current_example_group = example
+
+      @progress.example_group_started(example)
+      @summary.example_group_started(example)
     end
 
     def example_started(example)
       @test_groups[example] ||= @current_example_group
       @example_started_at = Time.now
+
+      @progress.example_started(example)
+      #@summary.example_started(example)
     end
 
     def example_passed(example)
       @test_groups[example] ||= @current_example_group
       @test_times[example] = Time.now - @example_started_at
       @test_results[example] = 'passed'
+
+      @progress.example_passed(example)
     end
 
     def example_failed(example, counter, failure)
@@ -30,12 +43,19 @@ module RightDevelop::CI::Formatters
       @test_times[example] = Time.now - @example_started_at
       @test_results[example] = 'failed'
       @test_failures[example] = failure
+
+      @progress.example_failed(example, counter, failure)
+
+      puts
+      @summary.dump_failure(counter, failure)
     end
 
     def example_pending(example, message, deprecated_pending_location=nil)
       @test_groups[example] ||= @current_example_group
       @test_times[example] = Time.now - @example_started_at
       @test_results[example] = 'pending'
+
+      @progress.example_pending(example, message, deprecated_pending_location)
     end
 
     def dump_summary(duration, example_count, failure_count, pending_count)
@@ -66,14 +86,17 @@ module RightDevelop::CI::Formatters
         end
       end
       output.puts builder.target!
+
+      puts
+      @summary.dump_summary(duration, example_count, failure_count, pending_count)
     end
 
     def dump_failure(counter, failure)
-      # no-op; our summary contains everything
+      # no-op; our XML summary contains everything
     end
 
     def dump_pending()
-      # no-op; our summary contains everything
+      @summary.dump_pending if @test_failures.size == 0
     end
 
     private

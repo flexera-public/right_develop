@@ -4,15 +4,17 @@ module RightDevelop::CI::Formatters
     RSpec::Core::Formatters.register self,
       :start, :example_group_started, :start_dump,
       :example_started, :example_passed, :example_failed,
-      :example_pending, :dump_summary
+      :example_pending, :dump_summary, :dump_pending
 
     def initialize(output)
       super(output)
       @failed_examples = []
       @example_group_number = 0
       @example_number = 0
-
       @test_results = []
+      @progress = RSpec::Core::Formatters::ProgressFormatter.new(STDOUT)
+      @summary = RSpec::Core::Formatters::BaseTextFormatter.new(STDOUT)
+      @failures = 0
     end
 
     def start(notification)
@@ -33,14 +35,25 @@ module RightDevelop::CI::Formatters
 
     def example_passed(passed)
       @test_results << passed
+
+      @progress.example_passed(passed)
     end
 
-    def example_failed(failure)
-      @test_results << failure
+    def example_failed(failed)
+      @test_results << failed
+
+      @progress.example_failed(failed)
+
+      puts
+      failures = @failures
+      puts failed.fully_formatted(failures)
+      @failures += 1
     end
 
     def example_pending(pending)
       @test_results << pending
+
+      @progress.example_pending(pending)
     end
 
     def dump_summary(summary)
@@ -78,13 +91,23 @@ module RightDevelop::CI::Formatters
       end
 
       output.puts builder.target!
+
+      puts
+      @summary.dump_summary(summary)
+    end
+
+    def dump_pending(summary)
+      @summary.dump_pending(summary) if @failures == 0
     end
 
     protected
 
     def failure_details_for(failure)
+      example   = failure.example
       exception = failure.example.exception
-      exception.nil? ? "" : "#{exception.message}\n#{failure.formatted_backtrace.join("\n")}"
+      formatter = RSpec.configuration.backtrace_formatter
+      backtrace = formatter.format_backtrace(exception.backtrace, example.metadata)
+      exception.nil? ? "" : "#{exception.message}\n#{backtrace.join("\n")}"
     end
 
     def classname_for(example)

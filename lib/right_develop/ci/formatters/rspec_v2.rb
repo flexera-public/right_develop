@@ -1,21 +1,40 @@
+require 'rspec/core/formatters/progress_formatter'
+
 module RightDevelop::CI::Formatters
   # JUnit XML output formatter for RSpec 2.x
   class RSpecV2 < RSpec::Core::Formatters::BaseFormatter
     def initialize(*args)
       super(*args)
       @test_results = []
+      @progress = RSpec::Core::Formatters::ProgressFormatter.new(STDOUT)
+      @summary = RSpec::Core::Formatters::BaseTextFormatter.new(STDOUT)
+      @failures = 0
     end
 
     def example_passed(example)
       @test_results << example
+
+      @progress.example_passed(example)
+      @summary.example_passed(example)
     end
 
     def example_failed(example)
       @test_results << example
+
+      @progress.example_failed(example)
+      @summary.example_failed(example)
+
+      puts
+      failures = @failures
+      @summary.instance_eval { dump_failure(example, failures) }
+      @failures += 1
     end
 
     def example_pending(example)
       @test_results << example
+
+      @progress.example_pending(example)
+      @summary.example_pending(example)
     end
 
     def dump_summary(duration, example_count, failure_count, pending_count)
@@ -47,6 +66,13 @@ module RightDevelop::CI::Formatters
         end
       end
       output.puts builder.target!
+
+      puts
+      @summary.dump_summary(duration, example_count, failure_count, pending_count)
+    end
+
+    def dump_pending
+      @summary.dump_pending if @failures == 0
     end
 
     protected
