@@ -22,9 +22,10 @@ gem 'right_aws', '>= 2.1.0'
 # testing server and client
 gem 'rack'
 
+gem 'rake', '>= 0.8.7', :group=>[:development, :test]
+
 # Gems used during RightDevelop development that should be called out in the gemspec
 group :development do
-  gem 'rake', '>= 0.8.7'
   gem 'jeweler', '~> 2.0'
   gem 'rdoc', '>= 2.4.2'
 end

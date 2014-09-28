@@ -3,7 +3,13 @@ require 'rubygems'
 require 'bundler/setup'
 
 require 'rake'
-require 'rdoc/task'
+
+begin
+  require 'rdoc/task'
+rescue LoadError
+  # ignore
+end
+
 require 'rubygems/package_task'
 
 require 'rake/clean'
@@ -36,15 +42,17 @@ Cucumber::Rake::Task.new do |t|
   t.cucumber_opts = %w{--color --format pretty}
 end
 
-desc 'Generate documentation for the right_develop gem.'
-Rake::RDocTask.new(:rdoc) do |rdoc|
-  rdoc.rdoc_dir = 'doc'
-  rdoc.title    = 'RightDevelop'
-  rdoc.options << '--line-numbers' << '--inline-source'
-  rdoc.rdoc_files.include('README.rdoc')
-  rdoc.rdoc_files.include('lib/**/*.rb')
-  rdoc.rdoc_files.exclude('features/**/*')
-  rdoc.rdoc_files.exclude('spec/**/*')
+if defined?(Rake::RDocTask)
+  desc 'Generate documentation for the right_develop gem.'
+  Rake::RDocTask.new(:rdoc) do |rdoc|
+    rdoc.rdoc_dir = 'doc'
+    rdoc.title    = 'RightDevelop'
+    rdoc.options << '--line-numbers' << '--inline-source'
+    rdoc.rdoc_files.include('README.rdoc')
+    rdoc.rdoc_files.include('lib/**/*.rb')
+    rdoc.rdoc_files.exclude('features/**/*')
+    rdoc.rdoc_files.exclude('spec/**/*')
+  end
 end
 
 require 'jeweler'
