@@ -1,10 +1,11 @@
-# Introduction
-
-RightDevelop is a library of reusable, unit- and functional-tested Ruby code that RightScale has found broadly useful.
-
-Maintained by the RightScale Engineering Team
+# RightDevelop
 
 [![Build Status](https://travis-ci.org/rightscale/right_develop.svg?branch=master)](https://travis-ci.org/rightscale/right_develop)
+
+This is a library of reusable testing tools to aid TDD, CI and other best practices. It consists of
+Rake tasks, command-line tools and Ruby classes. 
+
+Maintained by the RightScale Engineering Team.
 
 # What Does It Do?
 
