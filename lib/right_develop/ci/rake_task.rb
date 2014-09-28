@@ -170,7 +170,7 @@ module RightDevelop::CI
         case ver
         when /^1/
           Cucumber::Rake::Task.new(@cucumber_name, @cucumber_desc) do |t|
-            t.cucumber_opts = ['--no-color',
+            t.cucumber_opts = ['--color',
                                '--format', JavaCucumberFormatter.name,
                                '--out', File.join(@output_path, 'cucumber')]
           end

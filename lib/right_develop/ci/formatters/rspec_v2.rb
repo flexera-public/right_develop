@@ -1,5 +1,16 @@
 require 'rspec/core/formatters/progress_formatter'
 
+# Hack: enable colour output to non-TTY
+module RSpec
+  module Core
+    class Configuration
+      def output_to_tty?(*args)
+        true
+      end
+    end
+  end
+end
+
 module RightDevelop::CI::Formatters
   # JUnit XML output formatter for RSpec 2.x
   class RSpecV2 < RSpec::Core::Formatters::BaseFormatter

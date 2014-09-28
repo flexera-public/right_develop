@@ -38,7 +38,7 @@ Feature: RSpec 1.x support
   Scenario: color console output
     Given a trivial failing RSpec spec
     When I rake 'ci:spec'
-    Then the command should have ANSI color
+    Then the output should have ANSI color
 
   Scenario: override input file pattern
     Given an RSpec spec named 'passing_spec.rb' with content:
