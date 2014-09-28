@@ -12,13 +12,21 @@ Then /the output should contain ([0-9]+) '(.)' progress ticks?/ do |n, character
   n = Integer(n)
 
   begin
-    progress = @ruby_app_output.split("\n").select { |l| l =~ /^[ .*EF]+$/ }
+    progress = @ruby_app_output.split("\n").map { |l| l.gsub(/\e\[(\d+)(;\d+)*m/, '') }
+    progress = progress.select { |l| l =~ /^[ .*EF]+$/ }
     count = progress.map { |l| l.scan(character).count }.inject(0) { |a, x| a + x }
     count.should == n
   rescue Exception => e
+    puts
+    puts '-----'
     puts "Spurious output:"
-    puts @ruby_app_output
-    puts '--------------------------------------------------------------'
+    puts progress.map { |l| l.scan(character).count }
+    puts '-----'
+    puts
     raise
   end
+end
+
+Then /the output should have ANSI color/ do
+  @ruby_app_output.should =~ /\e\[(\d+)(;\d+)*m/
 end

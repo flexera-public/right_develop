@@ -1,6 +1,8 @@
 require 'spec/runner/formatter/progress_bar_formatter'
 require 'spec/runner/formatter/nested_text_formatter'
 
+ENV['RSPEC_COLOR'] = '1'
+
 module RightDevelop::CI::Formatters
   # JUnit XML output formatter for RSpec 1.x
   class RSpecV1 < Spec::Runner::Formatter::BaseTextFormatter

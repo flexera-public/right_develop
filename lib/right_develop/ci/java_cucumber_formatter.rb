@@ -27,7 +27,7 @@
 require 'right_develop'
 
 
-['cucumber', 'cucumber/formatter/junit'].each do |f|
+['cucumber', 'cucumber/formatter/junit', 'cucumber/formatter/progress'].each do |f|
   begin
     require f
   rescue LoadError
@@ -38,6 +38,47 @@ end
 module RightDevelop::CI
   if defined?(Cucumber)
     class JavaCucumberFormatter < Cucumber::Formatter::Junit
+      def initialize(runtime, io, options)
+        super
+
+        @progress = Cucumber::Formatter::Progress.new(runtime, STDOUT, options)
+      end
+
+      def before_features(features)
+        @progress.before_features(features)
+      end
+
+      def after_features(features)
+        @progress.after_features(features)
+      end
+
+      def before_feature_element(*args)
+        @progress.before_feature_element(*args)
+        super
+      end
+
+      def after_feature_element(*args)
+        @progress.after_feature_element(*args)
+      end
+
+      def before_steps(*args)
+        @progress.before_steps(*args)
+        super
+      end
+
+      def after_steps(*args)
+        @progress.after_steps(*args)
+        super
+      end
+
+      def after_step_result(*args)
+        @progress.after_step_result(*args)
+      end
+
+      def exception(*args)
+        @progress.exception(*args)
+      end
+
       private
 
       def build_testcase(duration, status, exception = nil, suffix = "")
