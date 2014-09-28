@@ -3,7 +3,14 @@ require 'rubygems'
 require 'bundler/setup'
 
 require 'rake'
-require 'rdoc/task'
+
+begin
+  require 'rdoc/task'
+  require 'jeweler'
+rescue LoadError
+  # ignore; these gems can be excluded from the bundle using --without
+end
+
 require 'rubygems/package_task'
 
 require 'rake/clean'
@@ -36,37 +43,40 @@ Cucumber::Rake::Task.new do |t|
   t.cucumber_opts = %w{--color --format pretty}
 end
 
-desc 'Generate documentation for the right_develop gem.'
-Rake::RDocTask.new(:rdoc) do |rdoc|
-  rdoc.rdoc_dir = 'doc'
-  rdoc.title    = 'RightDevelop'
-  rdoc.options << '--line-numbers' << '--inline-source'
-  rdoc.rdoc_files.include('README.rdoc')
-  rdoc.rdoc_files.include('lib/**/*.rb')
-  rdoc.rdoc_files.exclude('features/**/*')
-  rdoc.rdoc_files.exclude('spec/**/*')
+if defined?(Rake::RDocTask)
+  desc 'Generate documentation for the right_develop gem.'
+  Rake::RDocTask.new(:rdoc) do |rdoc|
+    rdoc.rdoc_dir = 'doc'
+    rdoc.title    = 'RightDevelop'
+    rdoc.options << '--line-numbers' << '--inline-source'
+    rdoc.rdoc_files.include('README.rdoc')
+    rdoc.rdoc_files.include('lib/**/*.rb')
+    rdoc.rdoc_files.exclude('features/**/*')
+    rdoc.rdoc_files.exclude('spec/**/*')
+  end
 end
 
-require 'jeweler'
-Jeweler::Tasks.new do |gem|
-  # gem is a Gem::Specification; see http://docs.rubygems.org/read/chapter/20 for more options
-  gem.name = "right_develop"
-  gem.homepage = "https://github.com/rightscale/right_develop"
-  gem.license = "MIT"
-  gem.summary = %Q{Reusable dev & test code.}
-  gem.description = %Q{A toolkit of development tools created by RightScale.}
-  gem.email = "support@rightscale.com"
-  gem.authors = ["Tony Spataro"]
-  gem.rubygems_version = "1.3.7"
-  gem.files.exclude ".rspec"
-  gem.files.exclude "Gemfile*"
-  gem.files.exclude "features/**/*"
-  gem.files.exclude "spec/**/*"
+if defined?(Jeweler)
+  Jeweler::Tasks.new do |gem|
+    # gem is a Gem::Specification; see http://docs.rubygems.org/read/chapter/20 for more options
+    gem.name = "right_develop"
+    gem.homepage = "https://github.com/rightscale/right_develop"
+    gem.license = "MIT"
+    gem.summary = %Q{Reusable dev & test code.}
+    gem.description = %Q{A toolkit of development tools created by RightScale.}
+    gem.email = "support@rightscale.com"
+    gem.authors = ["Tony Spataro"]
+    gem.rubygems_version = "1.3.7"
+    gem.files.exclude ".rspec"
+    gem.files.exclude "Gemfile*"
+    gem.files.exclude "features/**/*"
+    gem.files.exclude "spec/**/*"
+  end
+
+  Jeweler::RubygemsDotOrgTasks.new
+
+  CLEAN.include('pkg')
 end
-
-Jeweler::RubygemsDotOrgTasks.new
-
-CLEAN.include('pkg')
 
 RightDevelop::CI::RakeTask.new
 RightDevelop::Git::RakeTask.new

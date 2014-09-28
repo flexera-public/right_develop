@@ -22,16 +22,13 @@ gem 'right_aws', '>= 2.1.0'
 # testing server and client
 gem 'rack'
 
+gem 'rake', '>= 0.8.7', :group=>[:development, :test]
+
 # Gems used during RightDevelop development that should be called out in the gemspec
 group :development do
-  gem 'rake', '>= 0.8.7'
   gem 'jeweler', '~> 2.0'
   gem 'rdoc', '>= 2.4.2'
-
-  # debuggers
-  gem 'debugger', '>= 1.6.6', :platforms => [:ruby_19, :ruby_20]
-  gem 'pry', :platforms => [:ruby_21]
-  gem 'pry-byebug', :platforms => [:ruby_21]
+  gem 'github_api', '~> 0.9.7' # for ruby 1.8 compatibility
 end
 
 # Gems that are only used locally by this repo to run tests and should NOT be
@@ -40,4 +37,13 @@ group :test do
   gem 'rspec', '~> 2.0'
   gem 'cucumber', ['~> 1.0', '< 1.3.3'] # Cuke >= 1.3.3 depends on RubyGems > 2.0 without specifyin that in its gemspec
   gem 'libxml-ruby', '~> 2.7', :platforms => [:mri]
+  gem 'nokogiri', '~> 1.5.11' # for ruby 1.8 compatibility
+  gem 'json' # to shut MultiJson up
+end
+
+# Debuggers that are used during development & test (but not in CI)
+group :debugger do
+  gem 'debugger', '>= 1.6.6', :platforms => [:ruby_19, :ruby_20]
+  gem 'pry', :platforms => [:ruby_21]
+  gem 'pry-byebug', :platforms => [:ruby_21]
 end
