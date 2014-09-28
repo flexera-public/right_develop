@@ -134,6 +134,7 @@ module RightDevelop::CI
         when /^[23]/
           default_opts = ['-r', 'right_develop/ci',
                           '-f', 'RightDevelop::CI::RSpecFormatter',
+                          '-c', # colo(u)r
                           '-o', File.join(@output_path, 'rspec', @rspec_output)]
 
           # RSpec 2
@@ -146,6 +147,7 @@ module RightDevelop::CI
           end
         when /^1/
           default_opts = ['-r', 'right_develop/ci',
+                          '-c', # colo(u)r
                           '-f', 'RightDevelop::CI::RSpecFormatter' + ":" + File.join(@output_path, 'rspec', @rspec_output)]
 
           # RSpec 1
