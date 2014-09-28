@@ -38,9 +38,10 @@ group :test do
   gem 'cucumber', ['~> 1.0', '< 1.3.3'] # Cuke >= 1.3.3 depends on RubyGems > 2.0 without specifyin that in its gemspec
   gem 'libxml-ruby', '~> 2.7', :platforms => [:mri]
   gem 'nokogiri', '~> 1.5.11' # for ruby 1.8 compatibility
+  gem 'json' # to shut MultiJson up
 end
 
-# Debuggers that are used during tests (but not in CI)
+# Debuggers that are used during development & test (but not in CI)
 group :debugger do
   gem 'debugger', '>= 1.6.6', :platforms => [:ruby_19, :ruby_20]
   gem 'pry', :platforms => [:ruby_21]
