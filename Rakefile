@@ -4,12 +4,13 @@ require 'bundler/setup'
 
 require 'rake'
 
-begin
-  require 'rdoc/task'
-  require 'jeweler'
-  require 'coveralls/rake/task'
-rescue LoadError
-  # ignore; these gems can be excluded from the bundle using --without
+# These dependencies can be omitted using "bundle install --without"; tolerate their absence.
+['rdoc/task', 'jeweler', 'coveralls/rake/task'].each do |optional|
+  begin
+    require optional
+  rescue LoadError
+    # ignore
+  end
 end
 
 require 'rubygems/package_task'
@@ -79,8 +80,10 @@ if defined?(Jeweler)
   CLEAN.include('pkg')
 end
 
-if defined?(Coveralls)
+if defined?(Coveralls::RakeTask)
   Coveralls::RakeTask.new
+else
+  raise "WTF YO"
 end
 
 RightDevelop::CI::RakeTask.new
