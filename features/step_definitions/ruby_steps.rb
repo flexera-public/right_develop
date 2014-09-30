@@ -5,13 +5,25 @@ Given /^a Ruby application$/ do
 end
 
 Given /^a Gemfile$/ do
-  gemfile = ruby_app_path('Gemfile')
+  gemfile   = ruby_app_path('Gemfile')
+  simplecov = ruby_app_path('.simplecov')
+
   unless File.exist?(gemfile)
     basedir = File.expand_path('../../..', __FILE__)
     File.open(gemfile, 'w') do |file|
       file.puts "source 'https://rubygems.org'"
       file.puts "gem 'right_develop', :path=>'#{basedir}'"
       file.puts "gem 'coveralls'" unless RUBY_VERSION =~ /^1\.8/
+    end
+  end
+
+  unless File.exist?(simplecov)
+    File.open(simplecov, 'w') do |file|
+      dir = File.expand_path('../../../coverage', __FILE__)
+      file.puts "require 'coveralls'"
+      file.puts "Coveralls.wear! do"
+      file.puts "  coverage_dir '#{dir}'"
+      file.puts "end"
     end
   end
 end
@@ -47,10 +59,7 @@ Given /^the Rakefile contains a ([A-Za-z0-9:]+)::RakeTask with parameter '(.*)'$
   step 'a Rakefile'
   rakefile = ruby_app_path('Rakefile')
   File.open(rakefile, 'w') do |file|
-    unless RUBY_VERSION =~ /^1\.8/
-      file.puts "require 'coveralls'"
-      file.puts "Coveralls.wear! { coverage_dir '#{File.expand_path('../../../coverage,__FILE__')}' }"
-    end
+    file.puts "require 'simplecov'" unless RUBY_VERSION =~ /^1\.8/
     file.puts "require 'right_develop'"
     file.puts "#{mod}::RakeTask.new(#{ns})"
   end
@@ -73,10 +82,7 @@ Given /^a trivial (failing|pending)? ?RSpec spec$/ do |failing_pending|
   FileUtils.mkdir_p(spec_dir)
   File.open(spec, 'w') do |file|
     # ensure that our formatter's coverage gets handled
-    unless RUBY_VERSION =~ /^1\.8/
-      file.puts "require 'coveralls'"
-      file.puts "Coveralls.wear! { coverage_dir '#{File.expand_path('../../../coverage,__FILE__')}' }"
-    end
+    file.puts "require 'simplecov'" unless RUBY_VERSION =~ /^1\.8/
 
     # always include one passing test case as a baseline
     file.puts "describe String do"
@@ -114,10 +120,7 @@ Given /^an RSpec spec named '([A-Za-z0-9_.]+)' with content:$/ do |name, content
   FileUtils.mkdir_p(spec_dir)
   File.open(spec, 'w') do |file|
     # ensure that our formatter's coverage gets handled
-    unless RUBY_VERSION =~ /^1\.8/
-      file.puts "require 'coveralls'"
-      file.puts "Coveralls.wear! { coverage_dir '#{File.expand_path('../../../coverage,__FILE__')}' }"
-    end
+    file.puts "require 'simplecov'" unless RUBY_VERSION =~ /^1\.8/
 
     content.split("\n").each do |line|
       file.puts line
@@ -139,10 +142,7 @@ Given /^a trivial (failing )?Cucumber feature$/ do |failing|
   unless File.exist?(env)
     File.open(env, 'w') do |file|
       # ensure that our formatter's coverage gets handled
-      unless RUBY_VERSION =~ /^1\.8/
-        file.puts "require 'coveralls'"
-        file.puts "Coveralls.wear! { coverage_dir '#{File.expand_path('../../../coverage,__FILE__')}' }"
-      end
+      file.puts "require 'simplecov'" unless RUBY_VERSION =~ /^1\.8/
    end
   end
 
