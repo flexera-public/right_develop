@@ -40,6 +40,8 @@ group :test do
   gem 'nokogiri', '~> 1.5.11' # for ruby 1.8 compatibility
   gem 'json' # to shut MultiJson up
   gem 'coveralls', :require => false
+  gem 'mime-types', '~> 1.0' # can't use 2.x because it doesn't support 1.8
+  gem 'rest-client', '~> 1.6.0' # can't use 1.7 because it doesn't support 1.8
 end
 
 # Debuggers that are used during development & test (but not in CI)
