@@ -11,6 +11,7 @@ Given /^a Gemfile$/ do
     File.open(gemfile, 'w') do |file|
       file.puts "source 'https://rubygems.org'"
       file.puts "gem 'right_develop', :path=>'#{basedir}'"
+      file.puts "gem 'coveralls'" unless RUBY_VERSION =~ /^1\.8/
     end
   end
 end
@@ -46,6 +47,10 @@ Given /^the Rakefile contains a ([A-Za-z0-9:]+)::RakeTask with parameter '(.*)'$
   step 'a Rakefile'
   rakefile = ruby_app_path('Rakefile')
   File.open(rakefile, 'w') do |file|
+    unless RUBY_VERSION =~ /^1\.8/
+      file.puts "require 'coveralls'"
+      file.puts "Coveralls.wear! { coverage_dir '#{File.expand_path('../../../coverage,__FILE__')}' }"
+    end
     file.puts "require 'right_develop'"
     file.puts "#{mod}::RakeTask.new(#{ns})"
   end
@@ -67,6 +72,12 @@ Given /^a trivial (failing|pending)? ?RSpec spec$/ do |failing_pending|
   spec = ruby_app_path('spec', 'trivial_spec.rb')
   FileUtils.mkdir_p(spec_dir)
   File.open(spec, 'w') do |file|
+    # ensure that our formatter's coverage gets handled
+    unless RUBY_VERSION =~ /^1\.8/
+      file.puts "require 'coveralls'"
+      file.puts "Coveralls.wear! { coverage_dir '#{File.expand_path('../../../coverage,__FILE__')}' }"
+    end
+
     # always include one passing test case as a baseline
     file.puts "describe String do"
     file.puts "  it 'has a size' do"
@@ -102,6 +113,12 @@ Given /^an RSpec spec named '([A-Za-z0-9_.]+)' with content:$/ do |name, content
   spec = ruby_app_path('spec', name)
   FileUtils.mkdir_p(spec_dir)
   File.open(spec, 'w') do |file|
+    # ensure that our formatter's coverage gets handled
+    unless RUBY_VERSION =~ /^1\.8/
+      file.puts "require 'coveralls'"
+      file.puts "Coveralls.wear! { coverage_dir '#{File.expand_path('../../../coverage,__FILE__')}' }"
+    end
+
     content.split("\n").each do |line|
       file.puts line
     end
@@ -111,10 +128,23 @@ end
 Given /^a trivial (failing )?Cucumber feature$/ do |failing|
   features_dir = ruby_app_path('features')
   steps_dir    = ruby_app_path('features', 'step_definitions')
+  support_dir  = ruby_app_path('features', 'support')
   feature      = ruby_app_path('features', 'trivial.feature')
   steps        = ruby_app_path('features', 'step_definitions', 'trivial_steps.rb')
+  env          = ruby_app_path('features', 'support', 'env.rb')
   FileUtils.mkdir_p(features_dir)
   FileUtils.mkdir_p(steps_dir)
+  FileUtils.mkdir_p(support_dir)
+
+  unless File.exist?(env)
+    File.open(env, 'w') do |file|
+      # ensure that our formatter's coverage gets handled
+      unless RUBY_VERSION =~ /^1\.8/
+        file.puts "require 'coveralls'"
+        file.puts "Coveralls.wear! { coverage_dir '#{File.expand_path('../../../coverage,__FILE__')}' }"
+      end
+   end
+  end
 
   unless File.exist?(steps)
     File.open(steps, 'w') do |file|

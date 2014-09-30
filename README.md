@@ -2,6 +2,8 @@
 
 [![Build Status](https://travis-ci.org/rightscale/right_develop.svg?branch=master)](https://travis-ci.org/rightscale/right_develop)
 
+[![Coverage Status](https://img.shields.io/coveralls/rightscale/right_develop.svg)](https://coveralls.io/r/rightscale/right_develop)
+
 This is a library of reusable testing tools to aid TDD, CI and other best practices. It consists of
 Rake tasks, command-line tools and Ruby classes. 
 
