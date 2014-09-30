@@ -20,25 +20,17 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-# Try to load RSpec 2.x - 1.x
-['rspec', 'rspec/mocks', 'spec'].each do |f|
-  begin
-    require f
-  rescue LoadError
-    # no-op, we will raise later
-  end
-end
-
 module RightDevelop::Net
   # Extra fatal exceptions to add to RightSupport::Net::RequestBalancer
   FATAL_TEST_EXCEPTIONS = []
 
   spec_namespaces = []
 
-  if defined?(::RSpec::Mocks)
-    # RSpec 2.x
+  if require_succeeds?('rspec')
+    require 'rspec/mocks'
+    require 'rspec/expectations'
     spec_namespaces += [::RSpec::Mocks, ::RSpec::Expectations]
-  elsif defined?(::Spec::Expectations)
+  elsif require_succeeds?('spec')
     # RSpec 1.x
     spec_namespaces += [::Spec::Expectations]
   end
@@ -58,3 +50,4 @@ module RightDevelop::Net
     dfe << e unless dfe.include?(e)
   end
 end
+
