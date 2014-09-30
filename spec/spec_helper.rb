@@ -26,6 +26,11 @@ lib_dir = File.expand_path('../../lib', __FILE__)
 $: << lib_dir unless $:.include?(lib_dir)
 
 require 'coveralls'
-Coveralls.wear!
+Coveralls.wear_merged! do
+  command_name 'spec'
+  add_filter '/features/'
+  add_filter '/spec/'
+  add_filter '/vendor/'
+end
 
 require 'right_develop'

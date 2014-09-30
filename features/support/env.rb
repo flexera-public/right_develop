@@ -77,8 +77,14 @@ end
 
 module RightDevelopWorld
   include RubyAppHelper
+
+  # @return [String] the filename and line of the current scenario
+  attr_reader :scenario_location
 end
 
+Before do |scenario|
+  @scenario_location = scenario.location
+end
 # The Cucumber world
 World(RightDevelopWorld)
 

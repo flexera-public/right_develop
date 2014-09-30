@@ -46,7 +46,7 @@ end
 
 # Debuggers that are used during development & test (but not in CI)
 group :debugger do
-  gem 'debugger', '>= 1.6.6', :platforms => [:ruby_19, :ruby_20]
+  gem 'debugger', '>= 1.6.6', :platforms => [:ruby_19, :ruby_20, :ruby_21]
   gem 'pry', :platforms => [:ruby_21]
   gem 'pry-byebug', :platforms => [:ruby_21]
 end
