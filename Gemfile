@@ -39,6 +39,7 @@ group :test do
   gem 'libxml-ruby', '~> 2.7', :platforms => [:mri]
   gem 'nokogiri', '~> 1.5.11' # for ruby 1.8 compatibility
   gem 'json' # to shut MultiJson up
+  gem 'coveralls', :require => false
 end
 
 # Debuggers that are used during development & test (but not in CI)

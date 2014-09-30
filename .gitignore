@@ -12,6 +12,7 @@ log/*
 tmp/*
 pkg/*
 measurement/*
+coverage/*
 .swn
 .swo
 .swp

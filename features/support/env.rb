@@ -28,6 +28,10 @@ require 'bundler/setup'
 
 lib_dir = File.expand_path('../../../lib', __FILE__)
 $: << lib_dir unless $:.include?(lib_dir)
+
+require 'coveralls'
+Coveralls.wear!
+
 require 'right_develop'
 
 module RubyAppHelper
