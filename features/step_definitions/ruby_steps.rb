@@ -48,7 +48,7 @@ Given /^the Rakefile contains a ([A-Za-z0-9:]+)::RakeTask with parameter '(.*)'$
   rakefile = ruby_app_path('Rakefile')
   File.open(rakefile, 'w') do |file|
     file.puts "require 'coveralls'"
-    file.puts "Coveralls.wear!"
+    file.puts "Coveralls.wear! { coverage_dir '#{File.expand_path('../../../coverage,__FILE__')}' }"
     file.puts "require 'right_develop'"
     file.puts "#{mod}::RakeTask.new(#{ns})"
   end
@@ -72,7 +72,7 @@ Given /^a trivial (failing|pending)? ?RSpec spec$/ do |failing_pending|
   File.open(spec, 'w') do |file|
     # ensure that our formatter's coverage gets handled
     file.puts "require 'coveralls'"
-    file.puts "Coveralls.wear!"
+    file.puts "Coveralls.wear! { coverage_dir '#{File.expand_path('../../../coverage,__FILE__')}' }"
 
     # always include one passing test case as a baseline
     file.puts "describe String do"
@@ -111,7 +111,7 @@ Given /^an RSpec spec named '([A-Za-z0-9_.]+)' with content:$/ do |name, content
   File.open(spec, 'w') do |file|
     # ensure that our formatter's coverage gets handled
     file.puts "require 'coveralls'"
-    file.puts "Coveralls.wear!"
+    file.puts "Coveralls.wear! { coverage_dir '#{File.expand_path('../../../coverage,__FILE__')}' }"
 
     content.split("\n").each do |line|
       file.puts line
@@ -134,8 +134,8 @@ Given /^a trivial (failing )?Cucumber feature$/ do |failing|
     File.open(env, 'w') do |file|
       # ensure that our formatter's coverage gets handled
       file.puts "require 'coveralls'"
-      file.puts "Coveralls.wear!"
-    end
+      file.puts "Coveralls.wear! { coverage_dir '#{File.expand_path('../../../coverage,__FILE__')}' }"
+   end
   end
 
   unless File.exist?(steps)
