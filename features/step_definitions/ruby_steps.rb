@@ -11,7 +11,7 @@ Given /^a Gemfile$/ do
     File.open(gemfile, 'w') do |file|
       file.puts "source 'https://rubygems.org'"
       file.puts "gem 'right_develop', :path=>'#{basedir}'"
-      file.puts "gem 'coveralls'"
+      file.puts "gem 'coveralls'" unless RUBY_VERSION =~ /^1\.8/
     end
   end
 end
@@ -47,8 +47,10 @@ Given /^the Rakefile contains a ([A-Za-z0-9:]+)::RakeTask with parameter '(.*)'$
   step 'a Rakefile'
   rakefile = ruby_app_path('Rakefile')
   File.open(rakefile, 'w') do |file|
-    file.puts "require 'coveralls'"
-    file.puts "Coveralls.wear! { coverage_dir '#{File.expand_path('../../../coverage,__FILE__')}' }"
+    unless RUBY_VERSION =~ /^1\.8/
+      file.puts "require 'coveralls'"
+      file.puts "Coveralls.wear! { coverage_dir '#{File.expand_path('../../../coverage,__FILE__')}' }"
+    end
     file.puts "require 'right_develop'"
     file.puts "#{mod}::RakeTask.new(#{ns})"
   end
@@ -71,8 +73,10 @@ Given /^a trivial (failing|pending)? ?RSpec spec$/ do |failing_pending|
   FileUtils.mkdir_p(spec_dir)
   File.open(spec, 'w') do |file|
     # ensure that our formatter's coverage gets handled
-    file.puts "require 'coveralls'"
-    file.puts "Coveralls.wear! { coverage_dir '#{File.expand_path('../../../coverage,__FILE__')}' }"
+    unless RUBY_VERSION =~ /^1\.8/
+      file.puts "require 'coveralls'"
+      file.puts "Coveralls.wear! { coverage_dir '#{File.expand_path('../../../coverage,__FILE__')}' }"
+    end
 
     # always include one passing test case as a baseline
     file.puts "describe String do"
@@ -110,8 +114,10 @@ Given /^an RSpec spec named '([A-Za-z0-9_.]+)' with content:$/ do |name, content
   FileUtils.mkdir_p(spec_dir)
   File.open(spec, 'w') do |file|
     # ensure that our formatter's coverage gets handled
-    file.puts "require 'coveralls'"
-    file.puts "Coveralls.wear! { coverage_dir '#{File.expand_path('../../../coverage,__FILE__')}' }"
+    unless RUBY_VERSION =~ /^1\.8/
+      file.puts "require 'coveralls'"
+      file.puts "Coveralls.wear! { coverage_dir '#{File.expand_path('../../../coverage,__FILE__')}' }"
+    end
 
     content.split("\n").each do |line|
       file.puts line
@@ -133,8 +139,10 @@ Given /^a trivial (failing )?Cucumber feature$/ do |failing|
   unless File.exist?(env)
     File.open(env, 'w') do |file|
       # ensure that our formatter's coverage gets handled
-      file.puts "require 'coveralls'"
-      file.puts "Coveralls.wear! { coverage_dir '#{File.expand_path('../../../coverage,__FILE__')}' }"
+      unless RUBY_VERSION =~ /^1\.8/
+        file.puts "require 'coveralls'"
+        file.puts "Coveralls.wear! { coverage_dir '#{File.expand_path('../../../coverage,__FILE__')}' }"
+      end
    end
   end
 
