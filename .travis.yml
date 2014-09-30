@@ -6,5 +6,5 @@ rvm:
   - 2.0.0
   - 2.1.0
 script:
-  - bundle exec rake ci:spec && bundle exec rake ci:cucumber
+  - bundle exec rake ci:spec && bundle exec rake ci:cucumber && bundle exec rake coveralls:push
 bundler_args: --without debugger development

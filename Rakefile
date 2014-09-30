@@ -7,6 +7,7 @@ require 'rake'
 begin
   require 'rdoc/task'
   require 'jeweler'
+  require 'coveralls/rake/task'
 rescue LoadError
   # ignore; these gems can be excluded from the bundle using --without
 end
@@ -76,6 +77,10 @@ if defined?(Jeweler)
   Jeweler::RubygemsDotOrgTasks.new
 
   CLEAN.include('pkg')
+end
+
+if defined?(Coveralls)
+  Coveralls::RakeTask.new
 end
 
 RightDevelop::CI::RakeTask.new

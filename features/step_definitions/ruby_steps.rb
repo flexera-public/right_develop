@@ -12,17 +12,24 @@ Given /^a Gemfile$/ do
     basedir = File.expand_path('../../..', __FILE__)
     File.open(gemfile, 'w') do |file|
       file.puts "source 'https://rubygems.org'"
-      file.puts "gem 'right_develop', :path=>'#{basedir}'"
-      file.puts "gem 'coveralls'" unless RUBY_VERSION =~ /^1\.8/
+      file.puts "gem 'right_develop', :path=>'#{basedir}', :require=>false"
+      file.puts "gem 'coveralls', :require=>false" unless RUBY_VERSION =~ /^1\.8/
     end
   end
 
   unless File.exist?(simplecov)
     File.open(simplecov, 'w') do |file|
-      dir = File.expand_path('../../../coverage', __FILE__)
+      root_dir     = File.expand_path('../../..', __FILE__)
+      coverage_dir = File.join(root_dir, 'coverage')
+      # IMPORTANT: each scenario we invoke must use a distinct command_name, else coverage results
+      # will overwrite one another!
+      suite        = "cucumber[#{scenario_location}]"
+
       file.puts "require 'coveralls'"
-      file.puts "Coveralls.wear! do"
-      file.puts "  coverage_dir '#{dir}'"
+      file.puts "Coveralls.wear_merged! do"
+      file.puts "  command_name '#{suite}'"
+      file.puts "  root '#{root_dir}'"
+      file.puts "  coverage_dir '#{coverage_dir}'"
       file.puts "end"
     end
   end
@@ -50,6 +57,7 @@ Given /^the Rakefile contains a ([A-Za-z0-9:]+)::RakeTask$/ do |mod|
   step 'a Rakefile'
   rakefile = ruby_app_path('Rakefile')
   File.open(rakefile, 'w') do |file|
+    file.puts "require 'simplecov'" unless RUBY_VERSION =~ /^1\.8/
     file.puts "require 'right_develop'"
     file.puts "#{mod}::RakeTask.new"
   end
@@ -69,6 +77,7 @@ Given /^the Rakefile contains:$/ do |content|
   step 'a Rakefile'
   rakefile = ruby_app_path('Rakefile')
   File.open(rakefile, 'w') do |file|
+    file.puts "require 'simplecov'" unless RUBY_VERSION =~ /^1\.8/
     file.puts "require 'right_develop'"
     content.split("\n").each do |line|
       file.puts line
@@ -83,7 +92,7 @@ Given /^a trivial (failing|pending)? ?RSpec spec$/ do |failing_pending|
   File.open(spec, 'w') do |file|
     # ensure that our formatter's coverage gets handled
     file.puts "require 'simplecov'" unless RUBY_VERSION =~ /^1\.8/
-
+    file.puts "require 'right_develop'"
     # always include one passing test case as a baseline
     file.puts "describe String do"
     file.puts "  it 'has a size' do"
@@ -121,6 +130,7 @@ Given /^an RSpec spec named '([A-Za-z0-9_.]+)' with content:$/ do |name, content
   File.open(spec, 'w') do |file|
     # ensure that our formatter's coverage gets handled
     file.puts "require 'simplecov'" unless RUBY_VERSION =~ /^1\.8/
+    file.puts "require 'right_develop'"
 
     content.split("\n").each do |line|
       file.puts line
@@ -143,6 +153,7 @@ Given /^a trivial (failing )?Cucumber feature$/ do |failing|
     File.open(env, 'w') do |file|
       # ensure that our formatter's coverage gets handled
       file.puts "require 'simplecov'" unless RUBY_VERSION =~ /^1\.8/
+      file.puts "require 'right_develop'"
    end
   end
 
