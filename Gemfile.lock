@@ -130,7 +130,7 @@ DEPENDENCIES
   pry
   pry-byebug
   rack
-  rake (>= 0.8.7)
+  rake (~> 10.0)
   rdoc (>= 2.4.2)
   rest-client (~> 1.6.0)
   right_aws (>= 2.1.0)
