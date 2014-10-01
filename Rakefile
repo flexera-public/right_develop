@@ -82,8 +82,6 @@ end
 
 if defined?(Coveralls::RakeTask)
   Coveralls::RakeTask.new
-else
-  raise "WTF YO"
 end
 
 RightDevelop::CI::RakeTask.new
