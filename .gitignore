@@ -4,6 +4,7 @@
 .idea
 .loadpath
 .project
+.acunote.session
 .DS_Store
 *.swp
 nbproject/*

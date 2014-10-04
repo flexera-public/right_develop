@@ -24,6 +24,17 @@ gem 'rack'
 
 gem 'rake', '~> 10.0', :group=>[:development, :test]
 
+
+# for show_product_changes.rb
+#gem 'github_api' # specified below
+gem 'octokit', "~> 3.0"
+gem 'jira-ruby', "0.1.11"
+gem 'mechanize'
+gem 'spinning_cursor', '0.3.0'
+gem 'encryptor'
+
+
+
 # Gems used during RightDevelop development that should be called out in the gemspec
 group :development do
   gem 'jeweler', '~> 2.0'
