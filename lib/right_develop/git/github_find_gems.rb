@@ -2,8 +2,8 @@ require 'github_api'
 require 'pry'
 require 'json'
 
-  USER_NAME = "WilliamSnyders"
-  PASSWORD = "faRMMJji#!qhI@E200Q6VF$7zY62KtN$"
+  USER_NAME = "<username>"
+  PASSWORD = "<password>"
 
 REPOS_FILE = "sort_by_repo_results.json"
 GEMS_FILE = "sort_by_gem_results.json"
