@@ -68,7 +68,17 @@ module RightDevelop
 
       # @return [TrueClass|FalseClass] true if running on Windows platform
       def is_windows?
-        return !!(RUBY_PLATFORM =~ /mswin|win32|dos|mingw|cygwin/)
+        return !!(RUBY_PLATFORM =~ /mswin|win32|dos|mingw|cygwin/i)
+      end
+
+      # @return [TrueClass|FalseClass] true if running on Mac OS X platform
+      def is_darwin?
+        return !!(RUBY_PLATFORM =~ /darwin/i)
+      end
+
+      # @return [TrueClass|FalseClass] true if running on Linux platform
+      def is_linux?
+        return !!(RUBY_PLATFORM =~ /linux/i)
       end
 
       # Creates a null logger.
