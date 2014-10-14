@@ -81,3 +81,55 @@ you can use RightSupport's Kernel#require_succeeds? extension to conditionally i
   if require_succeeds?('right_develop')
     RightDevelop::CI::RakeTask.new
   end
+
+## Command-Line Tools
+
+RightDevelop provides a gem binary named `right_develop` that functions as an entry point to numerous useful
+utilities. It's organized similarly to Git, with a number of subcommands that perform different tasks.
+
+For information about the subcommands, try `right_develop --help` (or, if using RightDevelop in a 
+Bundler project, `bundle exec right_develop --help`).
+
+The following subcommands are available.
+
+### git
+
+The `git` subcommand is designed to be run while your working directory is a Git repository. It
+performs two useful maintenance tasks:
+- prune
+- tickets
+
+The `prune` command finds all branches that have been merged to master that have no recent commits;
+it displays the list of branches and offers to delete them all for you. It has options that let you
+filter which branches it considers: only local or remote, only branches beginning with a certain
+name, and so forth.
+
+### github
+
+The `github` subcommand uses the GitHub API to perform various code maintenance and introspection
+tasks.
+
+To get started, add your GitHub Personal Access Token to `~/.right_develop/github.yml`, and optionally,
+add Travis API tokens if you want the tool to report on the Travis status of your repositories.
+
+    github:
+      token: xyzzy
+    travis:
+      travis-ci.org: foo
+      travis-ci.com: bar
+
+Next, invoke the subcommand to find out what it can do: `right_develop github --help`
+
+You will find that it can do the following:
+
+#### github status
+
+You can use this tool to generate a list of every repository in your GitHub organization. If 
+Travis credentials are present, the table will include a build badge for each repository. Any 
+repository that contains a README.md will have its document parsed to determine the team or 
+individual who maintains the repository.
+
+The tool has two output modes: text (the default) and wiki markup. You can control the output 
+mode using the -o flag:
+    -o wiki
+    -o text
