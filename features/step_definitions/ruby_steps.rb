@@ -187,8 +187,12 @@ When /^I install the bundle$/ do
   ruby_app_shell('bundle check || bundle install --local || bundle install')
 end
 
+When /^I bundle exec '(.*)'$/ do |command|
+  @ruby_app_output = ruby_app_shell("bundle exec #{command}", :ignore_errors => true)
+end
+
 When /^I rake '(.*)'$/ do |task|
-  @ruby_app_output = ruby_app_shell("bundle exec rake #{task} --trace ", :ignore_errors => true)
+  @ruby_app_output = ruby_app_shell("bundle exec rake #{task} --trace", :ignore_errors => true)
 end
 
 Then /^the command should (succeed|fail)$/ do |success|
