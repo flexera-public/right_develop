@@ -9,7 +9,7 @@ Feature: command-line interface
     When I install the bundle
 
   Scenario: usage information
-    When I bundle exec 'right_develop --help'
+    When I invoke right_develop with '--help'
     Then the command should succeed
     And the output should contain 'Usage:'
     And the output should contain 'Where <command> is one of:'
