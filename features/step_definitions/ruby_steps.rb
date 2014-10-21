@@ -182,21 +182,3 @@ Given /^a trivial (failing )?Cucumber feature$/ do |failing|
     end
   end
 end
-
-When /^I install the bundle$/ do
-  ruby_app_shell('bundle check || bundle install --local || bundle install')
-end
-
-When /^I rake '(.*)'$/ do |task|
-  @ruby_app_output = ruby_app_shell("bundle exec rake #{task} --trace ", :ignore_errors => true)
-end
-
-Then /^the command should (succeed|fail)$/ do |success|
-  if success == 'succeed'
-    $?.exitstatus.should == 0
-  elsif success == 'fail'
-    $?.exitstatus.should_not == 0
-  else
-    raise NotImplementedError, "Unknown expectation #{success}"
-  end
-end

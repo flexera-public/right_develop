@@ -1,12 +1,25 @@
 #!/usr/bin/env ruby
 
+# What does this do? If you invoke this binary directly (e.g. from the RightDevelop git repository),
+# this ensures that RightDevelop will be loaded from your local disk, and not from any installed
+# RubyGems. The binary can therefore be used to play with in-development commands.
+#
+# Note that this trick depends on RubyGems NOT being activated at the moment the binary is parsed,
+# i.e. it will not work correctly if you "bundle exec bin/right_develop".
+#
+# Usage:
+#   bin/right_develop <whatever> # note no 'bundle exec' !
+if !defined?(Gem) && File.directory?(File.expand_path('../../.git', __FILE__))
+  $: << File.expand_path('../../lib', __FILE__)
+  require 'rubygems'
+end
+
 unless Gem.respond_to?(:latest_spec_for)
   fail 'right_develop command line tools require rubygems v1.8+'
 end
 
-require "trollop"
-
-require "right_develop"
+require 'trollop'
+require 'right_develop'
 
 gemspec = Gem.latest_spec_for("right_develop")
 
