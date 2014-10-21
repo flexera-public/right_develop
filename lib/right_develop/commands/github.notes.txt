@@ -1,0 +1,19 @@
+PFC_archive, No specs as it's a just an archive to hold old prices.
+PFC_website, No specs as it's the PlanForCloud website repo.
+account_dashboard, Nitin Mohan (NextGen) working on it
+analytics_api_service, New repo that we're going to start working on next month.
+blog, No specs as it's the eng blog repo.
+cs_elb, Robert Sulway to tell Christian something by end of the week. Probably owner is going to be CF
+cs_rds, Robert Sulway to tell Christian something by end of the week. Probably owner is going to be CF
+cs_s3, Robert Sulway to tell Christian something by end of the week. Probably owner is going to be CF
+cs_sqs, Robert Sulway to tell Christian something by end of the week. Probably owner is going to be CF
+mc_right_site, Nitin Mohan (NextGen) working on it
+praxis, NextGen team
+praxis-blueprints, NextGen team
+praxis-mapper, NextGen team
+right_agent, Lee (Cornsilk) working on it
+right_amqp, Lee (Cornsilk) working on it 
+right_infrastructure_agent, Lee (Cornsilk) working on it
+right_link, This is solely the Ivory team now
+vscale, According to Jim McGaw now its maintained by CF team
+vscale-admin, According to Jim McGaw now its maintained by CF team
