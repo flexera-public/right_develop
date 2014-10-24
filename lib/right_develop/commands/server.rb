@@ -173,8 +173,8 @@ And [options] are selected from:
         "mode-#{config.mode}_port-#{options[:port]}#{extension}")
     end
 
-    def gid_file_path(config, options)
-      xid_file_name(config, options, '.gid')
+    def pgid_file_path(config, options)
+      xid_file_name(config, options, '.pgid')
     end
 
     def pid_file_path(config, options)
@@ -186,27 +186,42 @@ And [options] are selected from:
       unless ::File.directory?(config.pid_dir)
         ::FileUtils.mkdir_p(config.pid_dir)
       end
-      pfp = pid_file_path(config, options)
-      gfp = gid_file_path(config, options)
-      if ::File.exists?(pfp) || ::File.exists?(gfp)
+
+      pidfp = pid_file_path(config, options)
+      pgidfp = pgid_file_path(config, options)
+      if ::File.exists?(pidfp) || ::File.exists?(pgidfp)
         msg = 'The service appears to already be running due to PID files ' +
               "found under #{config.pid_dir.inspect}"
         ::Trollop.die(msg)
       else
         executioner = lambda do
-          # use open3 to spawn service process.
-          cmd = "#{cmd} 1>/dev/null 2>&1"
-          stdin, stdout_and_stderr, wait_thread = ::Open3.popen2e(cmd)
+          # fork so that we can establish a new session ID (SID). if you do not
+          # fork then the (non-root) parent process can set it at most once
+          # before it will get a permissions error.
+          unless fork
+            # ensure fork has its own SID.
+            ::Process.setsid
 
-          # save PID/GID for stop.
-          pid = wait_thread.pid
-          gid = ::Process.getpgid(pid)
-          logger.info("Started (pid = #{pid}, gid = #{gid}).")
-          ::File.open(gfp, 'w') { |f| f.write gid }
-          ::File.open(pfp, 'w') { |f| f.write pid }
+            # note that cross-fork logging wont hurt anything but it might show
+            # up interleaved with other parent logging.
+            cmd = "#{cmd} 1>/dev/null 2>&1"
+            logger.info('+ ' + cmd)
+            stdin, stdout_and_stderr, wait_thread = ::Open3.popen2e(cmd)
 
-          # intentionally not closing I/O objects or waiting on thread so that
-          # service continues to run while parent goes away.
+            # save PID/PGID for stopping later.
+            pid = wait_thread.pid
+            pgid = ::Process.getpgid(pid)
+
+            logger.info("Running (PID = #{pid}, PGID = #{pgid})")
+            ::File.open(pidfp, 'w') { |f| f.write pid }
+            ::File.open(pgidfp, 'w') { |f| f.write pgid }
+
+            # intentionally not closing I/O objects or waiting on thread so that
+            # app continues to run while fork exits quickly. fork and exec does
+            # not have the same effect here because the exec'd process would not
+            # exit quicktly.
+            exit!
+          end
         end
 
         # clean all bundler env vars before executing child process (but only
@@ -218,17 +233,16 @@ And [options] are selected from:
     end
 
     def do_stop(config, options)
-      # group identifier
-      gfp = gid_file_path(config, options)
-      gid = (::File.read(gfp) rescue '').strip
+      # process identifiers
+      pidfp = pid_file_path(config, options)
+      pid = (::File.read(pidfp) rescue '').strip
 
-      # process identifier
-      pfp = pid_file_path(config, options)
-      pid = (::File.read(pfp) rescue '').strip
+      pgidfp = pgid_file_path(config, options)
+      pgid = (::File.read(pgidfp) rescue '').strip
 
-      unless pid.empty? || gid.empty?
+      unless pid.empty? || pgid.empty?
         pid = Integer(pid)
-        gid = Integer(gid)
+        pgid = Integer(pgid)
         signals = ['INT', 'TERM', 'KILL']
         signals.each do |signal|
           # use PID (process ID) to detect parent process but use GID
@@ -242,7 +256,7 @@ And [options] are selected from:
           end
           if found
             begin
-              ::Process.kill(signal, -gid)
+              ::Process.kill(signal, -pgid)
             rescue
               raise if signal == signals.last
             end
@@ -253,8 +267,8 @@ And [options] are selected from:
         end
         puts 'Stopped.'
       end
-      ::File.unlink(pfp) rescue nil
-      ::File.unlink(gfp) rescue nil
+      ::File.unlink(pidfp) rescue nil
+      ::File.unlink(pgidfp) rescue nil
     end
 
     def do_non_stop(config, options)
