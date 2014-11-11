@@ -45,38 +45,38 @@ module RightDevelop::CI
       end
 
       def before_features(features)
-        @progress.before_features(features)
+        @progress.before_features(features) if @progress.respond_to?(:before_features)
       end
 
       def after_features(features)
-        @progress.after_features(features)
+        @progress.after_features(features) if @progress.respond_to?(:after_features)
       end
 
       def before_feature_element(*args)
-        @progress.before_feature_element(*args)
+        @progress.before_feature_element(*args) if @progress.respond_to?(:before_feature_element)
         super
       end
 
       def after_feature_element(*args)
-        @progress.after_feature_element(*args)
+        @progress.after_feature_element(*args) if @progress.respond_to?(:after_feature_element)
       end
 
       def before_steps(*args)
-        @progress.before_steps(*args)
+        @progress.before_steps(*args) if @progress.respond_to?(:before_steps)
         super
       end
 
       def after_steps(*args)
-        @progress.after_steps(*args)
+        @progress.after_steps(*args)if @progress.respond_to?(:after_steps)
         super
       end
 
       def after_step_result(*args)
-        @progress.after_step_result(*args)
+        @progress.after_step_result(*args) if @progress.respond_to?(:after_step_result)
       end
 
       def exception(*args)
-        @progress.exception(*args)
+        @progress.exception(*args) if @progress.respond_to?(:exception)
       end
 
       private
