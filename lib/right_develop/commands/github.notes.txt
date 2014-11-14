@@ -1,19 +1,29 @@
-PFC_archive, No specs as it's a just an archive to hold old prices.
-PFC_website, No specs as it's the PlanForCloud website repo.
-account_dashboard, Nitin Mohan (NextGen) working on it
-analytics_api_service, New repo that we're going to start working on next month.
-blog, No specs as it's the eng blog repo.
-cs_elb, Robert Sulway to tell Christian something by end of the week. Probably owner is going to be CF
-cs_rds, Robert Sulway to tell Christian something by end of the week. Probably owner is going to be CF
-cs_s3, Robert Sulway to tell Christian something by end of the week. Probably owner is going to be CF
-cs_sqs, Robert Sulway to tell Christian something by end of the week. Probably owner is going to be CF
-mc_right_site, Nitin Mohan (NextGen) working on it
-praxis, NextGen team
-praxis-blueprints, NextGen team
-praxis-mapper, NextGen team
-right_agent, Lee (Cornsilk) working on it
-right_amqp, Lee (Cornsilk) working on it 
-right_infrastructure_agent, Lee (Cornsilk) working on it
-right_link, This is solely the Ivory team now
-vscale, According to Jim McGaw now its maintained by CF team
-vscale-admin, According to Jim McGaw now its maintained by CF team
+PFC_archive; No specs as it's a just an archive to hold old prices.
+PFC_website; No specs as it's the PlanForCloud website repo.
+account_dashboard; Seems its missing the corresponding Jenkins task: account_dasboard_ui that executes node.js scripts (this is completely red in Jenkins). The repo belongs to CM. But NextGen is helping in its maintenaince
+analytics_api_service; New repo that we're going to start working on next month.
+blog; No specs as it's the eng blog repo.
+cloud-slayers; stays in Jenkins . Ryan
+cloud_flow; stays in Jenkins (docker) . Ryan
+cql-model; fork of a Tony personal repo
+cs_elb; CF is now the maintainer. Should get into Travis during this sprint
+cs_rds; CF is now the maintainer. Should get into Travis during this sprint
+cs_s3; The Jenkins build (completely red) uses phantomjs. check that this build also does. CF is now the maintainer. Should get into Travis during this sprint
+cs_sqs; CF is now the maintainer. Should get into Travis during this sprint
+fast_api; IGNORE. is going to be deprea
+global_session; is a fork of a public repository
+grunt-skeletor; IGNORE
+jenkins_example; IGNORE
+mc_right_site; Nitin Mohan (NextGen) did it. Now awaiting CR
+praxis; NextGen team
+praxis-blueprints; NextGen team
+praxis-mapper; NextGen team
+repose_mirror; PR created for the badge
+right_link; This is solely the Ivory team now
+right_migrate; IGNORE
+scheduling_service; PR created for the badge
+shared_taylor; Travis config and badge already in a branch waiting to be merged.
+skeletor; IGNORE
+sql-partitioner; looks like Cornsilk (Jim) is working on it
+vscale; According to Jim McGaw now its maintained by CF team
+vscale-admin; According to Jim McGaw now its maintained by CF team
