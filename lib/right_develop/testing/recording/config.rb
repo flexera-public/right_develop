@@ -178,11 +178,15 @@ module RightDevelop::Testing::Recording
           # normalize routes for efficient usage but keep them separate from
           # user's config so that .to_hash returns something understandable and
           # JSONizable/YAMLable.
-          @normalized_routes = value.inject(RightSupport::Data::Mash.new) do |r, (k, v)|
+          mutable_routes = value.inject(RightSupport::Data::Mash.new) do |r, (k, v)|
             r[normalize_route_prefix(k)] = normalize_route_data(k, v)
             r
           end
-          @config_hash['routes'] = ::RightSupport::Data::HashTools.deep_clone(value)
+
+          # deep freeze routes to detect any case where code is unintentionally
+          # modifying the route hash.
+          @normalized_routes = ::RightSupport::Data::HashTools.deep_freeze!(mutable_routes)
+          @config_hash['routes'] = ::RightSupport::Data::HashTools.deep_clone2(value)
         else
           raise ConfigError, 'routes must be a hash'
         end

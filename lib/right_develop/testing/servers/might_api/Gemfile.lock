@@ -1,3 +1,10 @@
+GIT
+  remote: git@github.com:rightscale/right_support.git
+  revision: 5df7a952705f511c75ccd765f8e15388ff1998ef
+  branch: sapphire_14_24_ss_1013_deep_freeze_and_deep_merge
+  specs:
+    right_support (2.8.37)
+
 GEM
   remote: https://rubygems.org/
   specs:
@@ -5,7 +12,6 @@ GEM
     rack (1.5.2)
     rest-client (1.6.7)
       mime-types (>= 1.16)
-    right_support (2.8.31)
 
 PLATFORMS
   ruby
@@ -13,4 +19,4 @@ PLATFORMS
 DEPENDENCIES
   rack
   rest-client
-  right_support (>= 2.8.31)
+  right_support (>= 2.8.37)!

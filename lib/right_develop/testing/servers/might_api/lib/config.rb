@@ -146,10 +146,11 @@ module RightDevelop::Testing::Server::MightApi
               # if confing contains unreachable (i.e. no available route) files
               # then that is ignorable.
               query_string = request_data[:query]
+              path_parent = ::File.dirname(path)
               uri = METADATA_CLASS.normalize_uri(
                 URI::HTTP.build(
                   host:  'none',
-                  path:  (route_path + ::File.dirname(path)),
+                  path:  path_parent == '.' ? route_path : (route_path + path_parent),
                   query: request_data[:query]).to_s)
 
               # compute checksum from recorded request metadata.

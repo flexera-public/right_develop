@@ -2,4 +2,6 @@ source 'https://rubygems.org'
 
 gem 'rack'
 gem 'rest-client'
-gem 'right_support', '>= 2.8.31'
+gem 'right_support', '>= 2.8.37',
+                     git: 'git@github.com:rightscale/right_support.git',
+                     branch: 'sapphire_14_24_ss_1013_deep_freeze_and_deep_merge'

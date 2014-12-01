@@ -142,22 +142,17 @@ module RightDevelop::Testing::Recording
 
       # apply the configuration by substituting for variables in the request and
       # by obfuscating wherever a variable name is nil.
-      case @mode
-      when 'validate'
-        # do nothing; used to validate the fixtures before playback, etc.
-      else
-        erck = @effective_route_config[@kind]
-        if effective_variables = erck && erck[VARIABLES_KEY]
-          recursive_replace_variables(
-            [@kind, VARIABLES_KEY],
-            @typenames_to_values,
-            effective_variables,
-            erck[TRANSFORM_KEY])
-        end
-        if logger.debug?
-          logger.debug("#{@kind} effective_route_config = #{@effective_route_config[@kind].inspect}")
-          logger.debug("#{@kind} typenames_to_values = #{@typenames_to_values.inspect}")
-        end
+      erck = @effective_route_config[@kind]
+      if effective_variables = erck && erck[VARIABLES_KEY]
+        recursive_replace_variables(
+          [@kind, VARIABLES_KEY],
+          @typenames_to_values,
+          effective_variables,
+          erck[TRANSFORM_KEY])
+      end
+      if logger.debug?
+        logger.debug("#{@kind} effective_route_config = #{@effective_route_config[@kind].inspect}")
+        logger.debug("#{@kind} typenames_to_values = #{@typenames_to_values.inspect}")
       end
 
       # recreate headers and body from data using variable substitutions and
@@ -433,11 +428,16 @@ module RightDevelop::Testing::Recording
               match_deep(@typenames_to_values[qualifier_type], qualifier_name_to_value)
             end
             if all_matched
+              # note that we must be careful to deep clone the existing result
+              # before merging as any previously-merged configuration (shared
+              # from the original configuration) would be modified by deep
+              # merging. use .deep_merge instead of .deep_merge!
+              #
               # the final data is the union of all configurations matching
               # this request path and qualifiers. the uri regex and other
               # data used to match the request parameters is eliminated from
               # the final configuration.
-              ::RightSupport::Data::HashTools.deep_merge!(result, configuration)
+              result = ::RightSupport::Data::HashTools.deep_merge(result, configuration)
             end
           end
         end
@@ -771,17 +771,62 @@ module RightDevelop::Testing::Recording
       significant_data = RightSupport::Data::Mash.new(verb: @verb)
       significant_data[:http_status] = @http_status if @http_status
 
-      # headers
-      copy_if_significant(:header, significant, significant_data)
-
-      # query
-      unless copy_if_significant(:query, significant, significant_data)
-        # entire query string is significant by default.
-        significant_data[:query] = @typenames_to_values[:query]
+      # significance by type.
+      [:header, :query, :body].each do |type|
+        copy_if_significant(type, significant, significant_data)
       end
 
-      # body
-      unless copy_if_significant(:body, significant, significant_data)
+      # use deep-sorted JSON to prevent random ordering changing the checksum.
+      checksum_data = self.class.deep_sorted_json(significant_data)
+      if logger.debug?
+        logger.debug("#{@kind} significant = #{significant.inspect}")
+        logger.debug("#{@kind} checksum_data = #{checksum_data.inspect}")
+      end
+      ::Digest::MD5.hexdigest(checksum_data)
+    end
+
+    # Performs a selective copy of any significant fields (recursively) or else
+    # does nothing. Significance does not require the field to exist in the
+    # known fields; a missing field is still significant (value = nil).
+    #
+    # @param [String|Symbol] type of significance
+    # @param [Hash] significant selectors
+    # @param [Hash] significant_data to populate
+    #
+    # @return [TrueClass] always true
+    def copy_if_significant(type, significant, significant_data)
+      case significant_type = significant[type]
+      when nil
+        # no explicit significance declared; use the default behavior for type.
+        default_copy_if_significant(type, significant_data)
+      when false
+        # no fields are significant; copy nothing.
+      when true
+        # all fields are significant; copy everything.
+        significant_data[type] = @typenames_to_values[type]
+      else
+        # recursively copy significant values from hash.
+        significant_data[type] = recursive_selective_hash_copy(
+          ::RightSupport::Data::Mash.new,
+          @typenames_to_values[type],
+          significant_type)
+      end
+      true
+    end
+
+    # Copies fields by type only if considered significant by default.
+    #
+    # @param [String|Symbol] type of significance
+    # @param [Hash] significant_data to populate
+    #
+    # @return [TrueClass] always true
+    def default_copy_if_significant(type, significant_data)
+      case type
+      when :header
+        # headers are insignificant by default
+      when :query
+        significant_data[:query] = @typenames_to_values[:query]
+      when :body
         case body_value = @typenames_to_values[:body]
         when nil
           # body is either nil, empty or was not parsable; insert the checksum
@@ -797,45 +842,27 @@ module RightDevelop::Testing::Recording
           # use the parsed body so that it can be 'normalized' in sorted order.
           significant_data[:body] = body_value
         end
-      end
-
-      # use deep-sorted JSON to prevent random ordering changing the checksum.
-      checksum_data = self.class.deep_sorted_json(significant_data)
-      if logger.debug? && @mode != 'validate'
-        logger.debug("#{@kind} checksum_data = #{checksum_data.inspect}")
-      end
-      ::Digest::MD5.hexdigest(checksum_data)
-    end
-
-    # Performs a selective copy of any significant fields (recursively) or else
-    # does nothing. Significance does not require the field to exist in the
-    # known fields; a missing field is still significant (value = nil).
-    #
-    # @param [String|Symbol] type of significance
-    # @param [Hash] significant selectors
-    # @param [Hash] significant_data to populate
-    #
-    # @return [TrueClass|FalseClass] true if any were significant
-    def copy_if_significant(type, significant, significant_data)
-      if significant_type = significant[type]
-        significant_data[type] = recursive_selective_hash_copy(
-          RightSupport::Data::Mash.new, @typenames_to_values[type], significant_type)
-        true
       else
-        false
+        raise ::NotImplementedError,
+              "Unexpected significant type: #{type.inspect}"
       end
+      true
     end
 
     # Recursively selects and copies values from source to target.
     def recursive_selective_hash_copy(target, source, selections, path = [])
       selections.each do |k, v|
         case v
-        when nil
-          # hash to nil; user configured by using flat hashes instead of arrays.
-          # it's a style thing that makes the YAML look prettier.
+        when nil, true
+          # hash to nil or true; nil means that user configured by using flat
+          # hashes instead of arrays, which is a style thing that makes the YAML
+          # look prettier. true means explictly consider all elements at current
+          # key to be significant.
           copy_hash_value(target, source, path + [k])
+        when false
+          # explicitly declared nothing at current key to be significant.
         when ::Array
-          # also supporting arrays of names at top level or under a hash.
+          # also supporting arrays of names at top key or under a hash.
           v.each { |item| copy_hash_value(target, source, path + [item]) }
         when ::Hash
           # recursion.

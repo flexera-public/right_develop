@@ -1,3 +1,10 @@
+GIT
+  remote: git@github.com:rightscale/right_support.git
+  revision: 5df7a952705f511c75ccd765f8e15388ff1998ef
+  branch: sapphire_14_24_ss_1013_deep_freeze_and_deep_merge
+  specs:
+    right_support (2.8.37)
+
 GEM
   remote: https://rubygems.org/
   specs:
@@ -86,7 +93,6 @@ GEM
     right_git (1.0.1)
       right_support (>= 2.8.10)
     right_http_connection (1.3.0)
-    right_support (2.8.31)
     rspec (2.14.1)
       rspec-core (~> 2.14.0)
       rspec-expectations (~> 2.14.0)
@@ -135,7 +141,7 @@ DEPENDENCIES
   rest-client (~> 1.6.0)
   right_aws (>= 2.1.0)
   right_git (>= 1.0)
-  right_support (>= 2.8.31, < 3.0.0)
+  right_support (>= 2.8.31, < 3.0.0)!
   rspec (~> 2.0)
   ruby-debug
   trollop (>= 1.0, < 3.0)
