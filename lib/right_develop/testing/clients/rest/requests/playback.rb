@@ -170,11 +170,15 @@ module RightDevelop::Testing::Client::Rest::Request
       file_path = nil
       past_epochs = state[:past_epochs] ||= []
       try_epochs = [state[:epoch]] + past_epochs
-      tried_paths = []
+      first_tried_path = nil
+      first_tried_epoch = nil
+      last_tried_epoch = nil
       try_epochs.each do |epoch|
         file_path = response_file_path(epoch)
         break if ::File.file?(file_path)
-        tried_paths << file_path
+        first_tried_path = file_path unless first_tried_path
+        first_tried_epoch = epoch unless first_tried_epoch
+        last_tried_epoch = epoch
         file_path = nil
       end
       if file_path
@@ -189,8 +193,10 @@ module RightDevelop::Testing::Client::Rest::Request
           response_hash[:body])
         result = FakeNetHttpResponse.new(response_hash, response_metadata)
       else
-        raise PLAYBACK_ERROR,
-              "Unable to locate response file(s): \"#{tried_paths.join("\", \"")}\""
+        msg = 'Unable to locate response file(s) in epoch range ' +
+              "[#{first_tried_epoch} - #{last_tried_epoch}]:\n  " +
+              first_tried_path.inspect
+        raise PLAYBACK_ERROR, msg
       end
       logger.debug("Played back response from #{file_path.inspect}.")
 
