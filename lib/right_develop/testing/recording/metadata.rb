@@ -143,12 +143,18 @@ module RightDevelop::Testing::Recording
       # apply the configuration by substituting for variables in the request and
       # by obfuscating wherever a variable name is nil.
       erck = @effective_route_config[@kind]
-      if effective_variables = erck && erck[VARIABLES_KEY]
-        recursive_replace_variables(
-          [@kind, VARIABLES_KEY],
-          @typenames_to_values,
-          effective_variables,
-          erck[TRANSFORM_KEY])
+      case @mode
+      when 'validate'
+        # used to validate the fixtures before playback; no variable
+        # substitution should be performed.
+      else
+        if effective_variables = erck && erck[VARIABLES_KEY]
+          recursive_replace_variables(
+            [@kind, VARIABLES_KEY],
+            @typenames_to_values,
+            effective_variables,
+            erck[TRANSFORM_KEY])
+        end
       end
       if logger.debug?
         logger.debug("#{@kind} effective_route_config = #{@effective_route_config[@kind].inspect}")
