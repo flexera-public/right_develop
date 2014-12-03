@@ -43,11 +43,12 @@ module RightDevelop::Testing::Recording
     KINDS = %w(request response)
 
     # route-relative config keys.
-    MATCHERS_KEY    = 'matchers'.freeze
-    SIGNIFICANT_KEY = 'significant'.freeze
-    TIMEOUTS_KEY    = 'timeouts'.freeze
-    TRANSFORM_KEY   = 'transform'.freeze
-    VARIABLES_KEY   = 'variables'.freeze
+    DELAY_SECONDS_KEY = 'delay_seconds'.freeze
+    MATCHERS_KEY      = 'matchers'.freeze
+    SIGNIFICANT_KEY   = 'significant'.freeze
+    TIMEOUTS_KEY      = 'timeouts'.freeze
+    TRANSFORM_KEY     = 'transform'.freeze
+    VARIABLES_KEY     = 'variables'.freeze
 
     # finds the value index for a recorded variable, if any.
     VARIABLE_INDEX_REGEX = /\[(\d+)\]$/
@@ -180,6 +181,12 @@ module RightDevelop::Testing::Recording
     # @return [String] computed checksum for normalized 'significant' data
     def checksum
       @checksum ||= compute_checksum
+    end
+
+    # @return [Float] delay in seconds (of response) from effective
+    #  configuration or empty
+    def delay_seconds
+      Float((@effective_route_config[@kind] || {})[DELAY_SECONDS_KEY] || 0)
     end
 
     # @return [Hash] timeouts from effective configuration or empty
