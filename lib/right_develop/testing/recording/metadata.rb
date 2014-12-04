@@ -84,6 +84,7 @@ module RightDevelop::Testing::Recording
     end
 
     # exceptions.
+    class ConfigurationError < StandardError; end
     class RecordingError < StandardError; end
     class PlaybackError < StandardError; end
 
@@ -820,9 +821,9 @@ module RightDevelop::Testing::Recording
       else
         # recursively copy significant values from hash.
         significant_data[type] = recursive_selective_hash_copy(
-          ::RightSupport::Data::Mash.new,
           @typenames_to_values[type],
-          significant_type)
+          significant_type,
+          [type])
       end
       true
     end
@@ -862,34 +863,82 @@ module RightDevelop::Testing::Recording
       true
     end
 
-    # Recursively selects and copies values from source to target.
-    def recursive_selective_hash_copy(target, source, selections, path = [])
-      selections.each do |k, v|
-        case v
-        when nil, true
-          # hash to nil or true; nil means that user configured by using flat
-          # hashes instead of arrays, which is a style thing that makes the YAML
-          # look prettier. true means explictly consider all elements at current
-          # key to be significant.
-          copy_hash_value(target, source, path + [k])
-        when false
-          # explicitly declared nothing at current key to be significant.
-        when ::Array
-          # also supporting arrays of names at top key or under a hash.
-          v.each { |item| copy_hash_value(target, source, path + [item]) }
-        when ::Hash
-          # recursion.
-          recursive_selective_hash_copy(target, source, v, path + [k])
+    # Recursively selects values from source.
+    #
+    # @param [Object] source for selection
+    # @param [Object] selections to perform
+    # @param [Array] log_path as array of keys or indexes for logging only
+    #
+    # @return [Object] target of same type as source
+    #
+    def recursive_selective_hash_copy(source, selections, log_path)
+      return nil if source.nil?
+      result = nil
+      case selections
+      when nil, true
+        # hash to nil or true; nil means that user configured by using flat
+        # hashes instead of arrays, which is a style thing that makes the YAML
+        # look prettier. true means explictly consider all elements at current
+        # key to be significant.
+        result = ::RightSupport::Data::HashTools.deep_clone2(source)
+      when false
+        # explicitly declared nothing at current level to be significant.
+      when ::Array
+        # supporting special case of an array of all key names as a list of
+        # significant hash key/values.
+        if selections.all? { |item| item.is_a?(::String) || item.is_a?(::Symbol) }
+          # select hash values by listed keys.
+          unless source.kind_of?(::Hash)
+            msg = 'Mismatched significant qualifier with source type at ' +
+                  "#{log_path.join('/')}: #{source.class}"
+            raise ::ConfigurationError, msg
+          end
+          selections.each do |k|
+            source_value = source[k]
+            unless source_value.nil?
+              result ||= ::RightSupport::Data::Mash.new
+              result[k] = ::RightSupport::Data::HashTools.deep_clone2(source_value)
+            end
+          end
+        else
+          # select specific hash elements of array with specific significance.
+          # if a particular element has no siginificance then its selector can
+          # be a literal false or else it can fall off the end of the listed
+          # selectors.
+          unless source.kind_of?(::Array)
+            msg = 'Mismatched significant qualifier with source type at ' +
+                  "#{log_path.join('/')}: #{source.class}"
+            raise ::ConfigurationError, msg
+          end
+          selections.each_with_index do |item, idx|
+            if idx < source.size
+              result ||= []
+              result << recursive_selective_hash_copy(
+                source[idx], item, log_path + ["[#{idx}]"])
+            else
+              break
+            end
+          end
         end
+      when ::Hash
+        unless source.kind_of?(::Hash)
+          msg = 'Mismatched significant qualifier with source type at ' +
+                "#{log_path.join('/')}: #{source.class}"
+          raise ::ConfigurationError, msg
+        end
+        selections.each do |k, v|
+          target = recursive_selective_hash_copy(source[k], v, log_path + [k])
+          unless target.nil?
+            result ||= ::RightSupport::Data::Mash.new
+            result[k] = target
+          end
+        end
+        result
+      else
+        raise ::ConfigurationError,
+              "Unexpected significant value type at #{log_path.join('/')}: #{v.class}"
       end
-      target
-    end
-
-    # copies a single value between hashes by path.
-    def copy_hash_value(target, source, path)
-      value = ::RightSupport::Data::HashTools.deep_get(source, path)
-      ::RightSupport::Data::HashTools.deep_set!(target, path, value)
-      true
+      result
     end
 
   end # Metadata
