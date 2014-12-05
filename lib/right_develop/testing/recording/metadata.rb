@@ -356,7 +356,7 @@ module RightDevelop::Testing::Recording
             # note that we never want to fail to proxy back a response because
             # the server doesn't know what JSON is; log a warning and continue.
             # this actually happens with Right API 1.5 health-check saying
-            # response is 'application/json' but returning "ok"
+            # response is 'application/json' but returning "\"ok\""
             logger.warn("Failed to parse JSON data from #{body.inspect}: #{e.class} #{e.message}")
           end
         else
@@ -386,10 +386,10 @@ module RightDevelop::Testing::Recording
       when ::Hash, ::Array
         body_hash = body
       when ::String
-        body_hash = parse_body(normalized_headers, body)
-        return body unless body_hash
-      else
-        return body
+        # use unparsed original body to avoid losing information when we are
+        # unable to parse or parse a literal JSON string as happens in the case
+        # of RightAPI's health-check.
+        return @body
       end
       case ct = compute_content_type(normalized_headers)
       when 'application/x-www-form-urlencoded'
