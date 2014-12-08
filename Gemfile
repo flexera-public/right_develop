@@ -7,7 +7,7 @@ source 'https://rubygems.org'
 # Runtime dependencies of RightDevelop
 
 # Gems used by the CI harness
-gem 'right_support', ['>= 2.8.31', '< 3.0.0'] 
+gem 'right_support', ['>= 2.8.31', '< 3.0.0']
 
 # Gems used by reusable spec helpers
 gem "builder", "~> 3.0"

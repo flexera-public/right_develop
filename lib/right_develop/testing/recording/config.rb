@@ -52,7 +52,7 @@ module RightDevelop::Testing::Recording
 
     # keys allowed under the deep route configuration.
     ALLOWED_KINDS          = %w(request response)
-    ALLOWED_CONFIG_ACTIONS = %w(significant timeouts transform variables)
+    ALLOWED_CONFIG_ACTIONS = %w(delay_seconds significant timeouts transform variables)
     ALLOWED_TIMEOUTS       = %w(open_timeout read_timeout)
     ALLOWED_VARIABLE_TYPES = %w(body header query)
 
@@ -178,11 +178,15 @@ module RightDevelop::Testing::Recording
           # normalize routes for efficient usage but keep them separate from
           # user's config so that .to_hash returns something understandable and
           # JSONizable/YAMLable.
-          @normalized_routes = value.inject(RightSupport::Data::Mash.new) do |r, (k, v)|
+          mutable_routes = value.inject(RightSupport::Data::Mash.new) do |r, (k, v)|
             r[normalize_route_prefix(k)] = normalize_route_data(k, v)
             r
           end
-          @config_hash['routes'] = ::RightSupport::Data::HashTools.deep_clone(value)
+
+          # deep freeze routes to detect any case where code is unintentionally
+          # modifying the route hash.
+          @normalized_routes = ::RightSupport::Data::HashTools.deep_freeze!(mutable_routes)
+          @config_hash['routes'] = ::RightSupport::Data::HashTools.deep_clone2(value)
         else
           raise ConfigError, 'routes must be a hash'
         end
@@ -554,6 +558,15 @@ module RightDevelop::Testing::Recording
 
         rst[rst_k] = rst_v.inject(RightSupport::Data::Mash.new) do |kc, (kc_k, kc_v)|
           case kc_k
+          when METADATA_CLASS::DELAY_SECONDS_KEY
+            begin
+              kc_v = Float(kc_v)
+            rescue ::ArgumentError
+              location = position_string(position, subpath + [rst_k, kc_k])
+              message = 'Invalid route configuration delay_seconds value at ' +
+                        "#{location}: #{kc_v.inspect}"
+              raise ConfigError, message
+            end
           when METADATA_CLASS::TIMEOUTS_KEY
             # sanity check.
             kc_v = kc_v.inject(RightSupport::Data::Mash.new) do |h, (k, v)|

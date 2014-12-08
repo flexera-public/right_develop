@@ -40,9 +40,10 @@ module RightDevelop::Testing::Client::Rest::Request
 
     # fake Net::HTTPResponse
     class FakeNetHttpResponse
-      attr_reader :code, :body, :elapsed_seconds, :call_count
+      attr_reader :code, :body, :delay_seconds, :elapsed_seconds, :call_count
 
       def initialize(response_hash, response_metadata)
+        @delay_seconds = response_metadata.delay_seconds
         @elapsed_seconds = Integer(response_hash[:elapsed_seconds] || 0)
         @code = response_metadata.http_status.to_s
         @headers = response_metadata.headers.inject({}) do |h, (k, v)|
@@ -140,6 +141,15 @@ module RightDevelop::Testing::Client::Rest::Request
           logger.debug("throttle delay = #{delay}")
           sleep delay
         end
+
+        # there may be a configured response delay (in addition to throttling)
+        # which allows for other responses to complete before the current
+        # response thread is unblocked. the response delay is absolute and not
+        # subject to the throttle factor.
+        if (delay = response.delay_seconds) > 0
+          logger.debug("configured response delay = #{delay}")
+          sleep delay
+        end
         log_response(response)
         process_result(response, &block)
       else
@@ -170,11 +180,15 @@ module RightDevelop::Testing::Client::Rest::Request
       file_path = nil
       past_epochs = state[:past_epochs] ||= []
       try_epochs = [state[:epoch]] + past_epochs
-      tried_paths = []
+      first_tried_path = nil
+      first_tried_epoch = nil
+      last_tried_epoch = nil
       try_epochs.each do |epoch|
         file_path = response_file_path(epoch)
         break if ::File.file?(file_path)
-        tried_paths << file_path
+        first_tried_path = file_path unless first_tried_path
+        first_tried_epoch = epoch unless first_tried_epoch
+        last_tried_epoch = epoch
         file_path = nil
       end
       if file_path
@@ -189,8 +203,10 @@ module RightDevelop::Testing::Client::Rest::Request
           response_hash[:body])
         result = FakeNetHttpResponse.new(response_hash, response_metadata)
       else
-        raise PLAYBACK_ERROR,
-              "Unable to locate response file(s): \"#{tried_paths.join("\", \"")}\""
+        msg = 'Unable to locate response file(s) in epoch range ' +
+              "[#{first_tried_epoch} - #{last_tried_epoch}]:\n  " +
+              first_tried_path.inspect
+        raise PLAYBACK_ERROR, msg
       end
       logger.debug("Played back response from #{file_path.inspect}.")
 

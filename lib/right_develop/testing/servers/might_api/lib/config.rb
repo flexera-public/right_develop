@@ -140,16 +140,18 @@ module RightDevelop::Testing::Server::MightApi
               # load request/response pair to validate.
               request_file_path = ::File.join(requests_dir, path)
               response_file_path = ::File.join(responses_dir, path)
+              logger.debug("Normalizing request #{request_file_path.inspect} ...")
               request_data = RightSupport::Data::Mash.new(::YAML.load_file(request_file_path))
               response_data = RightSupport::Data::Mash.new(::YAML.load_file(response_file_path))
 
               # if confing contains unreachable (i.e. no available route) files
               # then that is ignorable.
               query_string = request_data[:query]
+              path_parent = ::File.dirname(path)
               uri = METADATA_CLASS.normalize_uri(
                 URI::HTTP.build(
                   host:  'none',
-                  path:  (route_path + ::File.dirname(path)),
+                  path:  path_parent == '.' ? route_path : (route_path + path_parent),
                   query: request_data[:query]).to_s)
 
               # compute checksum from recorded request metadata.
