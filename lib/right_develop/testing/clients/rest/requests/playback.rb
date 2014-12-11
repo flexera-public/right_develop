@@ -89,7 +89,7 @@ module RightDevelop::Testing::Client::Rest::Request
     end
 
     RETRY_DELAY = 0.5
-    MAX_RETRIES = 100  # = 50 seconds; a socket usually times out in 60-120 seconds
+    MAX_RETRIES = 240  # = 120 seconds; a socket usually times out in 60-120 seconds
 
     # Overrides transmit to catch halt thrown by log_request.
     #
@@ -176,7 +176,6 @@ module RightDevelop::Testing::Client::Rest::Request
       # allowed due to multithreaded requests causing the epoch to advance
       # (in a non-throttled playback) before all requests for a past epoch have
       # been made. the current epoch is always preferred over past.
-      logger.debug("BEGIN playback state = #{state.inspect}") if logger.debug?
       file_path = nil
       past_epochs = state[:past_epochs] ||= []
       try_epochs = [state[:epoch]] + past_epochs
@@ -208,6 +207,12 @@ module RightDevelop::Testing::Client::Rest::Request
               first_tried_path.inspect
         raise PLAYBACK_ERROR, msg
       end
+
+      # defer any verbose debug logging (i.e. the current state) until after
+      # metadata has been successfully loaded because a retryable missing
+      # variable may occur a couple hundred times before the condition is
+      # satisfied, if ever.
+      logger.debug("BEGIN playback state = #{state.inspect}") if logger.debug?
       logger.debug("Played back response from #{file_path.inspect}.")
 
       # determine if epoch is done, which it is if every known request has been
