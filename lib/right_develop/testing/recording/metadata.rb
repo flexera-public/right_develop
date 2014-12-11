@@ -88,7 +88,7 @@ module RightDevelop::Testing::Recording
     class RecordingError < StandardError; end
     class PlaybackError < StandardError; end
 
-    attr_reader :uri, :verb, :http_status, :headers, :body
+    attr_reader :uri, :verb, :http_status, :headers, :body, :checksum_data
     attr_reader :mode, :logger, :effective_route_config, :variables
     attr_reader :typenames_to_values
 
@@ -791,12 +791,12 @@ module RightDevelop::Testing::Recording
       end
 
       # use deep-sorted JSON to prevent random ordering changing the checksum.
-      checksum_data = self.class.deep_sorted_json(significant_data)
+      @checksum_data = self.class.deep_sorted_json(significant_data)
       if logger.debug?
         logger.debug("#{@kind} significant = #{significant.inspect}")
-        logger.debug("#{@kind} checksum_data = #{checksum_data.inspect}")
+        logger.debug("#{@kind} checksum_data = #{@checksum_data.inspect}")
       end
-      ::Digest::MD5.hexdigest(checksum_data)
+      ::Digest::MD5.hexdigest(@checksum_data)
     end
 
     # Performs a selective copy of any significant fields (recursively) or else

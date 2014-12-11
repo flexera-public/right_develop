@@ -202,9 +202,12 @@ module RightDevelop::Testing::Client::Rest::Request
           response_hash[:body])
         result = FakeNetHttpResponse.new(response_hash, response_metadata)
       else
-        msg = 'Unable to locate response file(s) in epoch range ' +
-              "[#{first_tried_epoch} - #{last_tried_epoch}]:\n  " +
-              first_tried_path.inspect
+        msg = <<EOF
+Unable to locate response file(s) in epoch range [#{first_tried_epoch} - #{last_tried_epoch}]:
+#{first_tried_path.inspect}
+request checksum_data = #{request_metadata.checksum_data.inspect}
+state = #{state.inspect}
+EOF
         raise PLAYBACK_ERROR, msg
       end
 
