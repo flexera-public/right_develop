@@ -63,6 +63,23 @@ module RightDevelop::Testing::Client::Rest::Request
       def to_hash; @headers; end
     end
 
+    # Overrides transmit to catch halt thrown by log_request.
+    #
+    # @param [URI[ uri of some kind
+    # @param [Net::HTTP] req of some kind
+    # @param [RestClient::Payload] of some kind
+    #
+    # @return
+    def transmit(uri, req, payload, &block)
+      super
+    rescue ::Interrupt
+      if @request_timestamp
+        logger.warn('Interrupted with at least one request outstanding; will record a timeout response.')
+        handle_timeout
+      end
+      raise
+    end
+
     # Overrides log_request for basic logging.
     #
     # @param [RestClient::Response] to capture

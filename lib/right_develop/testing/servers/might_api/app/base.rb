@@ -23,12 +23,15 @@
 require ::File.expand_path('../../config/init', __FILE__)
 
 require 'rack/chunked'
+require 'set'
 require 'stringio'
 require 'uri'
 
 module RightDevelop::Testing::Server::MightApi
   module App
     class Base
+
+      MUTEX = ::Mutex.new  # semaphore for critical sections
 
       MAX_REDIRECTS = 10  # 500 after so many redirects
 
@@ -63,6 +66,18 @@ module RightDevelop::Testing::Server::MightApi
           nil
       end
 
+      def self.interrupted?
+        !!@interrupted
+      end
+
+      def self.interrupted=(value)
+        @interrupted = value
+      end
+
+      def self.app_threads
+        @app_threads ||= ::Set.new
+      end
+
       def call(env)
         # HACK: chain trap interrupt on first call to app because the trap chain
         # does not exist, in rack terms, until just before app is run.
@@ -75,7 +90,11 @@ module RightDevelop::Testing::Server::MightApi
         # cleaned-up on shutdown, etc. admin mode has a workaround whereby it is
         # able to clean-up any temporary files immediately after reading its
         # config and whenever the administered configuration changes.
-        entrapment unless Base.trapped?
+        raise ::Interrupt if self.class.interrupted?
+        MUTEX.synchronize do
+          entrapment unless Base.trapped?
+          self.class.app_threads << ::Thread.current
+        end
 
         env['rack.logger'] ||= logger
 
@@ -145,6 +164,13 @@ module RightDevelop::Testing::Server::MightApi
         logger.error(message)
         logger.debug(trace.join("\n"))
         internal_server_error(message)
+      rescue ::Interrupt
+        # setting interrupted=true may or may not be redundant, depending on
+        # visibility of interrupted flag to all outstanding app threads.
+        # the problem is that we are not allowed to synchronize a mutex inside
+        # of a trap context.
+        self.class.interrupted = true
+        internal_server_error('interrupt')
       rescue ::Exception => e
         message = "Unhandled exception: #{e.class} #{e.message}"
         trace = e.backtrace || []
@@ -156,6 +182,12 @@ module RightDevelop::Testing::Server::MightApi
           env['rack.errors'].puts(trace.join("\n"))
         end
         internal_server_error(message)
+      ensure
+        unless self.class.interrupted?
+          MUTEX.synchronize do
+            self.class.app_threads.delete(::Thread.current)
+          end
+        end
       end
 
       # Handler.
@@ -432,6 +464,22 @@ EOF
               app.logger.targets.clear
               fail 'Unexpected targets' unless app.logger.targets.empty?
               app.logger.warn('cannot log traps')  # no exception raised
+            end
+
+            # interrupt any running app threads to resolve outstanding requests.
+            #
+            # note that Mutex#synchronize is not allowed inside a trap context.
+            #
+            # FIX: duplicating the set is slightly unsafe but not sure how else
+            # to deal with data protected by critical section in a trap. we also
+            # have logic in ensure block to avoid modifying set on interrupt.
+            app.class.interrupted = true
+            app_threads = app.class.app_threads.dup
+            app_threads.each do |app_thread|
+              if app_thread.alive?
+                app_thread.raise(::Interrupt)
+                app_thread.join
+              end
             end
 
             # cleanup fixtures, if requested.
