@@ -636,7 +636,14 @@ module RightDevelop::Testing::Recording
         result = variable  # use macro as substituted value
       elsif values = @variables[variable]
         # quick out for same as initial value; don't show array index.
+        # special case for 'any_variable_name[*]' which always uses the last
+        # given value instead of keeping an array of values.
         if values.first == real_value
+          result = variable
+        elsif variable.end_with?('[*]')
+          # special case for wildcard index; update 1-sized array 0th entry with
+          # latest value instead of appending a new unique value.
+          @variables[variable][0] = real_value
           result = variable
         else
           # show zero-based array index beyond the zero index.
@@ -667,8 +674,17 @@ module RightDevelop::Testing::Recording
         end
         result = variable  # use macro as substituted value
       else
-        values = @variables[variable]
-        case value_index = values && values.index(real_value)
+        value_index = nil
+        if values = @variables[variable]
+          # special wildcard index notation means 'always latest value'; the
+          # recorded variable name will be the wildcard index name.
+          if variable.end_with?('[*]')
+            value_index = 0
+          else
+            value_index = values.index(real_value)
+          end
+        end
+        case value_index
         when nil
           message = 'A variable referenced by a response has not yet been ' +
                     'defined by a request while replacing variable = ' +
@@ -702,7 +718,10 @@ module RightDevelop::Testing::Recording
           raise PlaybackError, message
         end
       elsif variable_array = @variables[variable]
-        if matched = VARIABLE_INDEX_REGEX.match(target_value)
+        if variable.end_with?('[*]')
+          # special case for wildcard
+          variable_array_index = 0
+        elsif matched = VARIABLE_INDEX_REGEX.match(target_value)
           variable_array_index = Integer(matched[1])
         else
           variable_array_index = 0
