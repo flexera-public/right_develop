@@ -1,5 +1,9 @@
 require 'nokogiri'
 
+Given /^an ancient version of Ruby$/ do
+  pending("This test does not apply to modern Ruby versions") unless RUBY_VERSION =~ /^1\.8/
+end
+
 Given /^a Ruby application$/ do
   ruby_app_root.should_not be_nil
 end

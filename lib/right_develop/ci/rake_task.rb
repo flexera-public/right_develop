@@ -170,7 +170,9 @@ module RightDevelop::CI
             end
           end
         when nil
-          warn "Cannot define right_develop ci:spec task: RSpec gem is unavailable"
+          # Gem not installed, do not warn. If someone is looking for this task and they don't find it, they will
+          # figure it out. This warning is misleading when running rake tasks in environments that don't require
+          # these tasks.
         else
           raise LoadError, "Cannot define RightDevelop ci:spec task: unsupported RSpec version #{ver}"
         end
@@ -187,7 +189,9 @@ module RightDevelop::CI
           end
           task :cucumber => [:prep]
         when nil
-          warn "Cannot define right_develop ci:cucumber task: Cucumber gem is unavailable" 
+          # Gem not installed, do not warn. If someone is looking for this task and they don't find it, they will
+          # figure it out. This warning is misleading when running rake tasks in environments that don't require
+          # these tasks.
         else
           raise LoadError, "Cannot define RightDevelop ci:cucumber task: unsupported Cucumber version #{ver}"
         end
