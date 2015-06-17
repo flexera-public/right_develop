@@ -4,7 +4,8 @@ Feature: RSpec 1.x support
   So any Ruby project can have a beautiful, info-rich Jenkins project
 
   Background:
-    Given a Ruby application
+    Given an ancient version of Ruby
+    And a Ruby application
     And a Gemfile
     And a gem dependency on 'rake ~> 0.9'
     And a gem dependency on 'rspec ~> 1.0'

@@ -139,3 +139,6 @@ DEPENDENCIES
   rspec (~> 2.0)
   ruby-debug
   trollop (>= 1.0, < 3.0)
+
+BUNDLED WITH
+   1.10.3
