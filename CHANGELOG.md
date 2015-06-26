@@ -1,3 +1,7 @@
+# 3.1.12
+
+Removed gem unavailable warnings when RSpec/Cucumber gems are unavailable.
+
 # 3.1
 
 Made CI RSpec/Cucumber integration optional; the Rake task will adapt to whichever gems are present
