@@ -17,7 +17,7 @@ gem 'trollop', ['>= 1.0', '< 3.0']
 gem 'right_git', '>= 1.0'
 
 # Gems used by S3 tools
-gem 'right_aws', '>= 2.1.0'
+gem 'right_aws_api', :git => 'git@github.com:rightscale/right_aws_api.git', :tag => 'v0.3.1'
 
 # testing server and client
 gem 'rack'

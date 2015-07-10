@@ -20,7 +20,7 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-require 'right_aws'
+require 'right_aws_api'
 
 module RightDevelop
   module S3
@@ -33,6 +33,7 @@ module RightDevelop
     # subdirectory or else from the root of the bucket or directory on disk).
     class Interface
       NO_SLASHES_REGEXP = /^[^\/]+$/
+      DEFAULT_ENDPOINT = 'https://s3.amazonaws.com'
 
       DEFAULT_OPTIONS = {
         :filters => nil,
@@ -57,7 +58,11 @@ module RightDevelop
         end
 
         @logger = options[:logger] || Logger.new(STDOUT)
-        @s3 = ::RightAws::S3Interface.new(aws_access_key_id, aws_secret_access_key, :logger => @logger)
+        @s3 = ::RightScale::CloudApi::AWS::S3::Manager.new(
+          aws_access_key_id,
+          aws_secret_access_key,
+          DEFAULT_ENDPOINT,
+          :logger => @logger)
       end
 
       attr_accessor :logger
@@ -76,9 +81,9 @@ module RightDevelop
         files = []
         trivial_filters = filters.select { |filter| filter.is_a?(String) }
         if trivial_filters.empty?
-          @s3.incrementally_list_bucket(bucket, 'prefix' => prefix) do |response|
-            incremental_files = response[:contents].map do |details|
-              details[:key][(prefix.length)..-1]
+          incrementally_list_bucket(bucket, 'prefix' => prefix) do |keys|
+            incremental_files = keys.map do |details|
+              details['Key'][(prefix.length)..-1]
             end
             files += filter_files(incremental_files, filters)
           end
@@ -86,15 +91,14 @@ module RightDevelop
           trivial_filters.each do |filename|
             begin
               # use head to query file existence.
-              @s3.head(bucket, "#{prefix}#{filename}")
-              files << filename
-            rescue RightAws::AwsError => e
+              files << filename if @s3.HeadObject(:Bucket => bucket, :Object => "#{prefix}#{filename}")
+            rescue RightScale::CloudApi::HttpError => e
               # do nothing if file not found
-              raise unless '404' == e.http_code
+              raise unless '404' == e.code
             end
           end
         end
-        return files
+        files
       end
 
       # Downloads all files from the given bucket to the given directory.
@@ -118,24 +122,24 @@ module RightDevelop
           files.each do |path|
             key = "#{prefix}#{path}"
             to_file_path = File.join(to_dir_path, path)
+
+            # AWS creates separate keys for folders created with its console
+            # since it can be an empty folder we should create corresponding folder
+            # in order to keep folder structure and proceed to the next key
+            if path[-1] == '/'
+              FileUtils.mkdir_p(to_file_path) unless File.directory?(to_file_path)
+              next
+            end
+
             parent_path = File.dirname(to_file_path)
             FileUtils.mkdir_p(parent_path) unless File.directory?(parent_path)
 
             disk_file = to_file_path
-            file_md5 = File.exist?(disk_file) && Digest::MD5.hexdigest(File.read(disk_file))
 
-            if file_md5
-              head = @s3.head(bucket, key) rescue nil
-              key_md5 = head && head['etag'].gsub(/[^0-9a-fA-F]/, '')
-              skip = (key_md5 == file_md5)
-            end
-
-            if skip
-              logger.info("Skipping #{bucket}/#{key} (identical contents)")
-            else
+            process_or_skip_file(disk_file, bucket, key) do
               logger.info("Downloading #{bucket}/#{key}")
               ::File.open(to_file_path, 'wb') do |f|
-                @s3.get(bucket, key) { |chunk| f.write(chunk) }
+                @s3.GetObject(:Bucket => bucket, :Object => key) { |chunk| f.write(chunk) }
               end
               downloaded += 1
             end
@@ -170,18 +174,10 @@ module RightDevelop
           uploaded = 0
           files.each do |path|
             key = "#{prefix}#{path}"
-            file_md5 = Digest::MD5.hexdigest(File.read(path))
-            File.open(path, 'rb') do |f|
-              head = @s3.head(bucket, key) rescue nil
-              key_md5 = head && head['etag'].gsub(/[^0-9a-fA-F]/, '')
 
-              if file_md5 == key_md5
-                logger.info("Skipping #{bucket}/#{key} (identical contents)")
-              else
-                logger.info("Uploading to #{bucket}/#{key}")
-                @s3.put(bucket, key, f, 'x-amz-acl' => access)
-                uploaded += 1
-              end
+            process_or_skip_file(path, bucket, key) do
+              @s3.PutObject(:Bucket => bucket, :Object => key, :body => File.read(path), :headers => {'x-amz-acl' => access})
+              uploaded += 1
             end
           end
 
@@ -199,20 +195,38 @@ module RightDevelop
       def delete_files(bucket, options={})
         options = DEFAULT_OPTIONS.dup.merge(options)
         prefix = normalize_subdirectory_path(options[:subdirectory])
+        # Perhaps we should care about files ordering.
         files = list_files(bucket, options)
         if files.empty?
           logger.info("No files found in \"#{bucket}/#{prefix}\"")
         else
           logger.info("Deleting #{files.count} files...")
           files.each do |path|
-            @s3.delete(bucket, "#{prefix}#{path}")
+            @s3.DeleteObject(:Bucket => bucket, :Object => "#{prefix}#{path}")
             logger.info("Deleted \"#{bucket}/#{prefix}#{path}\"")
           end
         end
-        return files.size
+        files.size
       end
 
       protected
+
+      def process_or_skip_file(file, bucket, key)
+        file_md5 = File.exist?(file) && Digest::MD5.hexdigest(File.read(file))
+        return unless file_md5
+
+        # if file exists and its content is the same we should skip it
+        @s3.HeadObject(:Bucket => bucket, :Object => key, :headers => {'If-Match' => file_md5})
+        logger.info("Skipping #{bucket}/#{key} (identical contents)")
+
+      rescue RightScale::CloudApi::HttpError => e
+        if %w(404 412).include? e.code
+          # file does not exist or its content has changed, so we can do whatever we want
+          yield if block_given?
+        else
+          raise
+        end
+      end
 
       # Normalizes a relative file path for use with S3.
       #
@@ -232,6 +246,31 @@ module RightDevelop
         return path
       end
 
+      def incrementally_list_bucket(bucket, options = {}, &block)
+        # TODO add support for max-keys
+        options = options.merge({'Bucket' => bucket})
+        response = @s3.ListObjects(options)['ListBucketResult']
+
+        yield Array(response['Contents'])
+
+        if response['IsTruncated'] == 'true'
+          # FIXME check max-keys
+          options['marker'] = decide_marker(response)
+          incrementally_list_bucket(bucket, options, &block)
+        end
+      end
+
+      def decide_marker(response)
+        return response['NextMarker'] if response['NextMarker']
+        last_prefix = Array(response['CommonPrefixes']).last
+        last_key = response['Contents'].last
+        if last_key
+          last_key['Key']
+        else
+          last_prefix
+        end
+      end
+
       # Normalizes storage filters from options.
       #
       # @option options [Array] :filters for returned paths or nil or empty
@@ -246,7 +285,7 @@ module RightDevelop
           # filter is trivial unless it contains wildcards. more than one
           # non-wildcard filenames delimited by semicolon can be trivial.
           filter = initial_filters.first
-          if filter.kind_of?(String) && filter == filter.gsub('*', '').gsub('?', '')
+          unless filter.to_s.match /[?*]/
             normalized_filters = filter.split(';').uniq
           end
         end
