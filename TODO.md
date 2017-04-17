@@ -1,6 +1,6 @@
 # Pending Features
 
-## Milestone: v3.2
+## Milestone: v3.3
 
 - Add a "github" CLI command to use simple GitHub API automation (e.g. "github foreach")
 - Add a "git stories" CLI subcommand to identify all stories present in branch vs. base

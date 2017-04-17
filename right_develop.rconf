@@ -1,7 +1,0 @@
-ruby do
-  version  '2.1.2'
-end
-
-bundler do
-  version '1.6.3'
-end

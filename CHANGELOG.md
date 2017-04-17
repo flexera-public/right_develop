@@ -1,3 +1,7 @@
+# 3.2.1
+
+Dropped support for Ruby pre-v2.1
+
 # 3.1.12
 
 Removed gem unavailable warnings when RSpec/Cucumber gems are unavailable.
@@ -24,4 +28,3 @@ should be no problems upgrading from v1 unless you were relying on the Git modul
 # 1.0
 
 Initial release calved from RightSupport.
-
