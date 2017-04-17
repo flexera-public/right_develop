@@ -4,7 +4,7 @@ describe "xml parser" do
   if RightDevelop::Parsers::SaxParser::AVAILABLE
   it "BaseHelper.xml_post_process_1_5 for root hash formatted xml" do
     expected_hash = {
-      "farms"=>nil,
+      "farms"=>[],
       "animals"=>[
         {"species"=>"chicken", "type"=>'bird'},
         {"species"=>"chicken", "type"=>'bird'},

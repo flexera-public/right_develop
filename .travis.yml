@@ -1,12 +1,8 @@
 language: ruby
 cache: bundler
 rvm:
-  - 1.8.7
-  - 1.9.3
-  - 2.0.0
-  - 2.1.0
+  - 2.1.10
 script:
   - bundle exec rake ci:spec
-  - bundle exec rake ci:cucumber
   - bundle exec rake coveralls:push
 bundler_args: --without debugger development
