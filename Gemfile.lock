@@ -108,7 +108,8 @@ DEPENDENCIES
   right_git (>= 1.0)
   right_support (~> 2.14)
   rspec (~> 2.0)
+  simplecov
   trollop (>= 1.0, < 3.0)
 
 BUNDLED WITH
-   1.14.6
+   1.15.1

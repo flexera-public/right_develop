@@ -18,6 +18,8 @@
 # LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+require 'simplecov'
+SimpleCov.start
 
 require 'rubygems'
 require 'bundler/setup'
@@ -25,12 +27,12 @@ require 'bundler/setup'
 lib_dir = File.expand_path('../../lib', __FILE__)
 $: << lib_dir unless $:.include?(lib_dir)
 
-require 'coveralls'
-Coveralls.wear_merged! do
-  command_name 'spec'
-  add_filter '/features/'
-  add_filter '/spec/'
-  add_filter '/vendor/'
-end
+# require 'coveralls'
+# Coveralls.wear_merged! do
+#   command_name 'spec'
+#   add_filter '/features/'
+#   add_filter '/spec/'
+#   add_filter '/vendor/'
+# end
 
 require 'right_develop'

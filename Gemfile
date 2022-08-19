@@ -42,5 +42,6 @@ group :test do
   gem 'rest-client', '~> 1.6.0' # can't use 1.7 because it doesn't support 1.8
 
   gem 'libxml-ruby', '~> 2.7', :platforms => [:mri]  # for sax parser
-  gem 'activesupport'                                # unit tests
+  gem 'activesupport'                          # unit tests
+  gem 'simplecov', require: false
 end
