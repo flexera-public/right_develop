@@ -25,7 +25,7 @@ Gem::Specification.new do |spec|
   spec.required_ruby_version = Gem::Requirement.new('~> 2.1')
 
   spec.add_runtime_dependency(%q<right_support>, ['~> 2.14'])
-  spec.add_runtime_dependency(%q<builder>, ["~> 3.0"])
+  spec.add_runtime_dependency(%q<builder>, [">= 2.1.2"])
   spec.add_runtime_dependency(%q<trollop>, ["< 3.0", ">= 1.0"])
   spec.add_runtime_dependency(%q<right_git>, [">= 1.0"])
   spec.add_runtime_dependency(%q<right_aws>, [">= 2.1.0"])

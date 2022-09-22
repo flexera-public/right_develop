@@ -10,7 +10,7 @@ gemspec
 gem 'right_support', '~> 2.14'
 
 # Gems used by reusable spec helpers
-gem "builder", "~> 3.0"
+gem "builder", "2.1.2"
 
 # Gems used by the command-line Git tools
 gem 'trollop', ['>= 1.0', '< 3.0']
